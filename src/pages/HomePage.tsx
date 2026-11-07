@@ -306,6 +306,9 @@ export const HomePage: React.FC = () => {
                     alt={cat.name}
                     className="w-full h-full object-contain filter drop-shadow-xs"
                     loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/assets/cat-chips.png';
+                    }}
                   />
                 </div>
                 <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] mt-1.5 group-hover:text-[#A67732] transition-colors truncate w-full px-0.5">
