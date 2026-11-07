@@ -90,7 +90,7 @@ export const HomePage: React.FC = () => {
       {/* 1. Compact Unified Navigation */}
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 space-y-7 sm:space-y-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-7 sm:pb-10 lg:pb-12 space-y-7 sm:space-y-10">
         
         {/* 2. Hero Banner / Slideshow: Smooth Transitions, Zero Image Fallback, Pause on Hover */}
         {activeBanners.length === 0 ? (
