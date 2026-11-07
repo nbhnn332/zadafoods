@@ -4,17 +4,27 @@
 
 @layer base {
   :root {
+    /* Core Brand Palette */
     --canvas: #FBF8F4;
     --canvas-subtle: #F7F3EB;
     --surface: #FFFFFF;
     --brand-primary: #A67732;
     --brand-primary-hover: #8E6325;
     --brand-secondary: #072C20;
-    --brand-gold: #DE8B24;
+    --brand-deep: #031D16;
+    --brand-gold: #A67732;
+    --brand-muted-gold: #D4B574;
     --content-primary: #041914;
     --content-secondary: #4A4F48;
     --content-muted: #787F76;
     --border-subtle: #EAE3D6;
+
+    /* Scroll padding for sticky header + bottom nav */
+    scroll-padding-top: 100px;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -22,6 +32,14 @@
     color: var(--content-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Better tap targets on touch devices */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   /* Hide default scrollbars for mobile carousels while keeping scrollable */
@@ -34,9 +52,125 @@
   }
 }
 
+@layer components {
+  /* =====================================================
+   * PREMIUM BUTTON SYSTEM
+   * ===================================================== */
+
+  /* Primary gold button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
+           rounded-xl bg-[#A67732] hover:bg-[#8E6325] active:scale-[0.98]
+           text-white text-sm font-bold shadow-sm 
+           transition-all duration-200 focus-visible:outline-none 
+           focus-visible:ring-2 focus-visible:ring-[#A67732] focus-visible:ring-offset-2;
+  }
+
+  /* Dark forest green button */
+  .btn-dark {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           rounded-xl bg-[#072C20] hover:bg-[#031D16] active:scale-[0.98]
+           text-white text-sm font-bold shadow-sm
+           transition-all duration-200 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-[#072C20] focus-visible:ring-offset-2;
+  }
+
+  /* Ghost/outline button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           rounded-xl border border-[#EAE3D6] bg-transparent hover:bg-[#F7F4EE]
+           text-[#1C1917] text-sm font-semibold
+           transition-all duration-200 focus-visible:outline-none
+           focus-visible:ring-2 focus-visible:ring-[#A67732];
+  }
+
+  /* =====================================================
+   * EDITORIAL SECTION SYSTEM
+   * ===================================================== */
+
+  /* Full-bleed dark forest green editorial section */
+  .section-forest {
+    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-12
+           bg-gradient-to-br from-[#031D16] via-[#072C20] to-[#0A3D2D];
+  }
+
+  /* Warm ivory tinted section */
+  .section-ivory {
+    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-10
+           bg-[#F7F3EB];
+  }
+
+  /* =====================================================
+   * GOLD EYEBROW LABEL
+   * ===================================================== */
+  .eyebrow-gold {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full
+           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest
+           bg-[#A67732]/15 text-[#A67732] border border-[#A67732]/25;
+  }
+
+  .eyebrow-gold-on-dark {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full
+           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest
+           bg-[#A67732]/25 text-[#D4B574] border border-[#A67732]/30;
+  }
+
+  /* =====================================================
+   * CARD SYSTEM
+   * ===================================================== */
+  .card-elevated {
+    @apply bg-white rounded-2xl border border-[#EAE3D6]/80
+           shadow-[0_2px_8px_rgba(0,0,0,0.04)]
+           hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
+           hover:border-[#A67732]/30
+           transition-all duration-300;
+  }
+
+  /* =====================================================
+   * CATEGORY CARD FALLBACK (when image is missing)
+   * ===================================================== */
+  .cat-fallback {
+    @apply bg-gradient-to-br from-[#072C20] to-[#0A3D2D]
+           flex items-center justify-center;
+  }
+}
+
 @layer utilities {
   .tap-highlight-transparent {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safe-area padding utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Fluid text utilities */
+  .text-fluid-sm {
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
+  }
+  .text-fluid-base {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+  }
+  .text-fluid-lg {
+    font-size: clamp(1rem, 3vw, 1.25rem);
+  }
+  .text-fluid-xl {
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+  }
+  .text-fluid-2xl {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+  }
+  .text-fluid-3xl {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+  }
+
+  /* Scroll clearance for bottom nav */
+  .scroll-mb-nav {
+    scroll-margin-bottom: 72px;
   }
 }
 

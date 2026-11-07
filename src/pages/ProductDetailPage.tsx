@@ -62,6 +62,16 @@ export const ProductDetailPage: React.FC = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileScreen(typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Dynamic gallery images derived authoritatively from product data and approved assets
   const isBananaChips = Boolean(product?.slug?.includes('banana-chips'));
@@ -250,7 +260,7 @@ export const ProductDetailPage: React.FC = () => {
     : (selectedVariant.discountPercentage || 0);
 
   return (
-    <div className="min-h-screen bg-canvas pb-16 text-content-primary">
+    <div className="min-h-screen bg-canvas pb-32 md:pb-16 text-content-primary">
       {/* Header: compact on mobile matching Screen 3; full navigation on desktop */}
       <Header
         showBack={true}
@@ -718,6 +728,47 @@ export const ProductDetailPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      {/* Mobile Sticky Purchase Bar — only on mobile viewports (< 768px) */}
+      {isMobileScreen && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#FBF8F4]/96 backdrop-blur-md border-t border-[#EAE3D6]/70 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]"
+             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex items-center gap-3 px-4 py-3">
+            {/* Price display */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-bold text-lg text-[#1C1917]">₹{sellingPrice}</span>
+                {savings > 0 && (
+                  <span className="text-xs text-[#9CA3AF] line-through">₹{mrp}</span>
+                )}
+              </div>
+              {savings > 0 && (
+                <span className="text-[10px] font-bold text-[#E84C30]">{calculatedDiscount}% OFF · Save ₹{savings}</span>
+              )}
+            </div>
+            {/* Add to Cart */}
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={selectedVariant.stockQuantity <= 0}
+              className="h-11 px-4 rounded-xl bg-white border-2 border-[#A67732] text-[#A67732] font-bold text-sm flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span className="hidden xs:inline">Add</span>
+            </button>
+            {/* Buy Now */}
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              disabled={isBuyingNow || selectedVariant.stockQuantity <= 0}
+              className="h-11 px-5 rounded-xl bg-[#A67732] hover:bg-[#8E6325] text-white font-bold text-sm flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all shadow-sm"
+            >
+              <Zap className="w-4 h-4 fill-current" />
+              <span>{isBuyingNow ? 'Going...' : 'Buy Now'}</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

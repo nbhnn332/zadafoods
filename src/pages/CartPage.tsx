@@ -81,23 +81,24 @@ export const CartPage: React.FC = () => {
       {/* Header matching Screen 4 */}
       <Header title="Your Cart" showBack={true} showSearch={false} hideCartIcon={true} />
 
-      <main className="max-w-md mx-auto px-4 pt-3 space-y-3.5">
-        {/* Cart Item Cards matching Screen 4 */}
-        <section className="space-y-3">
+      <main className="max-w-md mx-auto px-4 pt-4 space-y-3.5">
+        {/* Cart Item Cards — premium styling */}
+        <section className="space-y-2.5">
           {displayedItems.map((item) => (
             <div
               key={item.variantId}
-              className="bg-white rounded-2xl p-3.5 border border-[#EAE5DC] shadow-sm flex gap-3.5 items-start justify-between"
+              className="bg-white rounded-2xl p-3.5 border border-[#EAE3D6]/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex gap-3.5 items-start justify-between"
             >
               <div className="flex gap-3">
                 {/* Thumbnail */}
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#FBF8F4] shrink-0 border border-[#EAE5DC]">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#F7F4EE] shrink-0 border border-[#EAE3D6]/60">
                   <img
                     src={item.imageUrl}
                     alt={item.productName}
                     className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
-                  {/* Overlay weight label badge if not already baked into asset */}
+                  {/* Weight label badge */}
                   {!item.imageUrl.includes('/assets/cart-') && (
                     <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] font-bold text-white">
                       {item.variantWeightLabel}
@@ -106,39 +107,44 @@ export const CartPage: React.FC = () => {
                 </div>
 
                 {/* Item Details */}
-                <div className="space-y-0.5">
-                  <h3 className="font-bold text-xs sm:text-sm text-[#1C1917] leading-tight">
+                <div className="space-y-0.5 flex-1 min-w-0">
+                  <h3 className="font-semibold text-[13px] text-[#1C1917] leading-tight line-clamp-2">
                     {item.productName}
                   </h3>
-                  <p className="text-xs text-[#71717A] font-medium">
+                  <p className="text-[11px] text-[#77736C] font-medium">
                     {item.variantWeightLabel}
                   </p>
                   <div className="flex items-center gap-1.5 pt-0.5">
-                    <span className="text-sm font-bold text-[#DC2626]">
+                    <span className="text-sm font-bold text-[#1C1917]">
                       ₹{item.unitPrice}
                     </span>
                     {item.mrp > item.unitPrice && (
-                      <span className="text-xs text-[#71717A] line-through">
+                      <span className="text-xs text-[#9CA3AF] line-through">
                         ₹{item.mrp}
+                      </span>
+                    )}
+                    {item.mrp > item.unitPrice && (
+                      <span className="text-[9px] font-bold text-[#E84C30] bg-[#FFF0EE] px-1.5 py-0.5 rounded-md">
+                        {Math.round(((item.mrp - item.unitPrice) / item.mrp) * 100)}% OFF
                       </span>
                     )}
                   </div>
 
-                  {/* Quantity Stepper matching Screen 4 */}
-                  <div className="flex items-center border border-[#EAE5DC] rounded-xl bg-white overflow-hidden w-fit mt-1.5 shadow-sm divide-x divide-[#EAE5DC]">
+                  {/* Quantity Stepper */}
+                  <div className="flex items-center border border-[#EAE3D6] rounded-xl bg-[#F7F4EE] overflow-hidden w-fit mt-1.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] divide-x divide-[#EAE3D6]">
                     <button
                       onClick={() => !isDemoActive && updateQuantity(item.variantId, item.quantity - 1)}
-                      className="px-2.5 py-1 text-[#71717A] hover:bg-[#F9F7F3] transition-colors"
+                      className="px-2.5 py-1.5 text-[#77736C] hover:bg-white hover:text-[#1C1917] transition-colors"
                       aria-label="Decrease quantity"
                     >
                       <Minus className="w-3 h-3 stroke-[2.5]" />
                     </button>
-                    <span className="w-7 text-center font-bold text-xs text-[#1C1917]">
+                    <span className="w-8 text-center font-bold text-[12px] text-[#1C1917] bg-white">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => !isDemoActive && updateQuantity(item.variantId, item.quantity + 1)}
-                      className="px-2.5 py-1 text-[#71717A] hover:bg-[#F9F7F3] transition-colors"
+                      className="px-2.5 py-1.5 text-[#77736C] hover:bg-white hover:text-[#1C1917] transition-colors"
                       aria-label="Increase quantity"
                     >
                       <Plus className="w-3 h-3 stroke-[2.5]" />
@@ -150,7 +156,7 @@ export const CartPage: React.FC = () => {
               {/* Trash Delete Action */}
               <button
                 onClick={() => !isDemoActive && removeFromCart(item.variantId)}
-                className="p-1 text-[#71717A] hover:text-rose-500 transition-colors"
+                className="p-2 rounded-lg text-[#9CA3AF] hover:text-rose-500 hover:bg-rose-50 transition-colors shrink-0 mt-0.5"
                 aria-label="Remove item"
               >
                 <Trash2 className="w-4 h-4 stroke-[1.8]" />
