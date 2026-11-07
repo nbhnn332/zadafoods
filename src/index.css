@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --canvas: #FBF8F4;
+    --canvas-subtle: #F7F3EB;
+    --surface: #FFFFFF;
+    --brand-primary: #A67732;
+    --brand-primary-hover: #8E6325;
+    --brand-secondary: #072C20;
+    --brand-gold: #DE8B24;
+    --content-primary: #041914;
+    --content-secondary: #4A4F48;
+    --content-muted: #787F76;
+    --border-subtle: #EAE3D6;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--content-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hide default scrollbars for mobile carousels while keeping scrollable */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Print-specific stylesheet for Invoice / Bill printing */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #printable-invoice,
+  #printable-invoice * {
+    visibility: visible !important;
+  }
+  #printable-invoice {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+    background: white !important;
+    color: #111827 !important;
+    z-index: 999999 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
