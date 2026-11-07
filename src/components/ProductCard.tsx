@@ -49,12 +49,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     product.images[0]?.imageUrl ||
     `/assets/cat-${product.categorySlug || 'chips'}.png`;
 
+  const fallbackCatImage = `/assets/cat-${product.categorySlug || 'chips'}.png`;
+  const [imageSrc, setImageSrc] = useState(primaryImage);
+
+  React.useEffect(() => {
+    setImageSrc(product.images[0]?.imageUrl || fallbackCatImage);
+    setImgError(false);
+  }, [product.id, fallbackCatImage]);
+
   const isOutOfStock = selectedVariant.stockQuantity <= 0;
 
-  // Fallback initial letter for broken images
+  // Fallback initial letter for missing images
   const nameInitial = product.name.charAt(0).toUpperCase();
 
   const hasMultipleVariants = product.variants.length > 1;
+
+  const handleImageError = () => {
+    if (imageSrc !== fallbackCatImage) {
+      setImageSrc(fallbackCatImage);
+    } else {
+      setImgError(true);
+    }
+  };
 
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3D6]/80 hover:border-[#A67732]/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col h-full">
@@ -69,18 +85,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         >
           {imgError ? (
             /* Broken-image fallback: centred initial on warm bg */
-            <div className="w-full h-full flex items-center justify-center bg-[#F7F4EE]">
-              <span className="font-serif text-4xl font-bold text-[#A67732]/60 select-none">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F7F4EE] p-3 text-center">
+              <span className="font-serif text-3xl font-bold text-[#A67732]/70 select-none">
                 {nameInitial}
+              </span>
+              <span className="text-[10px] text-[#77736C] font-medium mt-1 truncate max-w-full">
+                {product.categorySlug || 'ZaDa Foods'}
               </span>
             </div>
           ) : (
             <img
-              src={primaryImage}
+              src={imageSrc}
               alt={product.name}
               className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-out"
               loading="lazy"
-              onError={() => setImgError(true)}
+              onError={handleImageError}
             />
           )}
         </Link>
@@ -161,16 +180,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* ── Controls Footer ── */}
-      <div className="px-3 pb-3 pt-0 mt-auto flex items-center gap-2">
+      <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3 pt-0 mt-auto flex items-center gap-1.5 sm:gap-2">
 
         {/* Variant selector */}
         {hasMultipleVariants ? (
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <select
               value={selectedVariant.id}
               onChange={handleVariantChange}
               aria-label={`Select pack size for ${product.name}`}
-              className="w-full appearance-none bg-[#F7F4EE] border border-[#EAE3D6] text-[#1C1917] text-[11px] px-2.5 py-1.5 pr-5 rounded-xl focus:outline-none focus:border-[#A67732] cursor-pointer truncate"
+              className="w-full appearance-none bg-[#F7F4EE] border border-[#EAE3D6] text-[#1C1917] text-[11px] font-medium py-1.5 pl-2 pr-4 rounded-xl focus:outline-none focus:border-[#A67732] cursor-pointer truncate shadow-2xs"
             >
               {product.variants.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -179,13 +198,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               ))}
             </select>
             {/* Custom chevron overlay */}
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#77736C] text-[8px]">
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#77736C] text-[8px]">
               ▼
             </span>
           </div>
         ) : (
           /* Single variant — readonly pill */
-          <span className="bg-[#F7F4EE] text-[#77736C] text-[11px] px-2 py-1 rounded-full border border-[#EAE3D6] whitespace-nowrap">
+          <span className="bg-[#F7F4EE] text-[#77736C] text-[11px] font-medium px-2 py-1 rounded-lg border border-[#EAE3D6] whitespace-nowrap shrink-0">
             {selectedVariant.weightLabel}
           </span>
         )}
@@ -197,7 +216,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock || cartState === 'adding'}
-            className={`h-9 w-9 rounded-xl text-white flex items-center justify-center shrink-0 transition-all active:scale-[0.98] shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#072C20] ${
+            className={`h-8 sm:h-9 w-8 sm:w-9 rounded-xl text-white flex items-center justify-center shrink-0 transition-all active:scale-[0.98] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-[#072C20] ${
               isOutOfStock
                 ? 'bg-stone-300 cursor-not-allowed text-stone-500'
                 : cartState === 'added'
@@ -226,12 +245,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </button>
         ) : (
-          /* Full-width pill button */
+          /* Pill button */
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock || cartState === 'adding'}
-            className={`w-full h-9 rounded-xl text-white text-[12px] font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#072C20] ${
+            className={`h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl text-white text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 shrink-0 transition-all active:scale-[0.98] shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-[#072C20] ${
               isOutOfStock
                 ? 'bg-stone-300 cursor-not-allowed text-stone-500'
                 : cartState === 'added'
@@ -249,14 +268,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {cartState === 'added' ? (
               <>
                 <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>✓ Added</span>
+                <span>Added</span>
               </>
             ) : isOutOfStock ? (
               <span>Sold Out</span>
             ) : (
               <>
                 <ShoppingCart className="w-3.5 h-3.5 stroke-[2]" />
-                <span>Add to Cart</span>
+                <span>Add</span>
               </>
             )}
           </button>

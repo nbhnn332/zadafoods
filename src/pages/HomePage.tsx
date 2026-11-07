@@ -231,14 +231,14 @@ export const HomePage: React.FC = () => {
               <>
                 <button
                   onClick={handlePrevSlide}
-                  className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all border border-white/20 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                  className="absolute bottom-3 right-12 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:left-4 z-20 w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all border border-white/20 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                   aria-label="Previous slide"
                 >
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
                 <button
                   onClick={handleNextSlide}
-                  className="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-white/10 hover:bg-white/25 text-white backdrop-blur-sm transition-all border border-white/20 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                  className="absolute bottom-3 right-3 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:right-4 z-20 w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-sm transition-all border border-white/20 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                   aria-label="Next slide"
                 >
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -326,80 +326,58 @@ export const HomePage: React.FC = () => {
 
           {categories.length > 0 && (
             <>
-              {/* Mobile: Featured (first) category — full-width tall card */}
-              <div className="md:hidden space-y-2">
-                {/* Featured large card */}
-                <Link
-                  to={`/category/${categories[0].slug}`}
-                  className="group relative block w-full h-40 rounded-2xl overflow-hidden bg-[#072C20] shadow-sm"
-                >
-                  <img
-                    src={categories[0].imageUrl}
-                    alt={categories[0].name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  {/* Fallback forest green bg if image missing */}
-                  <div className="absolute inset-0 bg-[#072C20]/30 group-hover:bg-[#072C20]/20 transition-colors" />
-                  {/* Bottom overlay gradient */}
-                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 to-transparent pointer-events-none" />
-                  {/* Category name */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-                    <span className="font-bold text-sm text-white drop-shadow-sm">{categories[0].name}</span>
-                  </div>
-                </Link>
-
-                {/* Remaining categories — 2-column square grid */}
-                <div className="grid grid-cols-2 gap-2">
-                  {categories.slice(1, 9).map((cat) => (
+              {/* Mobile: Clean Minimalist Small Circles Strip */}
+              <div className="md:hidden">
+                <div className="flex items-start gap-3.5 overflow-x-auto no-scrollbar py-2 -mx-4 px-4">
+                  {categories.map((cat) => (
                     <Link
                       key={cat.id}
                       to={`/category/${cat.slug}`}
-                      className="group relative block aspect-square rounded-2xl overflow-hidden bg-[#072C20] shadow-xs"
+                      className="group flex flex-col items-center shrink-0 w-[64px] focus:outline-none"
                     >
-                      <img
-                        src={cat.imageUrl}
-                        alt={cat.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      {/* Fallback bg */}
-                      <div className="absolute inset-0 bg-[#072C20]/20 group-hover:bg-[#072C20]/10 transition-colors" />
-                      {/* Bottom gradient */}
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-                      {/* Name overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5 z-10">
-                        <span className="font-semibold text-[11px] text-white drop-shadow-sm line-clamp-2 leading-tight">{cat.name}</span>
+                      {/* Small Circle with soft border and subtle hover zoom */}
+                      <div className="w-[58px] h-[58px] rounded-full p-1 bg-white border border-[#EAE3D6] shadow-[0_2px_6px_rgba(0,0,0,0.03)] flex items-center justify-center transition-all duration-300 group-hover:border-[#A67732] group-hover:scale-105 group-active:scale-95">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+                          <img
+                            src={cat.imageUrl}
+                            alt={cat.name}
+                            className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = '/assets/cat-chips.png';
+                            }}
+                          />
+                        </div>
                       </div>
+                      {/* Category Label */}
+                      <span className="text-[11px] font-semibold text-[#1C1917] mt-1.5 line-clamp-1 text-center leading-tight group-hover:text-[#A67732] transition-colors w-full px-0.5">
+                        {cat.name}
+                      </span>
                     </Link>
                   ))}
                 </div>
               </div>
 
-              {/* Desktop: 5-col or 6-col grid */}
-              <div className="hidden md:grid grid-cols-5 lg:grid-cols-10 gap-2 sm:gap-3">
+              {/* Desktop: 5-to-10 column clean circular grid */}
+              <div className="hidden md:grid grid-cols-5 lg:grid-cols-10 gap-3">
                 {categories.slice(0, 10).map((cat) => (
                   <Link
                     key={cat.id}
                     to={`/category/${cat.slug}`}
-                    className="group flex flex-col items-center text-center p-2 sm:p-2.5 rounded-2xl bg-white border border-[#EAE5DC] shadow-xs hover:border-[#A67732] hover:shadow-sm transition-all"
+                    className="group flex flex-col items-center text-center p-2 rounded-2xl hover:bg-white/60 transition-colors"
                   >
-                    <div className="w-14 h-12 sm:w-16 sm:h-14 overflow-hidden flex items-center justify-center group-hover:scale-105 transition-transform p-0.5">
-                      <img
-                        src={cat.imageUrl}
-                        alt={cat.name}
-                        className="w-full h-full object-contain filter drop-shadow-xs"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                    <div className="w-16 h-16 rounded-full p-1 bg-white border border-[#EAE3D6] shadow-xs flex items-center justify-center group-hover:border-[#A67732] group-hover:scale-105 transition-all">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+                        <img
+                          src={cat.imageUrl}
+                          alt={cat.name}
+                          className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/assets/cat-chips.png';
+                          }}
+                        />
+                      </div>
                     </div>
                     <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] mt-1.5 group-hover:text-[#A67732] transition-colors truncate w-full px-0.5">
                       {cat.name}
@@ -486,12 +464,12 @@ export const HomePage: React.FC = () => {
           </section>
         )}
 
-        {/* ── SECTION 6: Our Story Teaser — Forest Green Editorial ── */}
+        {/* ── SECTION 6: Our Story Teaser — Warm Ivory Artisanal Card ── */}
         <section
-          className="bg-[#072C20] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 overflow-hidden relative"
+          className="rounded-2xl sm:rounded-3xl bg-[#FAF6EE] border border-[#EAE3D6] p-6 sm:p-10 lg:p-12 overflow-hidden relative shadow-xs"
           aria-label="Our Kerala Heritage"
         >
-          {/* Subtle decorative orb */}
+          {/* Subtle decorative gold orb */}
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#A67732]/10 blur-3xl pointer-events-none" />
 
           <div className="max-w-6xl mx-auto">
@@ -499,25 +477,25 @@ export const HomePage: React.FC = () => {
               {/* Text Content */}
               <div className="md:col-span-7 space-y-3 text-center md:text-left">
                 {/* Gold eyebrow */}
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-[#A67732]/20 text-[#D4B574] border border-[#A67732]/30">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-[#A67732]/15 text-[#A67732] border border-[#A67732]/25">
                   Our Kerala Heritage
                 </span>
                 {/* Large serif headline */}
-                <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl text-white leading-snug">
+                <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl text-[#1C1917] leading-snug">
                   Pure Ingredients, Generational Craft
-                  <span className="block text-sm sm:text-base font-normal text-[#D4B574] mt-1">
+                  <span className="block text-sm sm:text-base font-normal text-[#A67732] mt-1">
                     Rooted in Kerala. Crafted for Every Kitchen.
                   </span>
                 </h2>
                 {/* Description */}
-                <p className="text-xs sm:text-sm text-white/70 leading-relaxed max-w-lg mx-auto md:mx-0">
+                <p className="text-xs sm:text-sm text-[#52525B] leading-relaxed max-w-lg mx-auto md:mx-0">
                   Every creation from ZaDa Foods celebrates Kerala's rich spice legacy and authentic regional cuisine. From Malabar black pepper to slow-cooked heritage treats — no preservatives, no shortcuts, just pure Kerala flavours rooted in tradition.
                 </p>
                 <div className="pt-2 flex justify-center md:justify-start">
                   <Link
                     to="/our-story"
                     aria-label="Read Our Story"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/30 text-white hover:bg-white/10 active:scale-[0.99] text-xs sm:text-sm font-bold transition-all"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#072C20] hover:bg-[#031D16] text-white active:scale-[0.99] text-xs sm:text-sm font-bold shadow-xs transition-all"
                   >
                     <span>Read Our Story</span>
                     <ArrowRight className="w-4 h-4" />
@@ -527,7 +505,7 @@ export const HomePage: React.FC = () => {
 
               {/* Image — desktop only (hidden on mobile for clean text focus) */}
               <div className="hidden md:flex md:col-span-5 items-center justify-center">
-                <div className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+                <div className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border border-[#EAE3D6] shadow-sm bg-white">
                   <img
                     src="/assets/prod-banana-chips-hero.png"
                     alt="Traditional Kerala chips preparation"
