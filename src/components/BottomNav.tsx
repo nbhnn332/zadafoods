@@ -16,65 +16,44 @@ export const BottomNav: React.FC = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-[#FBF8F4]/96 backdrop-blur-md border-t border-[#EAE3D6]/70 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] md:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EAE5DC] py-2 px-6 shadow-sm md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
     >
-      <div className="flex items-stretch justify-around max-w-md mx-auto h-14">
+      <div className="flex items-center justify-around max-w-md mx-auto">
 
         {/* Home */}
         <NavLink
           to="/"
           end
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 relative group"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
+              isActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+            }`
+          }
         >
           {({ isActive }) => (
             <>
-              {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full bg-[#A67732]" />
-              )}
-              <Home
-                className="w-5 h-5"
-                style={{
-                  color: isActive ? '#A67732' : '#9CA3AF',
-                  fill: isActive ? '#A67732' : 'none',
-                  strokeWidth: 2,
-                }}
-              />
-              <span
-                className="text-[10px] font-medium leading-none"
-                style={{ color: isActive ? '#A67732' : '#9CA3AF' }}
-              >
-                Home
-              </span>
+              <Home className={`w-5 h-5 stroke-[2] ${isActive ? 'fill-[#A67732]' : ''}`} />
+              <span>Home</span>
             </>
           )}
         </NavLink>
 
-        {/* Explore / Shop */}
+        {/* Shop */}
         <NavLink
           to="/shop"
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 relative group"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
+              isActive || isShopActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+            }`
+          }
         >
           {({ isActive }) => {
             const active = isActive || isShopActive;
             return (
               <>
-                {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full bg-[#A67732]" />
-                )}
-                <Search
-                  className="w-5 h-5"
-                  style={{
-                    color: active ? '#A67732' : '#9CA3AF',
-                    strokeWidth: active ? 2.5 : 2,
-                  }}
-                />
-                <span
-                  className="text-[10px] font-medium leading-none"
-                  style={{ color: active ? '#A67732' : '#9CA3AF' }}
-                >
-                  Explore
-                </span>
+                <Search className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-[2]'}`} />
+                <span>Shop</span>
               </>
             );
           }}
@@ -83,29 +62,18 @@ export const BottomNav: React.FC = () => {
         {/* Offers */}
         <NavLink
           to="/shop?filter=offers"
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 relative group"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
+              isActive || isOffersActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+            }`
+          }
         >
           {({ isActive }) => {
             const active = isActive || isOffersActive;
             return (
               <>
-                {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full bg-[#A67732]" />
-                )}
-                <Tag
-                  className="w-5 h-5"
-                  style={{
-                    color: active ? '#A67732' : '#9CA3AF',
-                    fill: active ? '#A67732' : 'none',
-                    strokeWidth: 2,
-                  }}
-                />
-                <span
-                  className="text-[10px] font-medium leading-none"
-                  style={{ color: active ? '#A67732' : '#9CA3AF' }}
-                >
-                  Offers
-                </span>
+                <Tag className={`w-5 h-5 stroke-[2] ${active ? 'fill-[#A67732]' : ''}`} />
+                <span>Offers</span>
               </>
             );
           }}
@@ -114,34 +82,22 @@ export const BottomNav: React.FC = () => {
         {/* Account */}
         <NavLink
           to="/account"
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 relative group"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
+              isActive || isAccountActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+            }`
+          }
         >
           {({ isActive }) => {
             const active = isActive || isAccountActive;
             return (
               <>
-                {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-b-full bg-[#A67732]" />
-                )}
-                <User
-                  className="w-5 h-5"
-                  style={{
-                    color: active ? '#A67732' : '#9CA3AF',
-                    fill: active ? '#A67732' : 'none',
-                    strokeWidth: 2,
-                  }}
-                />
-                <span
-                  className="text-[10px] font-medium leading-none"
-                  style={{ color: active ? '#A67732' : '#9CA3AF' }}
-                >
-                  Account
-                </span>
+                <User className={`w-5 h-5 stroke-[2] ${active ? 'fill-[#A67732]' : ''}`} />
+                <span>Account</span>
               </>
             );
           }}
         </NavLink>
-
       </div>
     </nav>
   );

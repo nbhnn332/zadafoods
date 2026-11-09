@@ -7,12 +7,87 @@ import { Footer } from '../components/Footer';
 import { ProductCard } from '../components/ProductCard';
 import { useAdminData } from '../context/AdminDataContext';
 import { normalizeWhatsAppNumber } from '../lib/commerce/whatsappRouting';
+import { Category } from '../types';
 import { FestivalHeroOverlay } from '../components/festival/FestivalHeroOverlay';
 import { FestivalSectionHeader } from '../components/festival/FestivalSectionHeader';
 import { FestivalAtmosphere, FestivalDivider } from '../components/festival/FestivalAtmosphere';
 import { FestivalPromotionSection } from '../components/festival/FestivalPromotionSection';
 import { FestivalPopup } from '../components/festival/FestivalPopup';
 import { FestivalFooterDecoration } from '../components/festival/FestivalFooterDecoration';
+
+interface CategoryRailItemProps {
+  category: Category;
+  isMobile?: boolean;
+}
+
+const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile }) => {
+  const [imgError, setImgError] = useState(false);
+
+  if (isMobile) {
+    return (
+      <Link
+        to={`/category/${category.slug}`}
+        className="group flex flex-col items-center shrink-0 w-[110px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A67732] rounded-2xl p-1 transition-all"
+      >
+        {/* Soft Circular Image Container (88–100px range, exactly 92px) */}
+        <div className="w-[92px] h-[92px] rounded-full p-1 bg-white border border-[#EAE3D6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all duration-300 group-hover:border-[#A67732] group-hover:scale-105 group-active:scale-95">
+          <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+            {imgError || !category.imageUrl ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF6EE] text-[#A67732]">
+                <span className="font-serif text-2xl font-bold select-none">
+                  {category.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            ) : (
+              <img
+                src={category.imageUrl}
+                alt={category.name}
+                className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                onError={() => setImgError(true)}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Category Label: 2-line natural wrap, no ellipsis truncation */}
+        <span className="mt-2 text-xs font-semibold text-[#1C1917] group-hover:text-[#A67732] text-center leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center transition-colors px-1 w-full break-words">
+          {category.name}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      to={`/category/${category.slug}`}
+      className="group flex flex-col items-center text-center p-2 rounded-2xl hover:bg-white/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A67732]"
+    >
+      <div className="w-20 h-20 rounded-full p-1 bg-white border border-[#EAE3D6] shadow-xs flex items-center justify-center group-hover:border-[#A67732] group-hover:scale-105 transition-all">
+        <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+          {imgError || !category.imageUrl ? (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF6EE] text-[#A67732]">
+              <span className="font-serif text-2xl font-bold select-none">
+                {category.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          ) : (
+            <img
+              src={category.imageUrl}
+              alt={category.name}
+              className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onError={() => setImgError(true)}
+            />
+          )}
+        </div>
+      </div>
+      <span className="text-xs font-semibold text-[#1C1917] mt-2 group-hover:text-[#A67732] transition-colors leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center px-1 w-full break-words">
+        {category.name}
+      </span>
+    </Link>
+  );
+};
 
 export const HomePage: React.FC = () => {
   const { products, categories, banners, settings } = useAdminData();
@@ -270,41 +345,52 @@ export const HomePage: React.FC = () => {
           </section>
         )}
 
-        {/* ── SECTION 2: Trust Strip ── */}
+        {/* ── SECTION 2: Trust Strip (Brand Quality Standards) ── */}
         <section className="py-1" aria-label="Brand Quality Standards">
-          <div className="flex items-center justify-around gap-0 overflow-x-auto no-scrollbar bg-white/40 rounded-2xl py-3.5 px-2">
+          {/* Responsive Brand Promise: 3 Stacked Rows on Mobile, 3 Columns on Desktop */}
+          <div className="bg-white/80 border border-[#EAE3D6] rounded-2xl p-2 sm:p-0 sm:py-3.5 sm:px-4 shadow-2xs flex flex-col md:grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#EAE3D6]/70 md:divide-[#E5DFD4]">
             {/* Item 1 */}
-            <div className="flex flex-col items-center gap-1.5 px-3 sm:px-5 min-w-0 shrink-0 flex-1 text-center">
-              <Sparkles className="w-5 h-5 text-[#A67732] stroke-[1.8] shrink-0" />
-              <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] leading-tight whitespace-nowrap">
-                Authentic Wayanad Spices<br />&amp; Heritage Blends
-              </span>
+            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
+              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
+                <Sparkles className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
+                  Authentic Wayanad Spices &amp; Heritage Blends
+                </p>
+              </div>
             </div>
-            {/* Separator */}
-            <div className="hidden sm:block w-px h-8 bg-[#E5DFD4] shrink-0" aria-hidden="true" />
+
             {/* Item 2 */}
-            <div className="flex flex-col items-center gap-1.5 px-3 sm:px-5 min-w-0 shrink-0 flex-1 text-center">
-              <Leaf className="w-5 h-5 text-[#A67732] stroke-[1.8] shrink-0" />
-              <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] leading-tight whitespace-nowrap">
-                100% Pure Cold-Pressed<br />Coconut Oil &amp; Ingredients
-              </span>
+            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
+              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
+                <Leaf className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
+                  100% Pure Cold-Pressed Coconut Oil &amp; Ingredients
+                </p>
+              </div>
             </div>
-            {/* Separator */}
-            <div className="hidden sm:block w-px h-8 bg-[#E5DFD4] shrink-0" aria-hidden="true" />
+
             {/* Item 3 */}
-            <div className="flex flex-col items-center gap-1.5 px-3 sm:px-5 min-w-0 shrink-0 flex-1 text-center">
-              <Shield className="w-5 h-5 text-[#A67732] stroke-[1.8] shrink-0" />
-              <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] leading-tight whitespace-nowrap">
-                Zero Artificial<br />Additives
-              </span>
+            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
+              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
+                <Shield className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
+                  Zero Artificial Additives
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Festival Section Separator */}
-        <FestivalDivider />
+        {/* Festival Section Separator with controlled vertical whitespace */}
+        <FestivalDivider className="my-2 sm:my-3 opacity-60" />
 
-        {/* ── SECTION 3: Shop by Category — Editorial Asymmetric Layout ── */}
+        {/* ── SECTION 3: Shop by Category — Clean Horizontal Rail on Mobile ── */}
         <section className="space-y-3" aria-labelledby="category-heading">
           <div className="flex items-center justify-between">
             <div>
@@ -326,63 +412,19 @@ export const HomePage: React.FC = () => {
 
           {categories.length > 0 && (
             <>
-              {/* Mobile: Clean Minimalist Small Circles Strip */}
+              {/* Mobile: Horizontal Scrolling Category Rail (105-120px tile width, 88-100px images, natural 2-line wrap) */}
               <div className="md:hidden">
-                <div className="flex items-start gap-3.5 overflow-x-auto no-scrollbar py-2 -mx-4 px-4">
+                <div className="flex items-start gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth py-1 -mx-4 px-4 sm:-mx-6 sm:px-6">
                   {categories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      to={`/category/${cat.slug}`}
-                      className="group flex flex-col items-center shrink-0 w-[64px] focus:outline-none"
-                    >
-                      {/* Small Circle with soft border and subtle hover zoom */}
-                      <div className="w-[58px] h-[58px] rounded-full p-1 bg-white border border-[#EAE3D6] shadow-[0_2px_6px_rgba(0,0,0,0.03)] flex items-center justify-center transition-all duration-300 group-hover:border-[#A67732] group-hover:scale-105 group-active:scale-95">
-                        <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
-                          <img
-                            src={cat.imageUrl}
-                            alt={cat.name}
-                            className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = '/assets/cat-chips.png';
-                            }}
-                          />
-                        </div>
-                      </div>
-                      {/* Category Label */}
-                      <span className="text-[11px] font-semibold text-[#1C1917] mt-1.5 line-clamp-1 text-center leading-tight group-hover:text-[#A67732] transition-colors w-full px-0.5">
-                        {cat.name}
-                      </span>
-                    </Link>
+                    <CategoryRailItem key={cat.id} category={cat} isMobile={true} />
                   ))}
                 </div>
               </div>
 
-              {/* Desktop: 5-to-10 column clean circular grid */}
-              <div className="hidden md:grid grid-cols-5 lg:grid-cols-10 gap-3">
-                {categories.slice(0, 10).map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={`/category/${cat.slug}`}
-                    className="group flex flex-col items-center text-center p-2 rounded-2xl hover:bg-white/60 transition-colors"
-                  >
-                    <div className="w-16 h-16 rounded-full p-1 bg-white border border-[#EAE3D6] shadow-xs flex items-center justify-center group-hover:border-[#A67732] group-hover:scale-105 transition-all">
-                      <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
-                        <img
-                          src={cat.imageUrl}
-                          alt={cat.name}
-                          className="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-300"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = '/assets/cat-chips.png';
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-[11px] sm:text-xs font-semibold text-[#1C1917] mt-1.5 group-hover:text-[#A67732] transition-colors truncate w-full px-0.5">
-                      {cat.name}
-                    </span>
-                  </Link>
+              {/* Desktop: Dynamic Clean Circular Grid */}
+              <div className="hidden md:grid grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                {categories.slice(0, 12).map((cat) => (
+                  <CategoryRailItem key={cat.id} category={cat} isMobile={false} />
                 ))}
               </div>
             </>

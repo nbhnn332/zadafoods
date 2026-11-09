@@ -194,17 +194,17 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Row 2: Full-width pill search bar (homepage only) */}
+          {/* Row 2: Full-width pill search bar (homepage only) matching 1 home ui.png */}
           {showSearch && !title && (
-            <form onSubmit={handleSearchSubmit} className="px-3 pb-2.5">
+            <form onSubmit={handleSearchSubmit} className="px-3.5 pb-2">
               <div className="relative flex items-center">
                 <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3.5 pointer-events-none stroke-[2]" />
                 <input
                   type="text"
-                  placeholder="Search spices, ingredients & more..."
+                  placeholder="Search snacks, sweets, combos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-xs rounded-full border border-[#E7E2D8] bg-[#F7F5EE] text-content-primary placeholder-[#9CA3AF] focus:outline-none focus:bg-white focus:border-[#A67732] focus:ring-1 focus:ring-[#A67732]/30 transition-all"
+                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-[#E7E2D8] bg-[#F7F5EE]/80 text-content-primary placeholder-[#9CA3AF] focus:outline-none focus:bg-white focus:border-brand-primary transition-all shadow-2xs"
                 />
               </div>
             </form>
@@ -309,7 +309,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Search className="w-4 h-4 text-content-muted absolute left-3 pointer-events-none stroke-[2]" />
                 <input
                   type="text"
-                  placeholder="Search spices, ingredients & more..."
+                  placeholder="Search snacks, sweets, combos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-border-subtle bg-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all placeholder:text-[#9CA3AF]"
