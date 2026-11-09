@@ -345,43 +345,35 @@ export const HomePage: React.FC = () => {
           </section>
         )}
 
-        {/* ── SECTION 2: Trust Strip (Brand Quality Standards) ── */}
+        {/* ── SECTION 2: Brand Promise — Exactly 3 Equal-Width Blocks Side-by-Side ── */}
         <section className="py-1" aria-label="Brand Quality Standards">
-          {/* Responsive Brand Promise: 3 Stacked Rows on Mobile, 3 Columns on Desktop */}
-          <div className="bg-white/80 border border-[#EAE3D6] rounded-2xl p-2 sm:p-0 sm:py-3.5 sm:px-4 shadow-2xs flex flex-col md:grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#EAE3D6]/70 md:divide-[#E5DFD4]">
-            {/* Item 1 */}
-            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
-              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
-                <Sparkles className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
-                  Authentic Wayanad Spices &amp; Heritage Blends
-                </p>
-              </div>
+          {/* Screen reader quality highlights for accessibility */}
+          <span className="sr-only">Wayanad Direct Zero Artificial Additives, 100% Pure Cold-Pressed Ingredients</span>
+
+          <div className="bg-[#FAF7F2] border border-[#EAE3D6] rounded-2xl shadow-xs grid grid-cols-3 divide-x divide-[#E5DFD4] py-3 sm:py-4 md:py-5 px-1 sm:px-4">
+            {/* Block 1: AUTHENTIC */}
+            <div className="flex flex-col items-center justify-center text-center px-1 sm:px-3">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#A67732] stroke-[1.8] mb-1.5 sm:mb-2 shrink-0" />
+              <span className="brand-promise-label">
+                AUTHENTIC
+              </span>
             </div>
 
-            {/* Item 2 */}
-            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
-              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
-                <Leaf className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
-                  100% Pure Cold-Pressed Coconut Oil &amp; Ingredients
-                </p>
-              </div>
+            {/* Block 2: PURE */}
+            <div className="flex flex-col items-center justify-center text-center px-1 sm:px-3">
+              <Leaf className="w-4 h-4 sm:w-5 sm:h-5 text-[#A67732] stroke-[1.8] mb-1.5 sm:mb-2 shrink-0" />
+              <span className="brand-promise-label">
+                PURE
+              </span>
             </div>
 
-            {/* Item 3 */}
-            <div className="flex items-center md:justify-center gap-2.5 min-[360px]:gap-3 py-2 px-2 min-[360px]:px-2.5 md:py-0 md:px-4">
-              <div className="w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 md:w-9 md:h-9 rounded-full bg-[#FAF6EE] border border-[#EAE3D6]/80 flex items-center justify-center shrink-0">
-                <Shield className="w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 text-[#A67732] stroke-[2]" />
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-[11px] min-[360px]:text-xs font-semibold text-[#1C1917] leading-snug md:leading-tight break-words">
-                  Zero Artificial Additives
-                </p>
+            {/* Block 3: NO ARTIFICIAL ADDITIVES */}
+            <div className="flex flex-col items-center justify-center text-center px-1 sm:px-3">
+              <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-[#A67732] stroke-[1.8] mb-1.5 sm:mb-2 shrink-0" />
+              <div className="w-full flex items-center justify-center">
+                <span className="brand-promise-label-long">
+                  NO ARTIFICIAL ADDITIVES
+                </span>
               </div>
             </div>
           </div>

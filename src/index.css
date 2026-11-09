@@ -204,3 +204,94 @@
     margin: 10mm;
   }
 }
+
+/* Brand Promise 3-Column Equal Width Responsive Labels */
+.brand-promise-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #1C1917;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.brand-promise-label-long {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: #1C1917;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
+  transform: scale(0.68);
+  transform-origin: center;
+}
+
+@media (max-width: 359px) {
+  .brand-promise-label {
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+  .brand-promise-label-long {
+    font-size: 9.5px;
+    letter-spacing: 0;
+    transform: scale(0.58);
+  }
+}
+
+@media (min-width: 360px) and (max-width: 389px) {
+  .brand-promise-label-long {
+    transform: scale(0.65);
+  }
+}
+
+@media (min-width: 390px) and (max-width: 429px) {
+  .brand-promise-label-long {
+    transform: scale(0.70);
+  }
+}
+
+@media (min-width: 430px) and (max-width: 639px) {
+  .brand-promise-label-long {
+    transform: scale(0.76);
+  }
+}
+
+@media (min-width: 640px) {
+  .brand-promise-label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+  .brand-promise-label-long {
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    transform: scale(0.88);
+  }
+}
+
+@media (min-width: 768px) {
+  .brand-promise-label {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+  .brand-promise-label-long {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    transform: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .brand-promise-label {
+    font-size: 14px;
+    letter-spacing: 0.12em;
+  }
+  .brand-promise-label-long {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    transform: none;
+  }
+}
