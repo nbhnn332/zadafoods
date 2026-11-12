@@ -247,9 +247,10 @@ export const AdminCMS: React.FC = () => {
     setBgColor(b.backgroundColor || '#072C20');
     setTextColor(b.textColor || '#FFFFFF');
     setEyebrow(b.eyebrow || 'Fresh From Kerala');
-    setCtaText(b.ctaText || 'Shop Now');
-    setLinkUrl(b.linkUrl || '/category/chips');
-    setShowCta(b.showCta !== false && Boolean(b.ctaText));
+    const hasActiveCta = b.showCta !== false && Boolean(b.ctaText && b.ctaText.trim());
+    setCtaText(b.ctaText || '');
+    setLinkUrl(b.linkUrl || '');
+    setShowCta(hasActiveCta);
     setIsClickable(b.isClickable !== false);
     setOpenInNewTab(b.openInNewTab || false);
     setDisplayOrder(b.displayOrder);
@@ -283,6 +284,17 @@ export const AdminCMS: React.FC = () => {
       }
     }
 
+    if (showCta) {
+      if (!ctaText.trim()) {
+        showToast('Validation Error', 'CTA Button is enabled. Please enter a CTA button label (e.g. "Shop Now").', 'error');
+        return;
+      }
+      if (!linkUrl.trim()) {
+        showToast('Validation Error', 'CTA Button is enabled. Please enter a destination URL (e.g. /shop).', 'error');
+        return;
+      }
+    }
+
     setIsSavingBanner(true);
     try {
       const payload: Partial<HomepageBanner> = {
@@ -292,13 +304,13 @@ export const AdminCMS: React.FC = () => {
         backgroundColor: bgColor,
         textColor: textColor,
         eyebrow: eyebrow.trim() || undefined,
-        ctaText: showCta ? (ctaText.trim() || 'Shop Now') : '',
-        linkUrl: linkUrl.trim() || '/category/chips',
+        ctaText: showCta ? ctaText.trim() : '',
+        linkUrl: linkUrl.trim() || '',
         displayOrder: Number(displayOrder),
         deviceTarget: deviceTarget === 'mobile' ? 'mobile' : 'desktop',
         isActive,
         showCta,
-        isClickable,
+        isClickable: showCta ? false : isClickable,
         openInNewTab
       };
 

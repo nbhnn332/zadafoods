@@ -347,9 +347,10 @@ export const HomePage: React.FC = () => {
             {activeBanners.map((slide, idx) => {
               const isCurrent = idx === currentSlide;
               const hasImage = !!(slide.imageUrl && slide.imageUrl.trim());
-              const isImageOnly = !slide.title && !slide.subtitle && !slide.eyebrow && slide.showCta === false;
-              const showCta = slide.showCta !== false && Boolean(slide.ctaText || slide.linkUrl);
-              const isEntireBannerClickable = !showCta && slide.isClickable !== false && Boolean(slide.linkUrl);
+              const hasTextContent = Boolean((slide.title && slide.title.trim()) || (slide.subtitle && slide.subtitle.trim()) || (slide.eyebrow && slide.eyebrow.trim()));
+              const showCta = slide.showCta !== false && Boolean((slide.ctaText && slide.ctaText.trim()) || (slide.linkUrl && slide.linkUrl.trim()));
+              const isImageOnly = !hasTextContent && slide.showCta === false;
+              const isEntireBannerClickable = !showCta && slide.isClickable !== false && Boolean(slide.linkUrl && slide.linkUrl.trim());
 
               return (
                 <div

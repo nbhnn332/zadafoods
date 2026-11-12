@@ -45,103 +45,265 @@ export const isThemeWithinSchedule = (theme: FestivalTheme, currentDate = new Da
 export const applyThemeToDocument = (theme: FestivalTheme | null, isFestivalActive: boolean) => {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  const body = document.body;
+
+  const defaultTokens = {
+    pageBg: '#FBF8F4',
+    surface: '#FFFFFF',
+    surfaceSubtle: '#F7F3EB',
+    headerBg: '#072C20',
+    headerText: '#FFFFFF',
+    headerBorder: '#0A3D2D',
+    sectionBg: '#F7F3EB',
+    primary: '#A67732',
+    primaryHover: '#8E6325',
+    secondary: '#072C20',
+    secondaryHover: '#0C3D2D',
+    accent: '#D4B574',
+    heading: '#041914',
+    text: '#4A4F48',
+    textMuted: '#787F76',
+    border: '#EAE3D6',
+    buttonBg: '#A67732',
+    buttonText: '#FFFFFF',
+    buttonSecondaryBg: '#072C20',
+    buttonSecondaryText: '#FFFFFF',
+    badgeBg: '#F4EADA',
+    badgeText: '#8E6325',
+    badgeBorder: '#D4B574',
+    footerBg: '#031D16',
+    footerText: '#E5E7EB'
+  };
+
+  const setCssTokens = (t: typeof defaultTokens) => {
+    root.style.setProperty('--color-page-bg', t.pageBg);
+    root.style.setProperty('--color-surface', t.surface);
+    root.style.setProperty('--color-surface-subtle', t.surfaceSubtle);
+    root.style.setProperty('--color-header-bg', t.headerBg);
+    root.style.setProperty('--color-header-text', t.headerText);
+    root.style.setProperty('--color-header-border', t.headerBorder);
+    root.style.setProperty('--color-section-bg', t.sectionBg);
+    root.style.setProperty('--color-primary', t.primary);
+    root.style.setProperty('--color-primary-hover', t.primaryHover);
+    root.style.setProperty('--color-secondary', t.secondary);
+    root.style.setProperty('--color-secondary-hover', t.secondaryHover);
+    root.style.setProperty('--color-accent', t.accent);
+    root.style.setProperty('--color-heading', t.heading);
+    root.style.setProperty('--color-text', t.text);
+    root.style.setProperty('--color-text-muted', t.textMuted);
+    root.style.setProperty('--color-border', t.border);
+    root.style.setProperty('--color-button-bg', t.buttonBg);
+    root.style.setProperty('--color-button-text', t.buttonText);
+    root.style.setProperty('--color-button-secondary-bg', t.buttonSecondaryBg);
+    root.style.setProperty('--color-button-secondary-text', t.buttonSecondaryText);
+    root.style.setProperty('--color-badge-bg', t.badgeBg);
+    root.style.setProperty('--color-badge-text', t.badgeText);
+    root.style.setProperty('--color-badge-border', t.badgeBorder);
+    root.style.setProperty('--color-footer-bg', t.footerBg);
+    root.style.setProperty('--color-footer-text', t.footerText);
+
+    // Backward-compatibility aliases
+    root.style.setProperty('--canvas', t.pageBg);
+    root.style.setProperty('--canvas-subtle', t.sectionBg);
+    root.style.setProperty('--surface', t.surface);
+    root.style.setProperty('--brand-primary', t.primary);
+    root.style.setProperty('--brand-primary-hover', t.primaryHover);
+    root.style.setProperty('--brand-secondary', t.secondary);
+    root.style.setProperty('--brand-deep', t.footerBg);
+    root.style.setProperty('--brand-gold', t.accent);
+    root.style.setProperty('--brand-muted-gold', t.accent);
+    root.style.setProperty('--content-primary', t.heading);
+    root.style.setProperty('--content-secondary', t.text);
+    root.style.setProperty('--border-subtle', t.border);
+  };
 
   if (!isFestivalActive || !theme || theme.preset === 'default') {
-    // Cleanly restore default ZaDa Foods brand tokens
-    root.style.removeProperty('--brand-primary');
-    root.style.removeProperty('--brand-primary-hover');
-    root.style.removeProperty('--brand-secondary');
-    root.style.removeProperty('--brand-deep');
-    root.style.removeProperty('--brand-gold');
-    root.style.removeProperty('--brand-muted-gold');
-    root.style.removeProperty('--canvas');
-    root.style.removeProperty('--canvas-subtle');
-    root.style.removeProperty('--border-subtle');
+    // Cleanly remove inline overrides so :root stylesheet tokens apply
+    const allTokens = [
+      '--color-page-bg', '--color-surface', '--color-surface-subtle',
+      '--color-header-bg', '--color-header-text', '--color-header-border',
+      '--color-section-bg', '--color-primary', '--color-primary-hover',
+      '--color-secondary', '--color-secondary-hover', '--color-accent',
+      '--color-heading', '--color-text', '--color-text-muted',
+      '--color-border', '--color-button-bg', '--color-button-text',
+      '--color-button-secondary-bg', '--color-button-secondary-text',
+      '--color-badge-bg', '--color-badge-text', '--color-badge-border',
+      '--color-footer-bg', '--color-footer-text',
+      '--brand-primary', '--brand-primary-hover', '--brand-secondary',
+      '--brand-deep', '--brand-gold', '--brand-muted-gold',
+      '--canvas', '--canvas-subtle', '--surface', '--content-primary',
+      '--content-secondary', '--border-subtle'
+    ];
+    allTokens.forEach((prop) => root.style.removeProperty(prop));
     root.removeAttribute('data-festival-theme');
     root.removeAttribute('data-festival-intensity');
-    document.body.removeAttribute('data-festival-theme');
-    document.body.removeAttribute('data-festival-intensity');
+    body.removeAttribute('data-festival-theme');
+    body.removeAttribute('data-festival-intensity');
     return;
   }
 
-  // Active festival theme: set data attributes on root and body
+  // Active festival theme
   root.setAttribute('data-festival-theme', theme.preset);
-  root.setAttribute('data-festival-intensity', theme.intensity || 'rich');
-  document.body.setAttribute('data-festival-theme', theme.preset);
-  document.body.setAttribute('data-festival-intensity', theme.intensity || 'rich');
+  root.setAttribute('data-festival-intensity', theme.intensity || 'balanced');
+  body.setAttribute('data-festival-theme', theme.preset);
+  body.setAttribute('data-festival-intensity', theme.intensity || 'balanced');
 
-  // Compute theme colors
-  let primary = theme.accentColor || '#A67732';
-  let primaryHover = theme.accentColor || '#8E6325';
-  let secondary = '#072C20';
-  let deep = '#031D16';
-  let gold = theme.accentColor || '#A67732';
-  let mutedGold = theme.badgeColor || '#D4B574';
-  let canvas = theme.atmosphere?.pageBackground || '#FBF8F4';
-  let canvasSubtle = theme.atmosphere?.sectionBackground || '#F7F3EB';
-  let border = theme.atmosphere?.borderColor || '#EAE3D6';
+  let tokens = { ...defaultTokens };
 
   if (theme.preset === 'onam') {
-    primary = '#CA8A04';
-    primaryHover = '#A16207';
-    secondary = '#1E293B';
-    deep = '#0F172A';
-    gold = '#EAB308';
-    mutedGold = '#FEF08A';
-    canvas = theme.atmosphere?.pageBackground || '#FFFDF5';
-    canvasSubtle = '#FEFCE8';
-    border = '#FDE047';
-  } else if (theme.preset === 'eid') {
-    primary = '#047857';
-    primaryHover = '#065F46';
-    secondary = '#064E3B';
-    deep = '#022C22';
-    gold = '#10B981';
-    mutedGold = '#A7F3D0';
-    canvas = theme.atmosphere?.pageBackground || '#F4FAF7';
-    canvasSubtle = '#ECFDF5';
-    border = '#A7F3D0';
+    tokens = {
+      pageBg: '#FAF5EA', // Warm Kerala Kasavu ivory cream
+      surface: '#FFFDF9', // Lustrous silk card surface
+      surfaceSubtle: '#F3EBD6',
+      headerBg: '#0D3B22', // Kerala coconut-grove deep green
+      headerText: '#FFFDF9',
+      headerBorder: '#194E31',
+      sectionBg: '#F4EBD4', // Kasavu-gold alternating section
+      primary: '#C88A10', // Traditional Kasavu golden yellow
+      primaryHover: '#A87008',
+      secondary: '#0D3B22', // Kerala plantain green
+      secondaryHover: '#092B19',
+      accent: '#D4AF37', // Muted temple gold
+      heading: '#172C15', // Deep botanical evergreen typography
+      text: '#384534',
+      textMuted: '#687763',
+      border: '#DFCF9F', // Kasavu woven border
+      buttonBg: '#C88A10',
+      buttonText: '#FFFFFF',
+      buttonSecondaryBg: '#0D3B22',
+      buttonSecondaryText: '#FFFDF9',
+      badgeBg: '#FDF2D4',
+      badgeText: '#946304',
+      badgeBorder: '#E5C77A',
+      footerBg: '#082816', // Midnight Kerala backwaters green
+      footerText: '#F0E8D0'
+    };
   } else if (theme.preset === 'diwali') {
-    primary = '#D97706';
-    primaryHover = '#B45309';
-    secondary = '#1C1917';
-    deep = '#0C0A09';
-    gold = '#F59E0B';
-    mutedGold = '#FDE68A';
-    canvas = theme.atmosphere?.pageBackground || '#FDFBF7';
-    canvasSubtle = '#FFFBEB';
-    border = '#FCD34D';
+    tokens = {
+      pageBg: '#140C24', // Deep royal plum night canvas
+      surface: '#22143A', // Velvety royal plum card surface
+      surfaceSubtle: '#2D1C4C',
+      headerBg: '#10091E', // Imperial plum night
+      headerText: '#FFF7ED',
+      headerBorder: '#361F58',
+      sectionBg: '#1D1133', // Illuminated midnight violet section
+      primary: '#F59E0B', // Radiant warm saffron diya gold
+      primaryHover: '#D97706',
+      secondary: '#E06D14', // Festive terracotta diya orange
+      secondaryHover: '#C25409',
+      accent: '#FFD700', // Festive sparkler gold
+      heading: '#FEF3C7', // Luminous candlelit heading
+      text: '#E2D9F3', // Soft readable lavender-cream body
+      textMuted: '#A898C8',
+      border: '#4C3270', // Rich jewel-tone border
+      buttonBg: '#F59E0B',
+      buttonText: '#140C24',
+      buttonSecondaryBg: '#7C2D12',
+      buttonSecondaryText: '#FEF3C7',
+      badgeBg: '#421D12',
+      badgeText: '#FBBF24',
+      badgeBorder: '#F59E0B',
+      footerBg: '#0B0614', // Obsidian plum footer
+      footerText: '#DDD2F2'
+    };
+  } else if (theme.preset === 'eid') {
+    tokens = {
+      pageBg: '#F1F7F4', // Pristine pearl ivory with subtle jade mist
+      surface: '#FFFFFF', // Marble card surface
+      surfaceSubtle: '#E2EEE7',
+      headerBg: '#043224', // Malabar royal emerald
+      headerText: '#FFFFFF',
+      headerBorder: '#084A36',
+      sectionBg: '#E5F0E9', // Silken pale jade section
+      primary: '#055C41', // Deep jewel emerald
+      primaryHover: '#034430',
+      secondary: '#C5A059', // Arabian champagne gold
+      secondaryHover: '#A8833E',
+      accent: '#D4AF37',
+      heading: '#03251B', // Deep forest emerald typography
+      text: '#284239', // Deep jade-slate body
+      textMuted: '#5C776D',
+      border: '#B6D8C8', // Fine jade filigree border
+      buttonBg: '#055C41',
+      buttonText: '#FFFFFF',
+      buttonSecondaryBg: '#C5A059',
+      buttonSecondaryText: '#03251B',
+      badgeBg: '#DDF0E6',
+      badgeText: '#044A34',
+      badgeBorder: '#97CBB3',
+      footerBg: '#021F16', // Deepest oasis night
+      footerText: '#DCEFE6'
+    };
   } else if (theme.preset === 'christmas') {
-    primary = '#15803D';
-    primaryHover = '#166534';
-    secondary = '#0F291E';
-    deep = '#051B12';
-    gold = '#22C55E';
-    mutedGold = '#BBF7D0';
-    canvas = theme.atmosphere?.pageBackground || '#FAFAF9';
-    canvasSubtle = '#F0FDF4';
-    border = '#86EFAC';
+    tokens = {
+      pageBg: '#F6F4EF', // Snow cream soft winter ivory
+      surface: '#FFFFFF', // Crisp snow card surface
+      surfaceSubtle: '#EBF2EE',
+      headerBg: '#0F3523', // Alpine spruce green
+      headerText: '#FFFFFF',
+      headerBorder: '#194B34',
+      sectionBg: '#E8EFEA', // Spruce-mist alternating section
+      primary: '#801826', // Royal burgundy velvet
+      primaryHover: '#65101D',
+      secondary: '#0F3523', // Pine evergreen
+      secondaryHover: '#0A2518',
+      accent: '#D4AF37', // Warm champagne gold
+      heading: '#16271D', // Deep holly evergreen heading
+      text: '#36453C',
+      textMuted: '#697A70',
+      border: '#C4D7CC', // Winter pine frost border
+      buttonBg: '#801826',
+      buttonText: '#FFFFFF',
+      buttonSecondaryBg: '#0F3523',
+      buttonSecondaryText: '#FFFFFF',
+      badgeBg: '#FCEBEF',
+      badgeText: '#801826',
+      badgeBorder: '#E8A2AF',
+      footerBg: '#081E14', // Deep midnight forest
+      footerText: '#E0EAE3'
+    };
   } else if (theme.preset === 'new_year') {
-    primary = '#B45309';
-    primaryHover = '#92400E';
-    secondary = '#1C1917';
-    deep = '#0C0A09';
-    gold = '#F59E0B';
-    mutedGold = '#FEF3C7';
-    canvas = theme.atmosphere?.pageBackground || '#FDFBF7';
-    canvasSubtle = '#FFFBEB';
-    border = '#FDE68A';
+    tokens = {
+      pageBg: '#0B1120', // Midnight celestial navy sky
+      surface: '#141C33', // Star-chamber card surface
+      surfaceSubtle: '#1C2747',
+      headerBg: '#070B16', // Deepest space navy
+      headerText: '#F8FAFC',
+      headerBorder: '#202D4E',
+      sectionBg: '#10172C', // Midnight starlight section
+      primary: '#D4AF37', // Champagne gold celebration
+      primaryHover: '#B89328',
+      secondary: '#94A3B8', // Platinum silver
+      secondaryHover: '#64748B',
+      accent: '#E2C974',
+      heading: '#F8FAFC', // Diamond white heading
+      text: '#CBD5E1', // Silver-gray readable body
+      textMuted: '#7E8DA5',
+      border: '#2A3A63', // Silvered constellation border
+      buttonBg: '#D4AF37',
+      buttonText: '#0B1120',
+      buttonSecondaryBg: '#1E293B',
+      buttonSecondaryText: '#F8FAFC',
+      badgeBg: '#282008',
+      badgeText: '#E2C974',
+      badgeBorder: '#D4AF37',
+      footerBg: '#04070E', // Deep cosmos footer
+      footerText: '#94A3B8'
+    };
+  } else if (theme.preset === 'custom') {
+    tokens = {
+      ...defaultTokens,
+      pageBg: theme.atmosphere?.pageBackground || defaultTokens.pageBg,
+      sectionBg: theme.atmosphere?.sectionBackground || defaultTokens.sectionBg,
+      primary: theme.accentColor || defaultTokens.primary,
+      primaryHover: theme.accentColor || defaultTokens.primaryHover,
+      buttonBg: theme.accentColor || defaultTokens.buttonBg,
+      badgeText: theme.badgeColor || defaultTokens.badgeText,
+      border: theme.atmosphere?.borderColor || defaultTokens.border
+    };
   }
 
-  root.style.setProperty('--brand-primary', primary);
-  root.style.setProperty('--brand-primary-hover', primaryHover);
-  root.style.setProperty('--brand-secondary', secondary);
-  root.style.setProperty('--brand-deep', deep);
-  root.style.setProperty('--brand-gold', gold);
-  root.style.setProperty('--brand-muted-gold', mutedGold);
-  root.style.setProperty('--canvas', canvas);
-  root.style.setProperty('--canvas-subtle', canvasSubtle);
-  root.style.setProperty('--border-subtle', border);
+  setCssTokens(tokens);
 };
 
 export const FestivalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

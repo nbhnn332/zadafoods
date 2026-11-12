@@ -1676,22 +1676,39 @@ export class SupabaseDataService {
           return { data: null, error: error.message, source: 'SUPABASE' };
         }
 
-        const mapped: HomepageBanner[] = (data || []).map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          subtitle: b.subtitle || '',
-          imageUrl: b.image_url || '',
-          backgroundColor: b.background_color || '#072C20',
-          textColor: b.text_color || '#FFFFFF',
-          eyebrow: b.eyebrow || undefined,
-          ctaText: b.cta_text || 'Shop Now',
-          linkUrl: b.cta_link || '/category/chips',
-          displayOrder: b.display_order ?? 0,
-          isActive: b.is_active ?? true,
-          deviceTarget: (b.badge_text === 'mobile' || b.device_target === 'mobile') ? 'mobile' : 'desktop',
-          badgeText: b.badge_text || undefined,
-          createdAt: b.created_at
-        }));
+        const mapped: HomepageBanner[] = (data || []).map((b: any) => {
+          let parsedMeta: any = {};
+          if (b.badge_text && typeof b.badge_text === 'string' && b.badge_text.startsWith('{')) {
+            try {
+              parsedMeta = JSON.parse(b.badge_text);
+            } catch {}
+          }
+          const targetDevice = parsedMeta.device || (b.badge_text === 'mobile' || b.device_target === 'mobile' ? 'mobile' : 'desktop');
+          const hasExplicitCta = b.cta_text != null && b.cta_text.trim() !== '';
+          const showCta = parsedMeta.showCta !== undefined ? Boolean(parsedMeta.showCta) : hasExplicitCta;
+          const isClickable = parsedMeta.isClickable !== undefined ? Boolean(parsedMeta.isClickable) : true;
+          const openInNewTab = Boolean(parsedMeta.openInNewTab);
+
+          return {
+            id: b.id,
+            title: b.title || '',
+            subtitle: b.subtitle || '',
+            imageUrl: b.image_url || '',
+            backgroundColor: b.background_color || '#072C20',
+            textColor: b.text_color || '#FFFFFF',
+            eyebrow: b.eyebrow || undefined,
+            ctaText: hasExplicitCta ? b.cta_text.trim() : '',
+            linkUrl: b.cta_link || b.cta_url || '',
+            displayOrder: b.display_order ?? 0,
+            isActive: b.is_active ?? true,
+            deviceTarget: targetDevice,
+            badgeText: parsedMeta.device ? undefined : b.badge_text,
+            showCta,
+            isClickable,
+            openInNewTab,
+            createdAt: b.created_at
+          };
+        });
         return { data: mapped, error: null, source: 'SUPABASE' };
       } catch (err: any) {
         return { data: null, error: err.message, source: 'SUPABASE' };
@@ -1717,21 +1734,36 @@ export class SupabaseDataService {
         }
 
         const b = data;
+        let parsedMeta: any = {};
+        if (b.badge_text && typeof b.badge_text === 'string' && b.badge_text.startsWith('{')) {
+          try {
+            parsedMeta = JSON.parse(b.badge_text);
+          } catch {}
+        }
+        const targetDevice = parsedMeta.device || (b.badge_text === 'mobile' || b.device_target === 'mobile' ? 'mobile' : 'desktop');
+        const hasExplicitCta = b.cta_text != null && b.cta_text.trim() !== '';
+        const showCta = parsedMeta.showCta !== undefined ? Boolean(parsedMeta.showCta) : hasExplicitCta;
+        const isClickable = parsedMeta.isClickable !== undefined ? Boolean(parsedMeta.isClickable) : true;
+        const openInNewTab = Boolean(parsedMeta.openInNewTab);
+
         return {
           data: {
             id: b.id,
-            title: b.title,
+            title: b.title || '',
             subtitle: b.subtitle || '',
             imageUrl: b.image_url || '',
             backgroundColor: b.background_color || '#072C20',
             textColor: b.text_color || '#FFFFFF',
             eyebrow: b.eyebrow || undefined,
-            ctaText: b.cta_text || 'Shop Now',
-            linkUrl: b.cta_link || '/category/chips',
+            ctaText: hasExplicitCta ? b.cta_text.trim() : '',
+            linkUrl: b.cta_link || b.cta_url || '',
             displayOrder: b.display_order ?? 0,
             isActive: b.is_active ?? true,
-            deviceTarget: b.badge_text === 'mobile' ? 'mobile' : 'desktop',
-            badgeText: b.badge_text || undefined,
+            deviceTarget: targetDevice,
+            badgeText: parsedMeta.device ? undefined : b.badge_text,
+            showCta,
+            isClickable,
+            openInNewTab,
             createdAt: b.created_at
           },
           error: null,
@@ -1756,13 +1788,24 @@ export class SupabaseDataService {
         const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
         const cleanImgUrl = banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim().replace(/^["']|["']$/g, '') : '';
         const titleVal = (banner.title || '').trim();
-        const showCta = banner.showCta !== false;
-        const ctaText = showCta && banner.ctaText && banner.ctaText.trim() ? banner.ctaText.trim() : null;
-        const ctaLink = banner.linkUrl ? banner.linkUrl.trim() : '/category/chips';
+        const showCta = banner.showCta !== false && Boolean(banner.ctaText && banner.ctaText.trim());
+        const isClickable = banner.isClickable !== false;
+        const openInNewTab = Boolean(banner.openInNewTab);
+        // Clean empty values to empty string '' so it satisfies NOT NULL constraints without inserting fake CTA text
+        const ctaText = showCta && banner.ctaText ? banner.ctaText.trim() : '';
+        const ctaLink = banner.linkUrl ? banner.linkUrl.trim() : '';
+
+        // Lossless JSON metadata stored in badge_text
+        const metadataJson = JSON.stringify({
+          device: targetDevice,
+          showCta,
+          isClickable,
+          openInNewTab
+        });
 
         const payload: any = {
           title: titleVal,
-          subtitle: banner.subtitle ? banner.subtitle.trim() : null,
+          subtitle: banner.subtitle ? banner.subtitle.trim() : '',
           image_url: cleanImgUrl,
           background_color: banner.backgroundColor || '#072C20',
           text_color: banner.textColor || '#FFFFFF',
@@ -1771,7 +1814,7 @@ export class SupabaseDataService {
           cta_link: ctaLink,
           display_order: banner.displayOrder ?? 1,
           is_active: banner.isActive ?? true,
-          badge_text: targetDevice
+          badge_text: metadataJson
         };
 
         const isUUID = banner.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(banner.id);
@@ -1829,6 +1872,23 @@ export class SupabaseDataService {
               .insert(corePayload)
               .select()
               .single();
+          }
+        }
+
+        // Gracefully handle PostgreSQL 23502 NOT NULL constraint violations
+        if (res.error && res.error.code === '23502') {
+          console.warn('[SupabaseDataService] Database NOT NULL constraint encountered; retrying with sanitized empty strings.');
+          const safePayload = {
+            ...payload,
+            title: payload.title || '',
+            cta_text: payload.cta_text || '',
+            cta_link: payload.cta_link || '',
+            subtitle: payload.subtitle || ''
+          };
+          if (isUUID) {
+            res = await supabase.from('homepage_banners').update(safePayload).eq('id', banner.id).select().single();
+          } else {
+            res = await supabase.from('homepage_banners').insert(safePayload).select().single();
           }
         }
 

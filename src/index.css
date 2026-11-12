@@ -4,20 +4,46 @@
 
 @layer base {
   :root {
-    /* Core Brand Palette */
-    --canvas: #FBF8F4;
-    --canvas-subtle: #F7F3EB;
-    --surface: #FFFFFF;
-    --brand-primary: #A67732;
-    --brand-primary-hover: #8E6325;
-    --brand-secondary: #072C20;
-    --brand-deep: #031D16;
-    --brand-gold: #A67732;
-    --brand-muted-gold: #D4B574;
-    --content-primary: #041914;
-    --content-secondary: #4A4F48;
-    --content-muted: #787F76;
-    --border-subtle: #EAE3D6;
+    /* Central Design Tokens (ZaDa Default Brand Identity) */
+    --color-page-bg: #FBF8F4;
+    --color-surface: #FFFFFF;
+    --color-surface-subtle: #F7F3EB;
+    --color-header-bg: #072C20;
+    --color-header-text: #FFFFFF;
+    --color-header-border: #0A3D2D;
+    --color-section-bg: #F7F3EB;
+    --color-primary: #A67732;
+    --color-primary-hover: #8E6325;
+    --color-secondary: #072C20;
+    --color-secondary-hover: #0C3D2D;
+    --color-accent: #D4B574;
+    --color-heading: #041914;
+    --color-text: #4A4F48;
+    --color-text-muted: #787F76;
+    --color-border: #EAE3D6;
+    --color-button-bg: #A67732;
+    --color-button-text: #FFFFFF;
+    --color-button-secondary-bg: #072C20;
+    --color-button-secondary-text: #FFFFFF;
+    --color-badge-bg: #F4EADA;
+    --color-badge-text: #8E6325;
+    --color-badge-border: #D4B574;
+    --color-footer-bg: #031D16;
+    --color-footer-text: #E5E7EB;
+
+    /* Backward-compatibility aliases */
+    --canvas: var(--color-page-bg);
+    --canvas-subtle: var(--color-section-bg);
+    --surface: var(--color-surface);
+    --brand-primary: var(--color-primary);
+    --brand-primary-hover: var(--color-primary-hover);
+    --brand-secondary: var(--color-secondary);
+    --brand-deep: var(--color-footer-bg);
+    --brand-gold: var(--color-accent);
+    --brand-muted-gold: var(--color-accent);
+    --content-primary: var(--color-heading);
+    --content-secondary: var(--color-text);
+    --border-subtle: var(--color-border);
 
     /* Scroll padding for sticky header + bottom nav */
     scroll-padding-top: 100px;
@@ -28,8 +54,8 @@
   }
 
   body {
-    background-color: var(--canvas);
-    color: var(--content-primary);
+    background-color: var(--color-page-bg);
+    color: var(--color-text);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Prevent horizontal scroll on mobile */
@@ -54,85 +80,267 @@
 
 @layer components {
   /* =====================================================
-   * PREMIUM BUTTON SYSTEM
+   * CENTRAL TOKEN-AWARE BUTTON SYSTEM
    * ===================================================== */
 
-  /* Primary gold button */
+  /* Primary action button */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 
-           rounded-xl bg-[#A67732] hover:bg-[#8E6325] active:scale-[0.98]
-           text-white text-sm font-bold shadow-sm 
+           rounded-xl active:scale-[0.98] text-sm font-bold shadow-sm 
            transition-all duration-200 focus-visible:outline-none 
-           focus-visible:ring-2 focus-visible:ring-[#A67732] focus-visible:ring-offset-2;
+           focus-visible:ring-2 focus-visible:ring-offset-2;
+    background-color: var(--color-button-bg);
+    color: var(--color-button-text);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
   }
 
-  /* Dark forest green button */
+  /* Secondary dark contrast button */
   .btn-dark {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
-           rounded-xl bg-[#072C20] hover:bg-[#031D16] active:scale-[0.98]
-           text-white text-sm font-bold shadow-sm
+           rounded-xl active:scale-[0.98] text-sm font-bold shadow-sm
            transition-all duration-200 focus-visible:outline-none
-           focus-visible:ring-2 focus-visible:ring-[#072C20] focus-visible:ring-offset-2;
+           focus-visible:ring-2 focus-visible:ring-offset-2;
+    background-color: var(--color-button-secondary-bg);
+    color: var(--color-button-secondary-text);
+  }
+  .btn-dark:hover {
+    background-color: var(--color-secondary-hover, var(--color-secondary));
   }
 
   /* Ghost/outline button */
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
-           rounded-xl border border-[#EAE3D6] bg-transparent hover:bg-[#F7F4EE]
-           text-[#1C1917] text-sm font-semibold
-           transition-all duration-200 focus-visible:outline-none
-           focus-visible:ring-2 focus-visible:ring-[#A67732];
+           rounded-xl bg-transparent active:scale-[0.98]
+           text-sm font-semibold transition-all duration-200 focus-visible:outline-none;
+    border: 1px solid var(--color-border);
+    color: var(--color-heading);
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-surface-subtle);
   }
 
   /* =====================================================
    * EDITORIAL SECTION SYSTEM
    * ===================================================== */
 
-  /* Full-bleed dark forest green editorial section */
+  /* Full-bleed dark editorial section */
   .section-forest {
-    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-12
-           bg-gradient-to-br from-[#031D16] via-[#072C20] to-[#0A3D2D];
+    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-12;
+    background: linear-gradient(135deg, var(--color-footer-bg), var(--color-secondary));
   }
 
-  /* Warm ivory tinted section */
+  /* Warm tinted section */
   .section-ivory {
-    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-10
-           bg-[#F7F3EB];
+    @apply -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8 sm:py-10;
+    background-color: var(--color-section-bg);
   }
 
   /* =====================================================
-   * GOLD EYEBROW LABEL
+   * EYEBROW / BADGE LABEL
    * ===================================================== */
   .eyebrow-gold {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest
-           bg-[#A67732]/15 text-[#A67732] border border-[#A67732]/25;
+           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest;
+    background-color: var(--color-badge-bg);
+    color: var(--color-badge-text);
+    border: 1px solid var(--color-badge-border);
   }
 
   .eyebrow-gold-on-dark {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full
-           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest
-           bg-[#A67732]/25 text-[#D4B574] border border-[#A67732]/30;
+           text-[10px] sm:text-[11px] font-bold uppercase tracking-widest;
+    background-color: var(--color-badge-bg);
+    color: var(--color-badge-text);
+    border: 1px solid var(--color-badge-border);
   }
 
   /* =====================================================
    * CARD SYSTEM
    * ===================================================== */
   .card-elevated {
-    @apply bg-white rounded-2xl border border-[#EAE3D6]/80
-           shadow-[0_2px_8px_rgba(0,0,0,0.04)]
+    @apply rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)]
            hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]
-           hover:border-[#A67732]/30
            transition-all duration-300;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
   }
 
   /* =====================================================
-   * CATEGORY CARD FALLBACK (when image is missing)
+   * CATEGORY CARD FALLBACK
    * ===================================================== */
   .cat-fallback {
-    @apply bg-gradient-to-br from-[#072C20] to-[#0A3D2D]
-           flex items-center justify-center;
+    @apply flex items-center justify-center;
+    background: linear-gradient(135deg, var(--color-secondary), var(--color-footer-bg));
   }
+}
+
+/* =====================================================
+ * REAL FESTIVAL-WIDE VISUAL TRANSFORMATION
+ * ===================================================== */
+[data-festival-theme] {
+  background-color: var(--color-page-bg) !important;
+}
+
+[data-festival-theme] body,
+[data-festival-theme] #root,
+[data-festival-theme] .min-h-screen,
+[data-festival-theme] main {
+  background-color: var(--color-page-bg) !important;
+  color: var(--color-text) !important;
+}
+
+/* Header & Sticky Top Bar */
+[data-festival-theme] header.sticky,
+[data-festival-theme] header,
+[data-festival-theme] header > div.bg-\[\#FBF8F4\]\/96 {
+  background-color: var(--color-header-bg) !important;
+  border-bottom-color: var(--color-header-border) !important;
+  color: var(--color-header-text) !important;
+}
+[data-festival-theme] header a,
+[data-festival-theme] header span:not(.animate-pulse),
+[data-festival-theme] header p,
+[data-festival-theme] header svg:not(.text-emerald-400):not(.text-amber-400),
+[data-festival-theme] header button {
+  color: var(--color-header-text);
+}
+[data-festival-theme] header .bg-brand-secondary {
+  background-color: var(--color-secondary) !important;
+  color: var(--color-header-text) !important;
+}
+[data-festival-theme] header input {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-heading) !important;
+}
+
+/* Mobile Bottom Navigation & Drawers */
+[data-festival-theme] nav.fixed,
+[data-festival-theme] .mobile-bottom-nav,
+[data-festival-theme] nav.bg-\[\#FBF8F4\]\/95,
+[data-festival-theme] div.bg-\[\#FBF8F4\] {
+  background-color: var(--color-page-bg) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Footer & Sub-Footer */
+[data-festival-theme] footer,
+[data-festival-theme] footer.bg-\[\#072C20\],
+[data-festival-theme] footer .bg-\[\#052219\] {
+  background-color: var(--color-footer-bg) !important;
+  color: var(--color-footer-text) !important;
+  border-color: var(--color-border) !important;
+}
+[data-festival-theme] footer a,
+[data-festival-theme] footer p,
+[data-festival-theme] footer span {
+  color: var(--color-footer-text);
+}
+
+/* Product Cards, Category Cards & Surface Containers */
+[data-festival-theme] .group.bg-white,
+[data-festival-theme] div.bg-white.rounded-2xl,
+[data-festival-theme] section.bg-white,
+[data-festival-theme] div.bg-white.rounded-xl,
+[data-festival-theme] div.bg-white.border {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+[data-festival-theme] .bg-\[\#F7F4EE\],
+[data-festival-theme] .bg-\[\#FBF8F2\],
+[data-festival-theme] .bg-\[\#F5EFE6\],
+[data-festival-theme] .bg-\[\#FAF6EE\] {
+  background: var(--color-surface-subtle) !important;
+}
+
+/* Editorial Alternating Sections */
+[data-festival-theme] .section-ivory,
+[data-festival-theme] .bg-canvas-subtle,
+[data-festival-theme] .bg-\[\#F7F3EB\],
+[data-festival-theme] section.bg-\[\#F7F3EB\] {
+  background-color: var(--color-section-bg) !important;
+  border-color: var(--color-border) !important;
+}
+[data-festival-theme] .section-forest {
+  background: linear-gradient(135deg, var(--color-footer-bg), var(--color-secondary)) !important;
+}
+
+/* Primary CTA Buttons */
+[data-festival-theme] button.bg-\[\#A67732\],
+[data-festival-theme] a.bg-\[\#A67732\],
+[data-festival-theme] .btn-primary,
+[data-festival-theme] button.bg-brand-primary,
+[data-festival-theme] a.bg-brand-primary {
+  background-color: var(--color-button-bg) !important;
+  color: var(--color-button-text) !important;
+}
+[data-festival-theme] button.bg-\[\#A67732\]:hover,
+[data-festival-theme] a.bg-\[\#A67732\]:hover,
+[data-festival-theme] .btn-primary:hover {
+  background-color: var(--color-primary-hover) !important;
+}
+
+/* Secondary Dark Buttons & Controls */
+[data-festival-theme] button.bg-\[\#072C20\],
+[data-festival-theme] a.bg-\[\#072C20\],
+[data-festival-theme] button.bg-\[\#07382A\],
+[data-festival-theme] a.bg-\[\#07382A\],
+[data-festival-theme] .btn-dark {
+  background-color: var(--color-button-secondary-bg) !important;
+  color: var(--color-button-secondary-text) !important;
+}
+
+/* Headings */
+[data-festival-theme] h1,
+[data-festival-theme] h2,
+[data-festival-theme] h3,
+[data-festival-theme] h4,
+[data-festival-theme] h5,
+[data-festival-theme] h6,
+[data-festival-theme] .font-serif,
+[data-festival-theme] .text-content-primary,
+[data-festival-theme] .text-\[\#041914\],
+[data-festival-theme] .text-\[\#1C1917\] {
+  color: var(--color-heading) !important;
+}
+
+/* Body Text */
+[data-festival-theme] p,
+[data-festival-theme] .text-content-secondary,
+[data-festival-theme] .text-\[\#4A4F48\] {
+  color: var(--color-text);
+}
+
+/* Borders */
+[data-festival-theme] .border-border-subtle,
+[data-festival-theme] .border-\[\#EAE3D6\],
+[data-festival-theme] .border-\[\#EAE5DC\],
+[data-festival-theme] .border-\[\#E7E2D8\] {
+  border-color: var(--color-border) !important;
+}
+
+/* Badges & Eyebrows */
+[data-festival-theme] .eyebrow-gold,
+[data-festival-theme] .bg-\[\#FAD982\],
+[data-festival-theme] .bg-\[\#A67732\]\/15,
+[data-festival-theme] .bg-\[\#A67732\]\/25 {
+  background-color: var(--color-badge-bg) !important;
+  color: var(--color-badge-text) !important;
+  border-color: var(--color-badge-border) !important;
+}
+
+/* Form Controls & Inputs on Dark Themes */
+[data-festival-theme="diwali"] input,
+[data-festival-theme="diwali"] select,
+[data-festival-theme="new_year"] input,
+[data-festival-theme="new_year"] select {
+  background-color: var(--color-surface-subtle) !important;
+  color: var(--color-heading) !important;
+  border-color: var(--color-border) !important;
 }
 
 @layer utilities {

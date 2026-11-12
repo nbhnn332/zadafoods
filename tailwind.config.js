@@ -8,30 +8,30 @@ export default {
     extend: {
       colors: {
         canvas: {
-          DEFAULT: '#FBF8F4',
-          subtle: '#F7F3EB',
+          DEFAULT: 'var(--color-page-bg, #FBF8F4)',
+          subtle: 'var(--color-section-bg, #F7F3EB)',
         },
         surface: {
-          DEFAULT: '#FFFFFF',
-          muted: '#F5EFE6',
+          DEFAULT: 'var(--color-surface, #FFFFFF)',
+          muted: 'var(--color-surface-subtle, #F5EFE6)',
         },
         brand: {
-          primary: '#A67732',
-          'primary-hover': '#8E6325',
-          'primary-light': '#F4EADA',
-          secondary: '#072C20',
-          'secondary-hover': '#0C3D2D',
-          'secondary-light': '#E9EFEA',
-          deep: '#031D16',
-          gold: '#A67732',
-          'gold-muted': '#D4B574',
-          'gold-light': '#FCF2E3',
+          primary: 'var(--color-primary, #A67732)',
+          'primary-hover': 'var(--color-primary-hover, #8E6325)',
+          'primary-light': 'var(--color-badge-bg, #F4EADA)',
+          secondary: 'var(--color-secondary, #072C20)',
+          'secondary-hover': 'var(--color-primary-hover, #0C3D2D)',
+          'secondary-light': 'var(--color-surface-subtle, #E9EFEA)',
+          deep: 'var(--color-footer-bg, #031D16)',
+          gold: 'var(--color-accent, #A67732)',
+          'gold-muted': 'var(--color-accent, #D4B574)',
+          'gold-light': 'var(--color-surface-subtle, #FCF2E3)',
         },
         content: {
-          primary: '#041914',
-          secondary: '#4A4F48',
-          muted: '#787F76',
-          warm: '#77736C',
+          primary: 'var(--color-heading, #041914)',
+          secondary: 'var(--color-text, #4A4F48)',
+          muted: 'var(--color-text-muted, #787F76)',
+          warm: 'var(--color-text-muted, #77736C)',
         },
         status: {
           discount: '#D32F2F',
@@ -42,8 +42,8 @@ export default {
           'warning-bg': '#FEF3C7',
         },
         border: {
-          subtle: '#EAE3D6',
-          active: '#072C20',
+          subtle: 'var(--color-border, #EAE3D6)',
+          active: 'var(--color-primary, #072C20)',
         }
       },
       fontFamily: {

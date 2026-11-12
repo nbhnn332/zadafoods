@@ -86,9 +86,10 @@ describe('ZaDa Foods — Festival Theme, Homepage CMS & Bulk Data Cleanup Verifi
 
       const root = document.documentElement;
       expect(root.getAttribute('data-festival-theme')).toBe('onam');
-      expect(root.style.getPropertyValue('--brand-primary')).toBe('#CA8A04');
-      expect(root.style.getPropertyValue('--brand-gold')).toBe('#EAB308');
-      expect(root.style.getPropertyValue('--canvas')).toBe('#FFFDF5');
+      expect(root.style.getPropertyValue('--color-primary')).toBe('#C88A10');
+      expect(root.style.getPropertyValue('--color-page-bg')).toBe('#FAF5EA');
+      expect(root.style.getPropertyValue('--color-header-bg')).toBe('#0D3B22');
+      expect(root.style.getPropertyValue('--brand-primary')).toBe('#C88A10');
     });
 
     it('injects CSS variables onto documentElement for Eid theme', () => {
@@ -97,8 +98,10 @@ describe('ZaDa Foods — Festival Theme, Homepage CMS & Bulk Data Cleanup Verifi
 
       const root = document.documentElement;
       expect(root.getAttribute('data-festival-theme')).toBe('eid');
-      expect(root.style.getPropertyValue('--brand-primary')).toBe('#047857');
-      expect(root.style.getPropertyValue('--canvas')).toBe('#F8FAF8');
+      expect(root.style.getPropertyValue('--color-primary')).toBe('#055C41');
+      expect(root.style.getPropertyValue('--color-page-bg')).toBe('#F1F7F4');
+      expect(root.style.getPropertyValue('--color-header-bg')).toBe('#043224');
+      expect(root.style.getPropertyValue('--brand-primary')).toBe('#055C41');
     });
 
     it('cleanly removes CSS variables and attributes when theme is restored to default', () => {
