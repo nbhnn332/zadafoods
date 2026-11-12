@@ -76,6 +76,9 @@ export const AdminCMS: React.FC = () => {
   const [eyebrow, setEyebrow] = useState('Fresh From Kerala');
   const [ctaText, setCtaText] = useState('Shop Now');
   const [linkUrl, setLinkUrl] = useState('/category/chips');
+  const [showCta, setShowCta] = useState(true);
+  const [isClickable, setIsClickable] = useState(true);
+  const [openInNewTab, setOpenInNewTab] = useState(false);
   const [displayOrder, setDisplayOrder] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -222,6 +225,9 @@ export const AdminCMS: React.FC = () => {
     setEyebrow('Fresh From Kerala');
     setCtaText('Shop Now');
     setLinkUrl('/category/chips');
+    setShowCta(true);
+    setIsClickable(true);
+    setOpenInNewTab(false);
     const existingCount = banners.filter((b) => (b.deviceTarget || 'desktop') === target).length;
     setDisplayOrder(existingCount + 1);
     setIsActive(true);
@@ -231,7 +237,7 @@ export const AdminCMS: React.FC = () => {
 
   const openEditBanner = (b: HomepageBanner) => {
     setEditingBanner(b);
-    setTitle(b.title);
+    setTitle(b.title || '');
     setSubtitle(b.subtitle || '');
     setImageUrl(b.imageUrl || '');
     setImageStatus(b.imageUrl ? 'validating' : 'idle');
@@ -242,7 +248,10 @@ export const AdminCMS: React.FC = () => {
     setTextColor(b.textColor || '#FFFFFF');
     setEyebrow(b.eyebrow || 'Fresh From Kerala');
     setCtaText(b.ctaText || 'Shop Now');
-    setLinkUrl(b.linkUrl);
+    setLinkUrl(b.linkUrl || '/category/chips');
+    setShowCta(b.showCta !== false && Boolean(b.ctaText));
+    setIsClickable(b.isClickable !== false);
+    setOpenInNewTab(b.openInNewTab || false);
     setDisplayOrder(b.displayOrder);
     setIsActive(b.isActive);
     setDeviceTarget(b.deviceTarget === 'mobile' ? 'mobile' : 'desktop');
@@ -255,12 +264,13 @@ export const AdminCMS: React.FC = () => {
       showToast('Permission Denied', 'Your administrator account lacks the "Hero Banner Management" (cms.hero_banners) permission.', 'error');
       return;
     }
-    if (!title.trim()) {
-      showToast('Validation Error', 'Headline Heading is mandatory.', 'error');
+    const trimmedTitle = title.trim();
+    const trimmedImg = (imageUrl || '').trim().replace(/^["']|["']$/g, '');
+    if (!trimmedTitle && !trimmedImg) {
+      showToast('Validation Error', 'Either a Headline or an Image URL must be provided.', 'error');
       return;
     }
 
-    const trimmedImg = (imageUrl || '').trim().replace(/^["']|["']$/g, '');
     if (trimmedImg) {
       const isValid = trimmedImg.startsWith('/') || /^https?:\/\//i.test(trimmedImg);
       if (!isValid) {
@@ -275,42 +285,35 @@ export const AdminCMS: React.FC = () => {
 
     setIsSavingBanner(true);
     try {
+      const payload: Partial<HomepageBanner> = {
+        title: trimmedTitle,
+        subtitle: subtitle.trim(),
+        imageUrl: trimmedImg || '',
+        backgroundColor: bgColor,
+        textColor: textColor,
+        eyebrow: eyebrow.trim() || undefined,
+        ctaText: showCta ? (ctaText.trim() || 'Shop Now') : '',
+        linkUrl: linkUrl.trim() || '/category/chips',
+        displayOrder: Number(displayOrder),
+        deviceTarget: deviceTarget === 'mobile' ? 'mobile' : 'desktop',
+        isActive,
+        showCta,
+        isClickable,
+        openInNewTab
+      };
+
       if (editingBanner) {
-        const res = await updateBanner(editingBanner.id, {
-          title: title.trim(),
-          subtitle: subtitle.trim(),
-          imageUrl: trimmedImg || '',
-          backgroundColor: bgColor,
-          textColor: textColor,
-          eyebrow: eyebrow.trim() || undefined,
-          ctaText: ctaText.trim() || 'Shop Now',
-          linkUrl: linkUrl.trim() || '/category/chips',
-          displayOrder: Number(displayOrder),
-          deviceTarget: deviceTarget === 'mobile' ? 'mobile' : 'desktop',
-          isActive
-        });
+        const res = await updateBanner(editingBanner.id, payload);
         if (res.success) {
-          showToast('Banner Updated', `Updated "${title}" successfully. Persisted to database.`, 'success');
+          showToast('Banner Updated', `Updated "${trimmedTitle || 'Banner'}" successfully. Persisted to database.`, 'success');
           setIsBannerModalOpen(false);
         } else {
           showToast('Database Error', res.error || 'Failed to update banner in database.', 'error');
         }
       } else {
-        const res = await addBanner({
-          title: title.trim(),
-          subtitle: subtitle.trim(),
-          imageUrl: trimmedImg || '',
-          backgroundColor: bgColor,
-          textColor: textColor,
-          eyebrow: eyebrow.trim() || undefined,
-          ctaText: ctaText.trim() || 'Shop Now',
-          linkUrl: linkUrl.trim() || '/category/chips',
-          displayOrder: Number(displayOrder),
-          deviceTarget: deviceTarget === 'mobile' ? 'mobile' : 'desktop',
-          isActive
-        });
+        const res = await addBanner(payload as any);
         if (res.success) {
-          showToast('Banner Created', `Added "${title}" to database and homepage rotation.`, 'success');
+          showToast('Banner Created', `Added "${trimmedTitle || 'Banner'}" to database and homepage rotation.`, 'success');
           setIsBannerModalOpen(false);
         } else {
           showToast('Database Error', res.error || 'Failed to save banner to database.', 'error');
@@ -787,7 +790,7 @@ export const AdminCMS: React.FC = () => {
                                 </span>
                               )}
                               <h4 className="font-serif font-bold text-sm leading-tight text-white line-clamp-2">
-                                {ban.title}
+                                {ban.title || <span className="italic opacity-70 font-sans text-xs">Image-Only Hero Banner</span>}
                               </h4>
                               {ban.subtitle && (
                                 <p className="text-[10px] text-white/80 line-clamp-1 font-sans">
@@ -803,7 +806,7 @@ export const AdminCMS: React.FC = () => {
 
                           <div className="p-3.5 space-y-1.5 text-xs bg-white">
                             <h4 className="font-serif font-bold text-sm text-content-primary line-clamp-1">
-                              {ban.title}
+                              {ban.title || <span className="italic text-content-muted font-sans text-xs">Image-Only Hero Banner</span>}
                             </h4>
                             {ban.subtitle && (
                               <p className="text-[11px] text-content-muted line-clamp-1">{ban.subtitle}</p>
@@ -972,7 +975,7 @@ export const AdminCMS: React.FC = () => {
                                 </span>
                               )}
                               <h4 className="font-serif font-bold text-sm leading-tight text-white line-clamp-2">
-                                {ban.title}
+                                {ban.title || <span className="italic opacity-70 font-sans text-xs">Image-Only Hero Banner</span>}
                               </h4>
                               {ban.subtitle && (
                                 <p className="text-[10px] text-white/80 line-clamp-1 font-sans">
@@ -988,7 +991,7 @@ export const AdminCMS: React.FC = () => {
 
                           <div className="p-3.5 space-y-1.5 text-xs bg-white">
                             <h4 className="font-serif font-bold text-sm text-content-primary line-clamp-1">
-                              {ban.title}
+                              {ban.title || <span className="italic text-content-muted font-sans text-xs">Image-Only Hero Banner</span>}
                             </h4>
                             {ban.subtitle && (
                               <p className="text-[11px] text-content-muted line-clamp-1">{ban.subtitle}</p>
@@ -1410,36 +1413,53 @@ export const AdminCMS: React.FC = () => {
                   )
                 ) : null}
 
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none" />
-
-                <div className="relative z-10 p-2 space-y-1 text-white max-w-sm">
-                  {eyebrow && (
-                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FAD982]">
-                      {eyebrow}
-                    </span>
-                  )}
-                  <h4 className="font-serif font-bold text-sm text-amber-200">
-                    {title || 'Headline Title Goes Here'}
-                  </h4>
-                  <p className="text-[11px] text-white/90 line-clamp-2">
-                    {subtitle || 'Supporting description copy will display here.'}
-                  </p>
-                  <div className="pt-1">
-                    <span className="inline-block px-3 py-1 rounded-lg bg-[#A67732] text-white text-[10px] font-bold shadow">
-                      {ctaText || 'Shop Now'} →
-                    </span>
+                {(!title && !subtitle && !eyebrow && !showCta) ? (
+                  <div className="absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded bg-black/60 text-white/90 text-[10px] font-medium border border-white/20">
+                    Image-Only Banner • {isClickable ? 'Clickable' : 'Static'}
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none" />
+
+                    <div className="relative z-10 p-2 space-y-1 text-white max-w-sm">
+                      {eyebrow && (
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#FAD982]">
+                          {eyebrow}
+                        </span>
+                      )}
+                      {title && (
+                        <h4 className="font-serif font-bold text-sm text-amber-200">
+                          {title}
+                        </h4>
+                      )}
+                      {subtitle && (
+                        <p className="text-[11px] text-white/90 line-clamp-2">
+                          {subtitle}
+                        </p>
+                      )}
+                      {showCta ? (
+                        <div className="pt-1">
+                          <span className="inline-block px-3 py-1 rounded-lg bg-[#A67732] text-white text-[10px] font-bold shadow">
+                            {ctaText || 'Shop Now'} →
+                          </span>
+                        </div>
+                      ) : isClickable && linkUrl ? (
+                        <div className="pt-1 text-[10px] text-amber-200/90 font-mono">
+                          Entire banner links to {linkUrl} {openInNewTab ? '(New Tab)' : ''}
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             <form onSubmit={handleSaveBanner} className="space-y-3 pt-2">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="font-bold text-content-primary block mb-1">Headline Heading *</label>
+                  <label className="font-bold text-content-primary block mb-1">Headline Heading (Optional for Image-Only)</label>
                   <input
                     type="text"
-                    required
                     placeholder="e.g. Authentic Kerala Flavours Delivered to Your Home"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -1447,7 +1467,7 @@ export const AdminCMS: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-content-primary block mb-1">Badge / Eyebrow</label>
+                  <label className="font-bold text-content-primary block mb-1">Badge / Eyebrow (Optional)</label>
                   <input
                     type="text"
                     placeholder="e.g. Fresh From Kerala"
@@ -1459,7 +1479,7 @@ export const AdminCMS: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-content-primary block mb-1">Subheadline Description</label>
+                <label className="font-bold text-content-primary block mb-1">Subheadline Description (Optional)</label>
                 <textarea
                   rows={2}
                   placeholder="e.g. Harvested from Wayanad farms, thinly sliced & fried fresh in 100% pure cold-pressed coconut oil."
@@ -1592,27 +1612,84 @@ export const AdminCMS: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-content-primary block mb-1">CTA Label</label>
-                  <input
-                    type="text"
-                    placeholder="Shop Now"
-                    value={ctaText}
-                    onChange={(e) => setCtaText(e.target.value)}
-                    className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                  />
+              {/* CTA & Click Behavior Controls */}
+              <div className="p-3 bg-canvas-subtle rounded-xl border border-border-subtle space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={showCta}
+                      onChange={(e) => setShowCta(e.target.checked)}
+                      className="rounded text-brand-primary focus:ring-brand-primary"
+                    />
+                    <span className="font-bold text-content-primary text-xs">Enable CTA Button</span>
+                  </label>
+                  <span className="text-[10px] text-content-muted">
+                    {showCta ? 'Shows call-to-action button' : 'Omit button (Image-only or clickable)'}
+                  </span>
                 </div>
 
-                <div>
-                  <label className="font-bold text-content-primary block mb-1">Destination URL</label>
-                  <input
-                    type="text"
-                    placeholder="/category/chips"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono"
-                  />
+                {showCta ? (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="font-bold text-content-primary block mb-1">CTA Label</label>
+                      <input
+                        type="text"
+                        placeholder="Shop Now"
+                        value={ctaText}
+                        onChange={(e) => setCtaText(e.target.value)}
+                        className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-content-primary block mb-1">Destination URL</label>
+                      <input
+                        type="text"
+                        placeholder="/category/chips"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pt-1">
+                    <div>
+                      <label className="font-bold text-content-primary block mb-1">Banner Destination URL</label>
+                      <input
+                        type="text"
+                        placeholder="/category/chips"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+                      <input
+                        type="checkbox"
+                        checked={isClickable}
+                        onChange={(e) => setIsClickable(e.target.checked)}
+                        className="rounded text-brand-primary focus:ring-brand-primary"
+                      />
+                      <span className="font-medium text-content-primary text-xs">
+                        Make entire banner image clickable to destination URL
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                <div className="pt-1 border-t border-border-subtle/60">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={openInNewTab}
+                      onChange={(e) => setOpenInNewTab(e.target.checked)}
+                      className="rounded text-brand-primary focus:ring-brand-primary"
+                    />
+                    <span className="text-[11px] text-content-secondary font-medium">
+                      Open destination link in new browser tab (_blank)
+                    </span>
+                  </label>
                 </div>
               </div>
 

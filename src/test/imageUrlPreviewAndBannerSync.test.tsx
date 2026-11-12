@@ -219,7 +219,7 @@ describe('Image URL Preview & Storefront Image Loading Architecture', () => {
         const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
         const savedBanner: HomepageBanner = {
           id: banner.id || `ban-${Date.now()}`,
-          title: banner.title.trim(),
+          title: (banner.title || '').trim(),
           subtitle: banner.subtitle || '',
           imageUrl: cleanImgUrl,
           deviceTarget: targetDevice,
@@ -269,7 +269,7 @@ describe('Image URL Preview & Storefront Image Loading Architecture', () => {
         const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
         const savedBanner: HomepageBanner = {
           id: banner.id || `ban-${Date.now()}`,
-          title: banner.title.trim(),
+          title: (banner.title || '').trim(),
           subtitle: banner.subtitle || '',
           imageUrl: cleanImgUrl,
           deviceTarget: targetDevice,

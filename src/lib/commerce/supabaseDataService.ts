@@ -1748,22 +1748,27 @@ export class SupabaseDataService {
    * Create or update Homepage Banner in Supabase with verification
    */
   public static async saveBanner(
-    banner: Partial<HomepageBanner> & { title: string }
+    banner: Partial<HomepageBanner>
   ): Promise<DataOperationResult<HomepageBanner>> {
     if (isSupabaseConfigured()) {
       try {
         await ensureAuthenticatedAdminSession();
         const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
         const cleanImgUrl = banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim().replace(/^["']|["']$/g, '') : '';
+        const titleVal = (banner.title || '').trim();
+        const showCta = banner.showCta !== false;
+        const ctaText = showCta && banner.ctaText && banner.ctaText.trim() ? banner.ctaText.trim() : null;
+        const ctaLink = banner.linkUrl ? banner.linkUrl.trim() : '/category/chips';
+
         const payload: any = {
-          title: banner.title.trim(),
+          title: titleVal,
           subtitle: banner.subtitle ? banner.subtitle.trim() : null,
           image_url: cleanImgUrl,
           background_color: banner.backgroundColor || '#072C20',
           text_color: banner.textColor || '#FFFFFF',
           eyebrow: banner.eyebrow ? banner.eyebrow.trim() : null,
-          cta_text: banner.ctaText ? banner.ctaText.trim() : 'Shop Now',
-          cta_link: banner.linkUrl ? banner.linkUrl.trim() : '/category/chips',
+          cta_text: ctaText,
+          cta_link: ctaLink,
           display_order: banner.displayOrder ?? 1,
           is_active: banner.isActive ?? true,
           badge_text: targetDevice
@@ -1802,11 +1807,11 @@ export class SupabaseDataService {
 
           // Canonical columns present in core database schema
           const corePayload: any = {
-            title: banner.title.trim(),
+            title: titleVal,
             subtitle: banner.subtitle ? banner.subtitle.trim() : null,
             image_url: cleanImgUrl,
-            cta_text: banner.ctaText ? banner.ctaText.trim() : 'Shop Now',
-            cta_link: banner.linkUrl ? banner.linkUrl.trim() : '/category/chips',
+            cta_text: ctaText,
+            cta_link: ctaLink,
             display_order: banner.displayOrder ?? 1,
             is_active: banner.isActive ?? true
           };
@@ -1856,7 +1861,7 @@ export class SupabaseDataService {
               const fallbackId = banner.id || `ban-${Date.now()}`;
               const fallbackBanner: HomepageBanner = {
                 id: fallbackId,
-                title: banner.title.trim(),
+                title: titleVal,
                 subtitle: banner.subtitle ? banner.subtitle.trim() : '',
                 imageUrl: cleanImgUrl,
                 deviceTarget: targetDevice,
@@ -1864,8 +1869,11 @@ export class SupabaseDataService {
                 backgroundColor: banner.backgroundColor || '#072C20',
                 textColor: banner.textColor || '#FFFFFF',
                 eyebrow: banner.eyebrow ? banner.eyebrow.trim() : undefined,
-                ctaText: banner.ctaText ? banner.ctaText.trim() : 'Shop Now',
-                linkUrl: banner.linkUrl ? banner.linkUrl.trim() : '/category/chips',
+                ctaText: ctaText || undefined,
+                linkUrl: ctaLink,
+                showCta: showCta,
+                isClickable: banner.isClickable ?? true,
+                openInNewTab: banner.openInNewTab ?? false,
                 displayOrder: banner.displayOrder ?? 1,
                 isActive: banner.isActive ?? true,
                 createdAt: banner.createdAt || new Date().toISOString()
@@ -1912,7 +1920,10 @@ export class SupabaseDataService {
           badgeText: banner.badgeText || verifyRes.data.badgeText || targetDevice,
           backgroundColor: banner.backgroundColor || verifyRes.data.backgroundColor || '#072C20',
           textColor: banner.textColor || verifyRes.data.textColor || '#FFFFFF',
-          eyebrow: banner.eyebrow || verifyRes.data.eyebrow
+          eyebrow: banner.eyebrow || verifyRes.data.eyebrow,
+          showCta: banner.showCta ?? (verifyRes.data.ctaText !== null && verifyRes.data.ctaText !== ''),
+          isClickable: banner.isClickable ?? true,
+          openInNewTab: banner.openInNewTab ?? false
         };
 
         return {
@@ -2293,22 +2304,22 @@ export class SupabaseDataService {
     const sectionId = config.id || 'h0000000-0000-0000-0000-000000000003';
     const payload = {
       id: sectionId,
-      title: config.heading.trim(),
+      title: (config.heading || '').trim(),
       section_type: 'corporate_gifting',
       display_order: config.displayOrder ?? 7,
       is_visible: config.isActive,
       metadata: {
-        eyebrow: config.eyebrow.trim(),
-        heading: config.heading.trim(),
-        description: config.description.trim(),
-        bulletPoints: config.bulletPoints || [],
+        eyebrow: (config.eyebrow || '').trim(),
+        heading: (config.heading || '').trim(),
+        description: (config.description || '').trim(),
+        bulletPoints: Array.isArray(config.bulletPoints) ? config.bulletPoints : [],
         primaryCta: {
-          label: config.primaryCtaLabel.trim(),
-          destination: config.primaryCtaDestination.trim()
+          label: (config.primaryCtaLabel || '').trim(),
+          destination: (config.primaryCtaDestination || '').trim()
         },
         secondaryCta: {
-          label: config.secondaryCtaLabel.trim(),
-          destination: config.secondaryCtaDestination.trim()
+          label: (config.secondaryCtaLabel || '').trim(),
+          destination: (config.secondaryCtaDestination || '').trim()
         },
         bgPreset: config.bgPreset || '#072C20',
         textColor: config.textColor || '#FFFFFF',
@@ -2318,8 +2329,13 @@ export class SupabaseDataService {
       updated_at: new Date().toISOString()
     };
 
+    try {
+      localStorage.setItem('zada_admin_corporate_section', JSON.stringify(config));
+    } catch {}
+
     if (isSupabaseConfigured()) {
       try {
+        await ensureAuthenticatedAdminSession();
         const { data, error } = await supabase
           .from('homepage_sections')
           .upsert(payload)
@@ -2696,138 +2712,558 @@ export class SupabaseDataService {
   }
 
   /**
-   * Super Admin Bulk Data Management / Operational Records Cleanup
+   * Super Admin Bulk Data Management / Multi-Category Operational Records Cleanup
    */
   public static async cleanupOperationalRecords(params: {
-    scope: 'ORDERS' | 'ENQUIRIES' | 'TEST_CHECKOUTS';
+    categories?: ('ORDERS_ALL' | 'ORDERS_CANCELLED' | 'ORDERS_PENDING' | 'ORDERS_COMPLETED' | 'BULK_ENQUIRIES' | 'REVIEWS' | 'AUDIT_LOGS' | 'EXPIRED_COUPONS' | 'TEMPORARY_CARTS')[];
+    scope?: 'ORDERS' | 'ENQUIRIES' | 'TEST_CHECKOUTS';
     olderThanDays?: number;
+    startDate?: string;
+    endDate?: string;
     beforeDate?: string;
     dryRun?: boolean;
     adminEmail?: string;
-  }): Promise<DataOperationResult<{ affectedRecords: number; details: string; dryRun: boolean }>> {
+  }): Promise<DataOperationResult<{
+    affectedRecords: number;
+    details: string;
+    dryRun: boolean;
+    breakdown: Array<{
+      category: string;
+      name: string;
+      count: number;
+      description: string;
+      sampleRecords?: any[];
+      deletedCount?: number;
+      status?: 'PENDING' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
+      error?: string;
+    }>;
+  }>> {
     if (isSupabaseConfigured()) {
       try {
-        const { scope, beforeDate, dryRun = true, adminEmail } = params;
+        await ensureAuthenticatedAdminSession();
+        const {
+          categories,
+          scope,
+          startDate,
+          endDate,
+          beforeDate,
+          dryRun = true,
+          adminEmail = 'superadmin@zadafoods.com'
+        } = params;
 
-        if (scope === 'ORDERS' || scope === 'TEST_CHECKOUTS') {
-          let query = supabase.from('orders').select('id, order_number, total_amount, created_at');
-          if (beforeDate) {
-            query = query.lte('created_at', beforeDate);
-          }
-          if (scope === 'TEST_CHECKOUTS') {
-            query = query.or('payment_status.eq.FAILED,fulfillment_status.eq.CANCELLED');
-          }
-
-          const { data: matched, error: mErr } = await query;
-          if (mErr) return { data: null, error: mErr.message, source: 'SUPABASE' };
-
-          const count = matched?.length || 0;
-          if (dryRun) {
-            return {
-              data: {
-                affectedRecords: count,
-                details: 'Preview: ' + count + ' orders (and cascading order_items) identified for cleanup. Zero records modified.',
-                dryRun: true
-              },
-              error: null,
-              source: 'SUPABASE'
-            };
-          }
-
-          if (count > 0 && matched) {
-            const ids = matched.map((o: any) => o.id);
-            await supabase.from('order_items').delete().in('order_id', ids);
-            await supabase.from('order_status_history').delete().in('order_id', ids);
-            const { error: dErr } = await supabase.from('orders').delete().in('id', ids);
-            if (dErr) return { data: null, error: dErr.message, source: 'SUPABASE' };
-
-            await supabase.from('admin_audit_logs').insert({
-              admin_email: adminEmail || 'superadmin@zadafoods.com',
-              action: 'BULK_DATA_CLEANUP',
-              entity_type: 'orders',
-              entity_id: 'bulk',
-              changes: { scope, count, ids: ids.slice(0, 10), timestamp: new Date().toISOString() }
-            });
-
-            return {
-              data: {
-                affectedRecords: count,
-                details: 'Successfully deleted ' + count + ' operational order records and cascading items.',
-                dryRun: false
-              },
-              error: null,
-              source: 'SUPABASE'
-            };
-          }
-
-          return {
-            data: { affectedRecords: 0, details: 'No eligible records found matching criteria.', dryRun: false },
-            error: null,
-            source: 'SUPABASE'
-          };
-        } else if (scope === 'ENQUIRIES') {
-          let query = supabase.from('bulk_enquiries').select('id, full_name, created_at');
-          if (beforeDate) {
-            query = query.lte('created_at', beforeDate);
-          }
-          const { data: matched, error: mErr } = await query;
-          if (mErr) return { data: null, error: mErr.message, source: 'SUPABASE' };
-
-          const count = matched?.length || 0;
-          if (dryRun) {
-            return {
-              data: {
-                affectedRecords: count,
-                details: 'Preview: ' + count + ' bulk enquiries identified for deletion. Zero records modified.',
-                dryRun: true
-              },
-              error: null,
-              source: 'SUPABASE'
-            };
-          }
-
-          if (count > 0 && matched) {
-            const ids = matched.map((e: any) => e.id);
-            const { error: dErr } = await supabase.from('bulk_enquiries').delete().in('id', ids);
-            if (dErr) return { data: null, error: dErr.message, source: 'SUPABASE' };
-
-            await supabase.from('admin_audit_logs').insert({
-              admin_email: adminEmail || 'superadmin@zadafoods.com',
-              action: 'BULK_DATA_CLEANUP',
-              entity_type: 'bulk_enquiries',
-              entity_id: 'bulk',
-              changes: { scope, count, timestamp: new Date().toISOString() }
-            });
-
-            return {
-              data: {
-                affectedRecords: count,
-                details: 'Successfully deleted ' + count + ' bulk enquiry records.',
-                dryRun: false
-              },
-              error: null,
-              source: 'SUPABASE'
-            };
-          }
-
-          return {
-            data: { affectedRecords: 0, details: 'No eligible records found matching criteria.', dryRun: false },
-            error: null,
-            source: 'SUPABASE'
-          };
+        // Map legacy scope if categories not provided
+        let targetCategories: string[] = categories && categories.length > 0 ? [...categories] : [];
+        if (targetCategories.length === 0 && scope) {
+          if (scope === 'ORDERS') targetCategories = ['ORDERS_ALL'];
+          else if (scope === 'TEST_CHECKOUTS') targetCategories = ['ORDERS_CANCELLED'];
+          else if (scope === 'ENQUIRIES') targetCategories = ['BULK_ENQUIRIES'];
         }
+        if (targetCategories.length === 0) {
+          targetCategories = ['ORDERS_CANCELLED'];
+        }
+
+        const dateCutoff = beforeDate || endDate;
+        const breakdown: any[] = [];
+        let totalAffected = 0;
+
+        for (const cat of targetCategories) {
+          try {
+            if (cat === 'ORDERS_ALL' || cat === 'ORDERS_CANCELLED' || cat === 'ORDERS_PENDING' || cat === 'ORDERS_COMPLETED') {
+              let query = supabase.from('orders').select('id, order_number, total_amount, customer_name, fulfillment_status, payment_status, created_at');
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              if (cat === 'ORDERS_CANCELLED') {
+                query = query.or('fulfillment_status.eq.CANCELLED,payment_status.eq.FAILED');
+              } else if (cat === 'ORDERS_PENDING') {
+                query = query.or('fulfillment_status.eq.PENDING,fulfillment_status.eq.PROCESSING');
+              } else if (cat === 'ORDERS_COMPLETED') {
+                query = query.eq('fulfillment_status', 'DELIVERED');
+              }
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: cat.replace('_', ' '),
+                  count: 0,
+                  description: 'Failed to query orders: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((o: any) => ({
+                id: o.id,
+                reference: o.order_number || o.id,
+                details: 'Amount: ₹' + (o.total_amount || 0) + ' | Customer: ' + (o.customer_name || 'Guest') + ' | Status: ' + (o.fulfillment_status || 'UNKNOWN'),
+                createdAt: o.created_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: cat === 'ORDERS_ALL' ? 'All Orders' : cat === 'ORDERS_CANCELLED' ? 'Cancelled / Failed Orders' : cat === 'ORDERS_PENDING' ? 'Pending Orders' : 'Delivered Orders',
+                  count,
+                  description: count + ' orders eligible for deletion',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((o: any) => o.id);
+                // Cascading delete
+                await supabase.from('order_items').delete().in('order_id', ids);
+                await supabase.from('order_status_history').delete().in('order_id', ids);
+                const { error: dErr } = await supabase.from('orders').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Orders',
+                    count,
+                    deletedCount: 0,
+                    description: 'Order deletion error: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Orders',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully cleaned ' + count + ' orders and order items',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Orders',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No matching orders in selected range',
+                  status: 'SUCCESS'
+                });
+              }
+            } else if (cat === 'BULK_ENQUIRIES') {
+              let query = supabase.from('bulk_enquiries').select('id, full_name, email, phone, created_at');
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: 'Bulk Enquiries',
+                  count: 0,
+                  description: 'Query failed: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((e: any) => ({
+                id: e.id,
+                reference: e.full_name || 'Enquiry',
+                details: 'Contact: ' + (e.email || e.phone || 'N/A'),
+                createdAt: e.created_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: 'Bulk Corporate Enquiries',
+                  count,
+                  description: count + ' bulk enquiries identified',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((e: any) => e.id);
+                const { error: dErr } = await supabase.from('bulk_enquiries').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Bulk Enquiries',
+                    count,
+                    deletedCount: 0,
+                    description: 'Deletion failed: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Bulk Enquiries',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully deleted ' + count + ' bulk enquiries',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Bulk Enquiries',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No enquiries found matching date criteria',
+                  status: 'SUCCESS'
+                });
+              }
+            } else if (cat === 'REVIEWS') {
+              let query = supabase.from('reviews').select('id, author_name, rating, comment, created_at');
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: 'Customer Reviews',
+                  count: 0,
+                  description: 'Query failed: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((r: any) => ({
+                id: r.id,
+                reference: r.author_name || 'Reviewer',
+                details: 'Rating: ' + r.rating + '/5 | ' + (r.comment ? r.comment.slice(0, 40) + '...' : ''),
+                createdAt: r.created_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: 'Customer Reviews',
+                  count,
+                  description: count + ' reviews identified',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((r: any) => r.id);
+                const { error: dErr } = await supabase.from('reviews').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Customer Reviews',
+                    count,
+                    deletedCount: 0,
+                    description: 'Deletion failed: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Customer Reviews',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully deleted ' + count + ' reviews',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Customer Reviews',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No reviews found matching date criteria',
+                  status: 'SUCCESS'
+                });
+              }
+            } else if (cat === 'AUDIT_LOGS') {
+              let query = supabase.from('admin_audit_logs').select('id, admin_email, action, created_at');
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: 'Audit Logs',
+                  count: 0,
+                  description: 'Query failed: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((l: any) => ({
+                id: l.id,
+                reference: l.action || 'Audit Log',
+                details: 'Admin: ' + (l.admin_email || 'System'),
+                createdAt: l.created_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: 'Audit Logs',
+                  count,
+                  description: count + ' logs identified',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((l: any) => l.id);
+                const { error: dErr } = await supabase.from('admin_audit_logs').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Audit Logs',
+                    count,
+                    deletedCount: 0,
+                    description: 'Deletion failed: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Audit Logs',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully pruned ' + count + ' audit log entries',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Audit Logs',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No audit logs found matching date criteria',
+                  status: 'SUCCESS'
+                });
+              }
+            } else if (cat === 'EXPIRED_COUPONS') {
+              const nowIso = new Date().toISOString();
+              let query = supabase.from('coupons').select('id, code, discount_value, valid_until, created_at').lt('valid_until', nowIso);
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: 'Expired Coupons',
+                  count: 0,
+                  description: 'Query failed: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((c: any) => ({
+                id: c.id,
+                reference: c.code || 'COUPON',
+                details: 'Expired on: ' + (c.valid_until ? new Date(c.valid_until).toLocaleDateString() : 'N/A'),
+                createdAt: c.created_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: 'Expired Coupons',
+                  count,
+                  description: count + ' expired coupons identified (valid_until < now)',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((c: any) => c.id);
+                const { error: dErr } = await supabase.from('coupons').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Expired Coupons',
+                    count,
+                    deletedCount: 0,
+                    description: 'Deletion failed: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Expired Coupons',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully deleted ' + count + ' expired coupons',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Expired Coupons',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No expired coupons found',
+                  status: 'SUCCESS'
+                });
+              }
+            } else if (cat === 'TEMPORARY_CARTS') {
+              let query = supabase.from('carts').select('id, user_id, updated_at, created_at');
+              if (startDate) query = query.gte('created_at', startDate);
+              if (dateCutoff) query = query.lte('created_at', dateCutoff);
+
+              const { data: matched, error: mErr } = await query;
+              if (mErr) {
+                breakdown.push({
+                  category: cat,
+                  name: 'Abandoned Carts',
+                  count: 0,
+                  description: 'Query failed: ' + mErr.message,
+                  status: 'FAILED',
+                  error: mErr.message
+                });
+                continue;
+              }
+
+              const count = matched?.length || 0;
+              const sampleRecords = (matched || []).slice(0, 5).map((c: any) => ({
+                id: c.id,
+                reference: 'Cart ' + c.id.slice(0, 8),
+                details: 'User: ' + (c.user_id ? c.user_id.slice(0, 8) + '...' : 'Guest'),
+                createdAt: c.created_at || c.updated_at
+              }));
+
+              if (dryRun) {
+                totalAffected += count;
+                breakdown.push({
+                  category: cat,
+                  name: 'Temporary Carts',
+                  count,
+                  description: count + ' temporary/abandoned carts identified',
+                  sampleRecords,
+                  status: 'PENDING'
+                });
+              } else if (count > 0 && matched) {
+                const ids = matched.map((c: any) => c.id);
+                await supabase.from('cart_items').delete().in('cart_id', ids);
+                const { error: dErr } = await supabase.from('carts').delete().in('id', ids);
+                if (dErr) {
+                  breakdown.push({
+                    category: cat,
+                    name: 'Temporary Carts',
+                    count,
+                    deletedCount: 0,
+                    description: 'Deletion failed: ' + dErr.message,
+                    status: 'FAILED',
+                    error: dErr.message
+                  });
+                } else {
+                  totalAffected += count;
+                  breakdown.push({
+                    category: cat,
+                    name: 'Temporary Carts',
+                    count,
+                    deletedCount: count,
+                    description: 'Successfully purged ' + count + ' temporary carts',
+                    status: 'SUCCESS'
+                  });
+                }
+              } else {
+                breakdown.push({
+                  category: cat,
+                  name: 'Temporary Carts',
+                  count: 0,
+                  deletedCount: 0,
+                  description: 'No temporary carts found in range',
+                  status: 'SUCCESS'
+                });
+              }
+            }
+          } catch (itemErr: any) {
+            breakdown.push({
+              category: cat,
+              name: cat,
+              count: 0,
+              description: 'Error during processing: ' + itemErr.message,
+              status: 'FAILED',
+              error: itemErr.message
+            });
+          }
+        }
+
+        // Write structured audit log on live execution
+        if (!dryRun && totalAffected > 0) {
+          try {
+            await supabase.from('admin_audit_logs').insert({
+              admin_email: adminEmail || 'superadmin@zadafoods.com',
+              action: 'BULK_DATA_CLEANUP',
+              resource_type: 'bulk_cleanup',
+              resource_id: 'operation_' + Date.now(),
+              details: JSON.stringify({
+                categories: targetCategories,
+                totalAffected,
+                dryRun: false,
+                breakdown,
+                timestamp: new Date().toISOString()
+              })
+            });
+          } catch (logErr: any) {
+            console.warn('[SupabaseDataService] Audit log record notice:', logErr.message);
+          }
+        }
+
+        const details = dryRun
+          ? 'Dry-run preview completed: ' + totalAffected + ' eligible records across ' + targetCategories.length + ' categories. Zero database records were modified.'
+          : 'Bulk cleanup successfully executed: ' + totalAffected + ' operational records deleted across ' + targetCategories.length + ' categories.';
+
+        return {
+          data: {
+            affectedRecords: totalAffected,
+            details,
+            dryRun,
+            breakdown
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
       } catch (err: any) {
         return { data: null, error: err.message, source: 'SUPABASE' };
       }
     }
-
     return {
-      data: { affectedRecords: 0, details: 'Offline mode dry-run simulated.', dryRun: true },
+      data: {
+        affectedRecords: 0,
+        details: 'Offline mode: Zero records modified.',
+        dryRun: true,
+        breakdown: []
+      },
       error: null,
       source: 'LOCAL_CACHE'
     };
   }
-
 
   /**
    * Fetch all Category Banners from Supabase with safe fallback
@@ -3073,6 +3509,18 @@ export class SupabaseDataService {
     // 1. Try fetching from Supabase if configured
     if (isSupabaseConfigured()) {
       try {
+        let isDefaultExplicit = false;
+        try {
+          const { data: themeSetting } = await supabase
+            .from('store_settings')
+            .select('value')
+            .eq('key', 'active_theme')
+            .maybeSingle();
+          if (themeSetting?.value?.preset === 'default' || themeSetting?.value?.id === 'theme-default') {
+            isDefaultExplicit = true;
+          }
+        } catch {}
+
         const { data, error } = await supabase
           .from('festival_themes')
           .select('*')
@@ -3086,7 +3534,7 @@ export class SupabaseDataService {
             greeting: t.greeting || '',
             announcementBadge: t.announcement_badge || undefined,
             couponCode: t.coupon_code || undefined,
-            isActive: Boolean(t.is_active),
+            isActive: isDefaultExplicit ? false : Boolean(t.is_active),
             startDate: t.start_date || undefined,
             endDate: t.end_date || undefined,
             intensity: t.intensity || 'subtle',
@@ -3211,37 +3659,46 @@ export class SupabaseDataService {
 
     // 1. Update local storage
     try {
-      const existing: FestivalTheme[] = JSON.parse(localStorage.getItem('zada_festival_themes') || JSON.stringify(INITIAL_FESTIVAL_PRESETS));
+      const existing: FestivalTheme[] = JSON.parse(
+        localStorage.getItem('zada_festival_themes') || JSON.stringify(INITIAL_FESTIVAL_PRESETS)
+      );
       const updated = existing.map((t) => ({
         ...t,
         isActive: isDefaultTheme ? t.preset === 'default' : t.id === themeId
       }));
       localStorage.setItem('zada_festival_themes', JSON.stringify(updated));
-      localStorage.setItem('zada_active_theme', isDefaultTheme ? 'default' : themeId);
+      localStorage.setItem('zada_active_theme', isDefaultTheme ? 'theme-default' : themeId);
     } catch {}
 
     // 2. Sync to Supabase
     if (isSupabaseConfigured()) {
       try {
+        await ensureAuthenticatedAdminSession();
+
         if (isDefaultTheme) {
-          // Deactivate all seasonal festival themes so standard ZaDa brand theme takes effect
+          // Deactivate all seasonal festival themes with a valid WHERE filter
           await supabase
             .from('festival_themes')
-            .update({ is_active: false });
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .neq('id', '00000000-0000-0000-0000-000000000000');
 
           try {
-            await supabase
-              .from('store_settings')
-              .update({ active_theme: 'default' })
-              .neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('store_settings').upsert(
+              {
+                key: 'active_theme',
+                value: { id: 'theme-default', preset: 'default', updated_at: new Date().toISOString() },
+                updated_at: new Date().toISOString()
+              },
+              { onConflict: 'key' }
+            );
           } catch {}
 
           return { data: true, error: null, source: 'SUPABASE' };
-        } else if (isUUID(themeId)) {
+        } else {
           // Deactivate other festival themes
           await supabase
             .from('festival_themes')
-            .update({ is_active: false })
+            .update({ is_active: false, updated_at: new Date().toISOString() })
             .neq('id', themeId);
 
           // Activate target festival theme
@@ -3251,10 +3708,14 @@ export class SupabaseDataService {
             .eq('id', themeId);
 
           try {
-            await supabase
-              .from('store_settings')
-              .update({ active_theme: themeId })
-              .neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('store_settings').upsert(
+              {
+                key: 'active_theme',
+                value: { id: themeId, updated_at: new Date().toISOString() },
+                updated_at: new Date().toISOString()
+              },
+              { onConflict: 'key' }
+            );
           } catch {}
 
           return { data: true, error: null, source: 'SUPABASE' };

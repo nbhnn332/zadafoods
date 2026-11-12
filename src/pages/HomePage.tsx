@@ -347,6 +347,10 @@ export const HomePage: React.FC = () => {
             {activeBanners.map((slide, idx) => {
               const isCurrent = idx === currentSlide;
               const hasImage = !!(slide.imageUrl && slide.imageUrl.trim());
+              const isImageOnly = !slide.title && !slide.subtitle && !slide.eyebrow && slide.showCta === false;
+              const showCta = slide.showCta !== false && Boolean(slide.ctaText || slide.linkUrl);
+              const isEntireBannerClickable = !showCta && slide.isClickable !== false && Boolean(slide.linkUrl);
+
               return (
                 <div
                   key={slide.id}
@@ -360,13 +364,13 @@ export const HomePage: React.FC = () => {
                   aria-hidden={!isCurrent}
                   role="group"
                   aria-roledescription="slide"
-                  aria-label={`${idx + 1} of ${activeBanners.length}: ${slide.title}`}
+                  aria-label={`${idx + 1} of ${activeBanners.length}${slide.title ? ': ' + slide.title : ''}`}
                 >
                   {/* Background Image: Rendered only if explicitly authorized */}
                   {hasImage ? (
                     <img
                       src={slide.imageUrl}
-                      alt={slide.title}
+                      alt={slide.title || 'Banner image'}
                       className="absolute inset-0 w-full h-full object-cover object-right sm:object-[80%_center]"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
@@ -375,35 +379,81 @@ export const HomePage: React.FC = () => {
                     />
                   ) : null}
 
-                  {/* Gradient Scrim Overlay for 100% text readability */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent w-full sm:w-3/4 lg:w-3/5 pointer-events-none" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent sm:hidden pointer-events-none" />
+                  {/* Gradient Scrim Overlay: Only rendered when text content is present */}
+                  {!isImageOnly && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent w-full sm:w-3/4 lg:w-3/5 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent sm:hidden pointer-events-none" />
+                    </>
+                  )}
+
+                  {/* Clickable Banner Overlay if CTA is disabled */}
+                  {isEntireBannerClickable && slide.linkUrl && (
+                    slide.linkUrl.startsWith('http') ? (
+                      <a
+                        href={slide.linkUrl}
+                        target={slide.openInNewTab ? '_blank' : '_self'}
+                        rel={slide.openInNewTab ? 'noopener noreferrer' : undefined}
+                        className="absolute inset-0 z-20 cursor-pointer"
+                        aria-label={slide.title || 'Banner link'}
+                      />
+                    ) : (
+                      <Link
+                        to={slide.linkUrl}
+                        target={slide.openInNewTab ? '_blank' : undefined}
+                        className="absolute inset-0 z-20 cursor-pointer"
+                        aria-label={slide.title || 'Banner link'}
+                      />
+                    )
+                  )}
 
                   {/* Content Overlay */}
-                  <div className="relative z-10 p-5 sm:p-8 lg:p-12 max-w-xl space-y-2.5 sm:space-y-3.5 text-white">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[#A67732]/30 text-amber-200 border border-amber-300/30">
-                      <Sparkles className="w-3 h-3 text-[#FAD982]" />
-                      {slide.eyebrow || 'Fresh From Kerala'}
-                    </span>
-                    <h1 className="font-serif font-bold text-xl sm:text-3xl lg:text-4xl leading-tight text-white drop-shadow-sm">
-                      {slide.title}
-                    </h1>
-                    {slide.subtitle && (
-                      <p className="text-xs sm:text-sm text-white/90 line-clamp-3 sm:line-clamp-2 max-w-md leading-relaxed font-normal">
-                        {slide.subtitle}
-                      </p>
-                    )}
-                    <div className="pt-2 sm:pt-3">
-                      <Link
-                        to={slide.linkUrl || '/shop'}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
-                        aria-label={slide.ctaText || 'Shop Now'}
-                      >
-                        <span>{slide.ctaText || 'Shop Now'}</span>
-                        <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                      </Link>
+                  {!isImageOnly && (
+                    <div className="relative z-10 p-5 sm:p-8 lg:p-12 max-w-xl space-y-2.5 sm:space-y-3.5 text-white">
+                      {slide.eyebrow && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-[#A67732]/30 text-amber-200 border border-amber-300/30">
+                          <Sparkles className="w-3 h-3 text-[#FAD982]" />
+                          {slide.eyebrow}
+                        </span>
+                      )}
+                      {slide.title && (
+                        <h1 className="font-serif font-bold text-xl sm:text-3xl lg:text-4xl leading-tight text-white drop-shadow-sm">
+                          {slide.title}
+                        </h1>
+                      )}
+                      {slide.subtitle && (
+                        <p className="text-xs sm:text-sm text-white/90 line-clamp-3 sm:line-clamp-2 max-w-md leading-relaxed font-normal">
+                          {slide.subtitle}
+                        </p>
+                      )}
+                      {showCta && (
+                        <div className="pt-2 sm:pt-3">
+                          {slide.linkUrl?.startsWith('http') ? (
+                            <a
+                              href={slide.linkUrl}
+                              target={slide.openInNewTab ? '_blank' : '_self'}
+                              rel={slide.openInNewTab ? 'noopener noreferrer' : undefined}
+                              className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                              aria-label={slide.ctaText || 'Shop Now'}
+                            >
+                              <span>{slide.ctaText || 'Shop Now'}</span>
+                              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                            </a>
+                          ) : (
+                            <Link
+                              to={slide.linkUrl || '/shop'}
+                              target={slide.openInNewTab ? '_blank' : undefined}
+                              className="inline-flex items-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                              aria-label={slide.ctaText || 'Shop Now'}
+                            >
+                              <span>{slide.ctaText || 'Shop Now'}</span>
+                              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}
@@ -855,8 +905,11 @@ export const HomePage: React.FC = () => {
         {/* ── SECTION 7: Bulk Orders / Corporate Gifting CTA — Admin CMS Managed ── */}
         {showCorporateGifting && corporateGiftingSection && (
           <section
-            style={{ color: corporateGiftingSection.textColor || '#FFFFFF' }}
-            className={`rounded-2xl sm:rounded-3xl ${getGiftingBgClass(corporateGiftingSection.bgPreset)} p-5 sm:p-8 lg:p-10 shadow-sm border border-emerald-950/40 overflow-hidden relative`}
+            style={{
+              backgroundColor: corporateGiftingSection.bgPreset?.startsWith('#') ? corporateGiftingSection.bgPreset : undefined,
+              color: corporateGiftingSection.textColor || '#FFFFFF'
+            }}
+            className={`rounded-2xl sm:rounded-3xl ${!corporateGiftingSection.bgPreset?.startsWith('#') ? getGiftingBgClass(corporateGiftingSection.bgPreset) : ''} p-5 sm:p-8 lg:p-10 shadow-sm border border-emerald-950/40 overflow-hidden relative`}
           >
             {/* Decorative gold accent */}
             <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#A67732]/15 blur-3xl pointer-events-none" />

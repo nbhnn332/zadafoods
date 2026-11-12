@@ -362,14 +362,14 @@ export interface ComboBundle {
 
 export interface HomepageBanner {
   id: string;
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
   imageUrl?: string;
   backgroundColor?: string;
   textColor?: string;
   eyebrow?: string;
   ctaText?: string;
-  linkUrl: string;
+  linkUrl?: string;
   displayOrder: number;
   isActive: boolean;
   startDate?: string;
@@ -377,6 +377,31 @@ export interface HomepageBanner {
   createdAt?: string;
   deviceTarget?: 'all' | 'desktop' | 'mobile';
   badgeText?: string;
+  showCta?: boolean;
+  isClickable?: boolean;
+  openInNewTab?: boolean;
+}
+
+export type CleanupCategory =
+  | 'ORDERS_ALL'
+  | 'ORDERS_CANCELLED'
+  | 'ORDERS_PENDING'
+  | 'ORDERS_COMPLETED'
+  | 'BULK_ENQUIRIES'
+  | 'REVIEWS'
+  | 'AUDIT_LOGS'
+  | 'EXPIRED_COUPONS'
+  | 'TEMPORARY_CARTS';
+
+export interface CleanupCategorySummary {
+  category: CleanupCategory;
+  name: string;
+  count: number;
+  description: string;
+  sampleRecords?: Array<Record<string, any>>;
+  status?: 'PENDING' | 'SUCCESS' | 'FAILED' | 'SKIPPED';
+  deletedCount?: number;
+  error?: string;
 }
 
 export interface HandpickedSectionConfig {

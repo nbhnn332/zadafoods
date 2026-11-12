@@ -357,9 +357,9 @@ export const Header: React.FC<HeaderProps> = ({
                 className="hidden sm:flex items-center gap-2 pl-2 border-l border-border-subtle text-xs font-semibold text-content-primary hover:text-brand-primary transition-colors"
               >
                 <div className="w-7 h-7 rounded-full bg-brand-secondary text-white flex items-center justify-center font-bold text-xs">
-                  {user ? user.fullName[0].toUpperCase() : <User className="w-3.5 h-3.5 text-white" />}
+                  {user ? (user.fullName ? user.fullName[0].toUpperCase() : (user.email ? user.email[0].toUpperCase() : 'U')) : <User className="w-3.5 h-3.5 text-white" />}
                 </div>
-                <span className="hidden xl:inline">{user ? user.fullName.split(' ')[0] : 'Sign In'}</span>
+                <span className="hidden xl:inline">{user ? (user.fullName ? user.fullName.split(' ')[0] : (user.email ? user.email.split('@')[0] : 'Account')) : 'Sign In'}</span>
               </Link>
             </div>
           </div>

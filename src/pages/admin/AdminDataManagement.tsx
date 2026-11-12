@@ -7,28 +7,116 @@ import {
   AlertTriangle,
   CheckCircle2,
   Search,
-  KeyRound
+  KeyRound,
+  Download,
+  Eye,
+  X,
+  ShieldCheck,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { SupabaseDataService } from '../../lib/commerce/supabaseDataService';
 import { supabase } from '../../lib/supabase';
+import { CleanupCategory, CleanupCategorySummary } from '../../types';
 
-type CleanupScope = 'ORDERS' | 'TEST_CHECKOUTS' | 'ENQUIRIES';
+interface CategoryOption {
+  id: CleanupCategory;
+  name: string;
+  group: 'Orders' | 'Operations' | 'Marketing' | 'System';
+  description: string;
+  dangerLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+const CLEANUP_OPTIONS: CategoryOption[] = [
+  {
+    id: 'ORDERS_CANCELLED',
+    name: 'Cancelled & Failed Orders',
+    group: 'Orders',
+    description: 'Orders with payment_status=FAILED or fulfillment_status=CANCELLED. Safely cascades to order_items.',
+    dangerLevel: 'LOW'
+  },
+  {
+    id: 'ORDERS_PENDING',
+    name: 'Pending & Processing Orders',
+    group: 'Orders',
+    description: 'Unfulfilled test orders. Cascades to associated items and status logs.',
+    dangerLevel: 'MEDIUM'
+  },
+  {
+    id: 'ORDERS_COMPLETED',
+    name: 'Delivered / Completed Orders',
+    group: 'Orders',
+    description: 'Historical delivered orders. Preserves customer profiles and inventory counts.',
+    dangerLevel: 'HIGH'
+  },
+  {
+    id: 'ORDERS_ALL',
+    name: 'All Orders (Full Order Cleanup)',
+    group: 'Orders',
+    description: 'All orders in date range. Cascades to order_items and order_status_history.',
+    dangerLevel: 'HIGH'
+  },
+  {
+    id: 'BULK_ENQUIRIES',
+    name: 'Bulk Corporate Enquiries',
+    group: 'Operations',
+    description: 'Corporate gifting and wedding bulk order enquiry submissions.',
+    dangerLevel: 'LOW'
+  },
+  {
+    id: 'REVIEWS',
+    name: 'Customer Product Reviews',
+    group: 'Marketing',
+    description: 'Submitted customer reviews and ratings in the reviews table.',
+    dangerLevel: 'MEDIUM'
+  },
+  {
+    id: 'AUDIT_LOGS',
+    name: 'Administrative Audit Logs',
+    group: 'System',
+    description: 'Prunes admin_audit_logs entries outside retention period.',
+    dangerLevel: 'LOW'
+  },
+  {
+    id: 'EXPIRED_COUPONS',
+    name: 'Expired Promotion Coupons',
+    group: 'Marketing',
+    description: 'Coupons with valid_until past current time. Active coupons remain untouched.',
+    dangerLevel: 'LOW'
+  },
+  {
+    id: 'TEMPORARY_CARTS',
+    name: 'Abandoned & Temporary Carts',
+    group: 'Operations',
+    description: 'Temporary customer and guest cart sessions and cart_items.',
+    dangerLevel: 'LOW'
+  }
+];
 
 export const AdminDataManagement: React.FC = () => {
   const { user, isSuperAdmin } = useAuth();
   const { showToast } = useToast();
 
-  const [selectedScope, setSelectedScope] = useState<CleanupScope>('ORDERS');
-  const [beforeDate, setBeforeDate] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<CleanupCategory[]>([
+    'ORDERS_CANCELLED',
+    'TEMPORARY_CARTS'
+  ]);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [isRunningPreview, setIsRunningPreview] = useState(false);
+
   const [previewResult, setPreviewResult] = useState<{
     affectedRecords: number;
     details: string;
-    scope: CleanupScope;
-    dateUsed?: string;
+    breakdown: CleanupCategorySummary[];
+    categories: CleanupCategory[];
+    startDate?: string;
+    endDate?: string;
   } | null>(null);
+
+  // Sample inspection drawer/modal
+  const [inspectingCategory, setInspectingCategory] = useState<CleanupCategorySummary | null>(null);
 
   // Destructive Confirmation Modal
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -50,24 +138,52 @@ export const AdminDataManagement: React.FC = () => {
     );
   }
 
-  const expectedTypedPhrase =
-    selectedScope === 'ENQUIRIES' ? 'DELETE ELIGIBLE ENQUIRIES' : 'DELETE ELIGIBLE ORDERS';
+  const expectedTypedPhrase = 'CONFIRM BULK CLEANUP';
+
+  const handleToggleCategory = (catId: CleanupCategory) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(catId)) {
+        return prev.filter((c) => c !== catId);
+      } else {
+        return [...prev, catId];
+      }
+    });
+    setPreviewResult(null);
+  };
+
+  const handleSelectAll = () => {
+    setSelectedCategories(CLEANUP_OPTIONS.map((c) => c.id));
+    setPreviewResult(null);
+  };
+
+  const handleClearAll = () => {
+    setSelectedCategories([]);
+    setPreviewResult(null);
+  };
 
   const handleRunPreview = async () => {
+    if (selectedCategories.length === 0) {
+      showToast('Selection Required', 'Please select at least one record category to evaluate.', 'warning');
+      return;
+    }
+
     setIsRunningPreview(true);
     setPreviewResult(null);
 
-    const dateFilter = beforeDate ? new Date(beforeDate).toISOString() : undefined;
+    const startIso = startDate ? new Date(startDate).toISOString() : undefined;
+    const endIso = endDate ? new Date(endDate + 'T23:59:59.999Z').toISOString() : undefined;
+
     const res = await SupabaseDataService.cleanupOperationalRecords({
-      scope: selectedScope,
-      beforeDate: dateFilter,
+      categories: selectedCategories,
+      startDate: startIso,
+      endDate: endIso,
       dryRun: true,
       adminEmail: user?.email || 'superadmin@zadafoods.com'
     });
 
     setIsRunningPreview(false);
     if (res.error) {
-      showToast('Preview Notice', res.error, 'warning');
+      showToast('Preview Error', res.error, 'error');
       return;
     }
 
@@ -75,11 +191,41 @@ export const AdminDataManagement: React.FC = () => {
       setPreviewResult({
         affectedRecords: res.data.affectedRecords,
         details: res.data.details,
-        scope: selectedScope,
-        dateUsed: beforeDate || 'All historical records'
+        breakdown: res.data.breakdown as CleanupCategorySummary[],
+        categories: [...selectedCategories],
+        startDate: startDate || 'Beginning of time',
+        endDate: endDate || 'Present'
       });
-      showToast('Dry-Run Completed', `Preview found ${res.data.affectedRecords} matching records.`, 'info');
+      showToast(
+        'Dry-Run Completed',
+        `Evaluated ${selectedCategories.length} categories. Found ${res.data.affectedRecords} matching records. Zero database modifications made.`,
+        'info'
+      );
     }
+  };
+
+  const handleExportCsv = () => {
+    if (!previewResult) return;
+    const rows = [
+      ['Category ID', 'Category Name', 'Matching Records', 'Status', 'Description'],
+      ...previewResult.breakdown.map((b) => [
+        b.category,
+        `"${b.name}"`,
+        b.count,
+        b.status || 'PENDING',
+        `"${b.description.replace(/"/g, '""')}"`
+      ])
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `zada_bulk_cleanup_preview_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Export Ready', 'Preview summary downloaded as CSV.', 'success');
   };
 
   const handleOpenConfirmModal = () => {
@@ -114,7 +260,6 @@ export const AdminDataManagement: React.FC = () => {
 
     try {
       // 1. Fresh cryptographic re-authentication against Supabase Auth directly.
-      // Strictly zero hardcoded passwords!
       const currentEmail = user?.email || 'superadmin@zadafoods.com';
       const { data: authData, error: aErr } = await supabase.auth.signInWithPassword({
         email: currentEmail,
@@ -128,10 +273,13 @@ export const AdminDataManagement: React.FC = () => {
       }
 
       // 2. Execute deletion safely in cascade
-      const dateFilter = beforeDate ? new Date(beforeDate).toISOString() : undefined;
+      const startIso = startDate ? new Date(startDate).toISOString() : undefined;
+      const endIso = endDate ? new Date(endDate + 'T23:59:59.999Z').toISOString() : undefined;
+
       const res = await SupabaseDataService.cleanupOperationalRecords({
-        scope: selectedScope,
-        beforeDate: dateFilter,
+        categories: selectedCategories,
+        startDate: startIso,
+        endDate: endIso,
         dryRun: false,
         adminEmail: currentEmail
       });
@@ -146,8 +294,8 @@ export const AdminDataManagement: React.FC = () => {
       setIsConfirmModalOpen(false);
       setPreviewResult(null);
       showToast(
-        'Cleanup Completed',
-        `Successfully cleaned up operational records: ${res.data?.affectedRecords} records deleted.`,
+        'Bulk Cleanup Completed',
+        `Successfully deleted ${res.data?.affectedRecords} records across selected categories. Logged to admin audit logs.`,
         'success'
       );
     } catch (err: any) {
@@ -162,137 +310,310 @@ export const AdminDataManagement: React.FC = () => {
       <div>
         <h1 className="text-xl sm:text-2xl font-serif font-bold text-content-primary flex items-center gap-2">
           <Trash2 className="w-5 h-5 text-rose-600" />
-          <span>Secure Bulk Data Management</span>
+          <span>Admin-Controlled Bulk Data Management</span>
         </h1>
         <p className="text-xs text-content-muted mt-1">
-          Safely purge operational and test records after QA or when business records are no longer required.
-          Products, categories, inventory, customer profiles, and admin accounts are strictly safeguarded and cannot be deleted.
+          Safely manage and purge operational, staging, and expired test records with strict guardrails.
+          Core business assets (products, categories, inventory, customer profiles, payment settings) are permanently protected.
         </p>
       </div>
 
-      {/* Safety Notice Banner */}
-      <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
-        <div className="flex items-center gap-2 font-bold text-amber-950">
-          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-          <span>Strict Safety Guardrails &amp; Two-Step Verification</span>
-        </div>
-        <p className="text-[11px] leading-relaxed">
-          The default action is always <strong>Dry-Run Preview</strong>. Zero records will be deleted without a fresh Supabase password re-authentication, explicit typed phrase verification, and second confirmation checkbox.
-        </p>
-      </div>
-
-      {/* Configuration Card */}
-      <div className="bg-white rounded-card border border-border-subtle p-5 shadow-2xs space-y-4">
-        <h2 className="font-bold text-sm text-content-primary">Cleanup Configuration</h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Strict Protection Callout Banner */}
+      <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-950 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
           <div>
-            <label className="block text-xs font-semibold text-content-primary mb-1">
-              Select Record Scope *
-            </label>
-            <select
-              value={selectedScope}
-              onChange={(e) => {
-                setSelectedScope(e.target.value as CleanupScope);
-                setPreviewResult(null);
-              }}
-              className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-white font-medium focus:ring-1 focus:ring-brand-primary"
-            >
-              <option value="ORDERS">Test &amp; Operational Orders (with cascading Order Items)</option>
-              <option value="TEST_CHECKOUTS">Cancelled &amp; Failed Checkout Records Only</option>
-              <option value="ENQUIRIES">Bulk Enquiries &amp; Contact Inquiries</option>
-            </select>
-            <p className="text-[10px] text-content-muted mt-1">
-              {selectedScope === 'ORDERS' && 'Targets orders and deletes associated order items and status history. Preserves customer profiles and inventory counts.'}
-              {selectedScope === 'TEST_CHECKOUTS' && 'Targets only abandoned or failed test checkouts. Leaves valid completed orders untouched.'}
-              {selectedScope === 'ENQUIRIES' && 'Targets corporate and wedding bulk order inquiries.'}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-content-primary mb-1 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-content-muted" />
-              <span>Created On or Before (Optional)</span>
-            </label>
-            <input
-              type="date"
-              value={beforeDate}
-              onChange={(e) => {
-                setBeforeDate(e.target.value);
-                setPreviewResult(null);
-              }}
-              className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-white font-medium focus:ring-1 focus:ring-brand-primary"
-            />
-            <p className="text-[10px] text-content-muted mt-1">
-              Leave blank to evaluate all historical records within the selected scope.
-            </p>
-          </div>
-        </div>
-
-        {/* Action Button: Run Dry-Run Preview */}
-        <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border-subtle">
-          <button
-            onClick={handleRunPreview}
-            disabled={isRunningPreview}
-            className="px-4 py-2 rounded-btn bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-          >
-            <Search className="w-4 h-4" />
-            <span>{isRunningPreview ? 'Analyzing Records...' : '1. Run Dry-Run Preview (Safe)'}</span>
-          </button>
-
-          {previewResult && previewResult.affectedRecords > 0 && (
-            <button
-              onClick={handleOpenConfirmModal}
-              className="px-4 py-2 rounded-btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Lock className="w-4 h-4" />
-              <span>2. Proceed to Secure Cleanup ({previewResult.affectedRecords} Records)</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Preview Results Table */}
-      {previewResult && (
-        <div className="bg-white rounded-card border border-border-subtle p-5 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-content-primary flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Dry-Run Preview Result</span>
-            </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-              Zero Changes Made
+            <span className="font-bold block">Protected Core Entities (Strict Exemption)</span>
+            <span className="text-[11px] text-emerald-800">
+              Products, Product Variants, Categories, Inventory Batches, Customer Accounts, Store &amp; Payment Settings are strictly exempt from bulk cleanup.
             </span>
           </div>
+        </div>
+        <span className="px-2.5 py-1 rounded bg-white text-emerald-700 font-mono text-[10px] font-bold border border-emerald-200 shrink-0">
+          Immutable Protection ON
+        </span>
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-canvas-subtle p-3.5 rounded-xl border border-border-subtle">
+      {/* Multi-Category Selection Card */}
+      <div className="bg-white rounded-card border border-border-subtle p-5 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border-subtle pb-3">
+          <div>
+            <h2 className="font-bold text-sm text-content-primary flex items-center gap-2">
+              <Filter className="w-4 h-4 text-brand-primary" />
+              <span>1. Select Operational Categories to Evaluate</span>
+            </h2>
+            <p className="text-[11px] text-content-muted">
+              Choose one or multiple operational record categories for cleanup evaluation.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className="px-2.5 py-1 rounded text-[11px] font-semibold text-brand-primary hover:bg-canvas-subtle"
+            >
+              Select All
+            </button>
+            <span className="text-border-subtle">|</span>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="px-2.5 py-1 rounded text-[11px] font-semibold text-content-muted hover:text-content-primary"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        {/* Categories Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {CLEANUP_OPTIONS.map((opt) => {
+            const isSelected = selectedCategories.includes(opt.id);
+            return (
+              <label
+                key={opt.id}
+                className={`p-3 rounded-xl border transition-all cursor-pointer select-none flex items-start gap-2.5 ${
+                  isSelected
+                    ? 'border-brand-primary bg-amber-50/40 shadow-xs'
+                    : 'border-border-subtle bg-white hover:bg-canvas-subtle/40'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => handleToggleCategory(opt.id)}
+                  className="mt-0.5 rounded text-brand-primary focus:ring-brand-primary shrink-0"
+                />
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-xs text-content-primary">{opt.name}</span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
+                        opt.dangerLevel === 'HIGH'
+                          ? 'bg-rose-100 text-rose-700'
+                          : opt.dangerLevel === 'MEDIUM'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {opt.dangerLevel}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-content-muted leading-relaxed line-clamp-2">
+                    {opt.description}
+                  </p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Date Range Filters */}
+        <div className="p-4 bg-canvas-subtle rounded-xl border border-border-subtle space-y-2">
+          <label className="block text-xs font-bold text-content-primary flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-brand-primary" />
+            <span>2. Optional Date Range Filter</span>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
-              <span className="text-content-muted block text-[10px]">Target Scope</span>
-              <span className="font-bold text-content-primary">{previewResult.scope}</span>
+              <label className="block text-[11px] text-content-secondary mb-1">Created On or After</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setPreviewResult(null);
+                }}
+                className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-white font-medium outline-none"
+              />
             </div>
             <div>
-              <span className="text-content-muted block text-[10px]">Date Range</span>
-              <span className="font-bold text-content-primary">{previewResult.dateUsed}</span>
+              <label className="block text-[11px] text-content-secondary mb-1">Created On or Before</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setPreviewResult(null);
+                }}
+                className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-white font-medium outline-none"
+              />
             </div>
-            <div>
-              <span className="text-content-muted block text-[10px]">Eligible Records</span>
-              <span className="font-bold text-rose-700 text-sm">{previewResult.affectedRecords}</span>
+          </div>
+          <p className="text-[10px] text-content-muted">
+            Leave dates blank to evaluate all historical records in the selected categories.
+          </p>
+        </div>
+
+        {/* Action Controls */}
+        <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border-subtle">
+          <button
+            type="button"
+            onClick={handleRunPreview}
+            disabled={isRunningPreview || selectedCategories.length === 0}
+            className="px-4 py-2.5 rounded-btn bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+          >
+            <Search className="w-4 h-4" />
+            <span>
+              {isRunningPreview
+                ? 'Evaluating Selected Categories...'
+                : `1. Run Dry-Run Preview (${selectedCategories.length} Categories)`}
+            </span>
+          </button>
+
+          {previewResult && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-3.5 py-2.5 rounded-btn bg-canvas-subtle border border-border-subtle text-content-secondary hover:text-content-primary text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export CSV</span>
+              </button>
+
+              {previewResult.affectedRecords > 0 && (
+                <button
+                  type="button"
+                  onClick={handleOpenConfirmModal}
+                  className="px-4 py-2.5 rounded-btn bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>2. Proceed to Secure Cleanup ({previewResult.affectedRecords} Records)</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Preview Summary Table */}
+      {previewResult && (
+        <div className="bg-white rounded-card border border-border-subtle p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <div>
+                <h3 className="font-bold text-sm text-content-primary">
+                  Dry-Run Preview Breakdown
+                </h3>
+                <p className="text-[11px] text-content-muted">
+                  Date Range: {previewResult.startDate} → {previewResult.endDate}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                Safe Mode • Zero Changes Made
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                Total: {previewResult.affectedRecords} Records
+              </span>
             </div>
           </div>
 
-          <p className="text-xs text-content-secondary leading-relaxed">
-            {previewResult.details}
-          </p>
-
-          {previewResult.affectedRecords === 0 && (
-            <div className="p-3 bg-stone-50 rounded-lg text-stone-600 text-xs text-center">
-              No records found matching your selected criteria. Your database is already clean.
-            </div>
-          )}
+          {/* Breakdown Table */}
+          <div className="overflow-x-auto rounded-xl border border-border-subtle">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-canvas-subtle text-content-secondary font-bold border-b border-border-subtle">
+                <tr>
+                  <th className="py-2.5 px-3.5">Category</th>
+                  <th className="py-2.5 px-3.5">Scope Description</th>
+                  <th className="py-2.5 px-3.5 text-right">Matching Records</th>
+                  <th className="py-2.5 px-3.5 text-center">Sample Inspection</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {previewResult.breakdown.map((row) => (
+                  <tr key={row.category} className="hover:bg-canvas-subtle/30 transition-colors">
+                    <td className="py-2.5 px-3.5 font-bold text-content-primary">
+                      {row.name}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-content-muted text-[11px]">
+                      {row.description}
+                    </td>
+                    <td className="py-2.5 px-3.5 text-right font-mono font-bold">
+                      <span className={row.count > 0 ? 'text-rose-600' : 'text-stone-400'}>
+                        {row.count}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-center">
+                      {row.sampleRecords && row.sampleRecords.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setInspectingCategory(row)}
+                          className="px-2.5 py-1 rounded bg-canvas-subtle border border-border-subtle hover:bg-white text-content-secondary font-medium text-[10px] inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3 h-3 text-brand-primary" />
+                          <span>Inspect ({row.sampleRecords.length})</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-content-muted font-mono">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* Destructive Confirmation Modal */}
+      {/* Sample Inspection Modal */}
+      {inspectingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-card border border-border-subtle max-w-lg w-full p-5 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-content-primary">
+                  Sample Inspection: {inspectingCategory.name}
+                </h3>
+                <p className="text-[11px] text-content-muted">
+                  First 5 sample records identified for cleanup evaluation
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectingCategory(null)}
+                className="p-1 rounded text-content-muted hover:text-content-primary"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {inspectingCategory.sampleRecords?.map((sample, idx) => (
+                <div
+                  key={sample.id || idx}
+                  className="p-3 rounded-lg border border-border-subtle bg-canvas-subtle space-y-1 text-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-content-primary font-mono text-[11px]">
+                      {sample.reference}
+                    </span>
+                    <span className="text-[10px] text-content-muted">
+                      {sample.createdAt ? new Date(sample.createdAt).toLocaleString() : 'N/A'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-content-secondary">{sample.details}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={() => setInspectingCategory(null)}
+                className="px-3.5 py-1.5 rounded-btn bg-canvas-subtle border border-border-subtle text-xs font-semibold text-content-secondary hover:bg-canvas"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Two-Step Destructive Confirmation Modal */}
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white rounded-card border border-rose-300 max-w-lg w-full p-6 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
@@ -305,7 +626,7 @@ export const AdminDataManagement: React.FC = () => {
                   Confirm Permanent Record Deletion
                 </h3>
                 <p className="text-xs text-rose-600 font-semibold mt-0.5">
-                  Scope: {selectedScope} • {previewResult?.affectedRecords} records will be purged
+                  {previewResult?.affectedRecords} records across {selectedCategories.length} categories will be permanently purged
                 </p>
               </div>
             </div>
@@ -360,7 +681,7 @@ export const AdminDataManagement: React.FC = () => {
                   className="mt-0.5 rounded text-rose-600 focus:ring-rose-500"
                 />
                 <span>
-                  I understand that this action is irreversible and will permanently delete <strong>{previewResult?.affectedRecords} records</strong> and cascade to associated order items.
+                  I understand that this action is irreversible and will permanently delete <strong>{previewResult?.affectedRecords} records</strong> and cascade to associated dependencies.
                 </span>
               </label>
 

@@ -42,6 +42,108 @@ export const isThemeWithinSchedule = (theme: FestivalTheme, currentDate = new Da
   return true;
 };
 
+export const applyThemeToDocument = (theme: FestivalTheme | null, isFestivalActive: boolean) => {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+
+  if (!isFestivalActive || !theme || theme.preset === 'default') {
+    // Cleanly restore default ZaDa Foods brand tokens
+    root.style.removeProperty('--brand-primary');
+    root.style.removeProperty('--brand-primary-hover');
+    root.style.removeProperty('--brand-secondary');
+    root.style.removeProperty('--brand-deep');
+    root.style.removeProperty('--brand-gold');
+    root.style.removeProperty('--brand-muted-gold');
+    root.style.removeProperty('--canvas');
+    root.style.removeProperty('--canvas-subtle');
+    root.style.removeProperty('--border-subtle');
+    root.removeAttribute('data-festival-theme');
+    root.removeAttribute('data-festival-intensity');
+    document.body.removeAttribute('data-festival-theme');
+    document.body.removeAttribute('data-festival-intensity');
+    return;
+  }
+
+  // Active festival theme: set data attributes on root and body
+  root.setAttribute('data-festival-theme', theme.preset);
+  root.setAttribute('data-festival-intensity', theme.intensity || 'rich');
+  document.body.setAttribute('data-festival-theme', theme.preset);
+  document.body.setAttribute('data-festival-intensity', theme.intensity || 'rich');
+
+  // Compute theme colors
+  let primary = theme.accentColor || '#A67732';
+  let primaryHover = theme.accentColor || '#8E6325';
+  let secondary = '#072C20';
+  let deep = '#031D16';
+  let gold = theme.accentColor || '#A67732';
+  let mutedGold = theme.badgeColor || '#D4B574';
+  let canvas = theme.atmosphere?.pageBackground || '#FBF8F4';
+  let canvasSubtle = theme.atmosphere?.sectionBackground || '#F7F3EB';
+  let border = theme.atmosphere?.borderColor || '#EAE3D6';
+
+  if (theme.preset === 'onam') {
+    primary = '#CA8A04';
+    primaryHover = '#A16207';
+    secondary = '#1E293B';
+    deep = '#0F172A';
+    gold = '#EAB308';
+    mutedGold = '#FEF08A';
+    canvas = theme.atmosphere?.pageBackground || '#FFFDF5';
+    canvasSubtle = '#FEFCE8';
+    border = '#FDE047';
+  } else if (theme.preset === 'eid') {
+    primary = '#047857';
+    primaryHover = '#065F46';
+    secondary = '#064E3B';
+    deep = '#022C22';
+    gold = '#10B981';
+    mutedGold = '#A7F3D0';
+    canvas = theme.atmosphere?.pageBackground || '#F4FAF7';
+    canvasSubtle = '#ECFDF5';
+    border = '#A7F3D0';
+  } else if (theme.preset === 'diwali') {
+    primary = '#D97706';
+    primaryHover = '#B45309';
+    secondary = '#1C1917';
+    deep = '#0C0A09';
+    gold = '#F59E0B';
+    mutedGold = '#FDE68A';
+    canvas = theme.atmosphere?.pageBackground || '#FDFBF7';
+    canvasSubtle = '#FFFBEB';
+    border = '#FCD34D';
+  } else if (theme.preset === 'christmas') {
+    primary = '#15803D';
+    primaryHover = '#166534';
+    secondary = '#0F291E';
+    deep = '#051B12';
+    gold = '#22C55E';
+    mutedGold = '#BBF7D0';
+    canvas = theme.atmosphere?.pageBackground || '#FAFAF9';
+    canvasSubtle = '#F0FDF4';
+    border = '#86EFAC';
+  } else if (theme.preset === 'new_year') {
+    primary = '#B45309';
+    primaryHover = '#92400E';
+    secondary = '#1C1917';
+    deep = '#0C0A09';
+    gold = '#F59E0B';
+    mutedGold = '#FEF3C7';
+    canvas = theme.atmosphere?.pageBackground || '#FDFBF7';
+    canvasSubtle = '#FFFBEB';
+    border = '#FDE68A';
+  }
+
+  root.style.setProperty('--brand-primary', primary);
+  root.style.setProperty('--brand-primary-hover', primaryHover);
+  root.style.setProperty('--brand-secondary', secondary);
+  root.style.setProperty('--brand-deep', deep);
+  root.style.setProperty('--brand-gold', gold);
+  root.style.setProperty('--brand-muted-gold', mutedGold);
+  root.style.setProperty('--canvas', canvas);
+  root.style.setProperty('--canvas-subtle', canvasSubtle);
+  root.style.setProperty('--border-subtle', border);
+};
+
 export const FestivalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
   const [themes, setThemes] = useState<FestivalTheme[]>(() => {
@@ -125,6 +227,11 @@ export const FestivalProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (previewTheme) return true;
     return isThemeWithinSchedule(effectiveTheme);
   }, [effectiveTheme, previewTheme]);
+
+  // Apply complete visual transformation across document root whenever effective theme changes
+  useEffect(() => {
+    applyThemeToDocument(effectiveTheme, isFestivalActive);
+  }, [effectiveTheme, isFestivalActive]);
 
   // Activate a festival theme (deactivates others)
   const activateTheme = async (themeId: string): Promise<{ success: boolean; error?: string }> => {
@@ -256,13 +363,46 @@ export const FestivalProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  // One-click restore Default ZaDa Theme
+  // One-click authoritative restore Default ZaDa Brand Theme
   const resetToDefault = async (): Promise<{ success: boolean; error?: string }> => {
-    const defaultTheme = themes.find((t) => t.preset === 'default');
-    if (defaultTheme) {
-      return activateTheme(defaultTheme.id);
+    try {
+      // 1. Immediately deactivate all seasonal festival overrides in state
+      const updated = themes.map((t) => ({
+        ...t,
+        isActive: t.preset === 'default',
+        updatedAt: new Date().toISOString()
+      }));
+      setThemes(updated);
+      setPreviewTheme(null);
+
+      // 2. Clear stale local storage states and record default
+      try {
+        localStorage.setItem('zada_festival_themes', JSON.stringify(updated));
+        localStorage.setItem('zada_active_theme', 'theme-default');
+      } catch {}
+
+      // 3. Immediately reset document CSS variables to canonical brand defaults
+      applyThemeToDocument(null, false);
+
+      // 4. Persist to Supabase
+      await SupabaseDataService.setActiveFestivalTheme('theme-default');
+
+      // 5. Broadcast instant theme reset across all windows/tabs
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zada-theme-changed', { detail: { theme: 'default' } }));
+      }
+
+      showToast(
+        'Default Theme Restored',
+        'Clean ZaDa Foods brand theme restored and active across the storefront.',
+        'success'
+      );
+
+      return { success: true };
+    } catch (err: any) {
+      showToast('Reset Notice', err?.message || 'Error restoring default theme.', 'warning');
+      return { success: false, error: err?.message };
     }
-    return { success: false, error: 'Default theme preset missing' };
   };
 
   return (

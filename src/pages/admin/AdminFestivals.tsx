@@ -3,6 +3,7 @@ import {
   Sparkles,
   Calendar,
   Check,
+  CheckCircle2,
   Eye,
   RotateCcw,
   Plus,
@@ -51,6 +52,60 @@ export const AdminFestivals: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'visuals' | 'badges' | 'promotions' | 'popup'>('visuals');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  const [isResetConfirmModalOpen, setIsResetConfirmModalOpen] = useState(false);
+  const [isResettingDefault, setIsResettingDefault] = useState(false);
+
+  // Festival Promotional Artwork Direct URL Validation
+  const [artStatus, setArtStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [artDimensions, setArtDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [artErrorMsg, setArtErrorMsg] = useState('');
+  const [artRetryKey, setArtRetryKey] = useState(0);
+
+  React.useEffect(() => {
+    const trimmed = (editingTheme.promotionalImageUrl || '').trim().replace(/^["']|["']$/g, '');
+    if (!trimmed) {
+      setArtStatus('idle');
+      setArtDimensions(null);
+      setArtErrorMsg('');
+      return;
+    }
+    const isValid = trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed);
+    if (!isValid) {
+      setArtStatus('invalid');
+      setArtDimensions(null);
+      setArtErrorMsg('URL must begin with https://, http://, or /assets/');
+      return;
+    }
+    setArtStatus('validating');
+    setArtErrorMsg('');
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    let isCancelled = false;
+    img.onload = () => {
+      if (!isCancelled) {
+        setArtStatus('valid');
+        setArtDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+        setArtErrorMsg('');
+      }
+    };
+    img.onerror = () => {
+      if (!isCancelled) {
+        setArtStatus('invalid');
+        setArtDimensions(null);
+        setArtErrorMsg('Unable to load festival artwork from direct URL.');
+      }
+    };
+    if (artRetryKey > 0 && /^https?:\/\//i.test(trimmed)) {
+      const sep = trimmed.includes('?') ? '&' : '?';
+      img.src = `${trimmed}${sep}_retry=${Date.now()}`;
+    } else {
+      img.src = trimmed;
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [editingTheme.promotionalImageUrl, artRetryKey]);
 
   const [isCreatingCustom, setIsCreatingCustom] = useState(false);
   const [customName, setCustomName] = useState('');
@@ -191,9 +246,7 @@ export const AdminFestivals: React.FC = () => {
           </button>
 
           <button
-            onClick={async () => {
-              await resetToDefault();
-            }}
+            onClick={() => setIsResetConfirmModalOpen(true)}
             className="px-3.5 py-2 rounded-btn bg-canvas-subtle border border-border-subtle hover:bg-canvas text-content-secondary text-xs font-medium transition-colors flex items-center gap-1.5"
             title="Deactivate all festival overlays and return to clean default ZaDa aesthetic"
           >
@@ -616,6 +669,146 @@ export const AdminFestivals: React.FC = () => {
                       onChange={(e) => setEditingTheme({ ...editingTheme, accentColor: e.target.value })}
                       className="w-6 h-6 rounded border border-border cursor-pointer"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Optional Festival Artwork (Direct URL Only — Zero File Uploads) */}
+              <div className="p-3 bg-canvas-subtle rounded-xl border border-border-subtle space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-content-primary flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
+                    <span>Festival Promotional Artwork (Direct URL Link)</span>
+                  </label>
+                  <span className="text-[10px] text-content-muted">
+                    Direct Image URL Only • No File Uploads
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    value={editingTheme.promotionalImageUrl || ''}
+                    onChange={(e) =>
+                      setEditingTheme({
+                        ...editingTheme,
+                        promotionalImageUrl: e.target.value.trim() || undefined
+                      })
+                    }
+                    placeholder="https://images.unsplash.com/... or /assets/..."
+                    className="w-full px-3 py-2 text-xs rounded-input border border-border bg-white font-mono outline-none"
+                  />
+                  {editingTheme.promotionalImageUrl && (
+                    <div className="flex items-center gap-2 pt-1 text-[11px]">
+                      {artStatus === 'valid' && (
+                        <span className="text-emerald-700 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Direct image valid ({artDimensions?.width} × {artDimensions?.height}px)
+                        </span>
+                      )}
+                      {artStatus === 'validating' && (
+                        <span className="text-stone-500 font-medium">Validating image URL...</span>
+                      )}
+                      {artStatus === 'invalid' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-rose-600 font-medium">{artErrorMsg || 'Unable to load'}</span>
+                          <button
+                            type="button"
+                            onClick={() => setArtRetryKey((k) => k + 1)}
+                            className="px-2 py-0.5 rounded bg-white border border-rose-300 text-rose-700 font-bold text-[10px]"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingTheme({
+                            ...editingTheme,
+                            promotionalImageUrl: undefined
+                          })
+                        }
+                        className="ml-auto text-[10px] text-content-muted hover:text-rose-600"
+                      >
+                        Clear Artwork
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Background & Surface Atmosphere Colors */}
+              <div className="p-3 bg-canvas-subtle rounded-xl border border-border-subtle space-y-2">
+                <label className="block text-xs font-bold text-content-primary flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-brand-primary" />
+                  <span>Background &amp; Surface Atmosphere Colors</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-[11px] text-content-secondary mb-1">Page Canvas Background</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={editingTheme.atmosphere?.pageBackground || '#FBF8F4'}
+                        onChange={(e) =>
+                          setEditingTheme({
+                            ...editingTheme,
+                            atmosphere: {
+                              ...editingTheme.atmosphere,
+                              pageBackground: e.target.value
+                            }
+                          })
+                        }
+                        className="w-7 h-7 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={editingTheme.atmosphere?.pageBackground || '#FBF8F4'}
+                        onChange={(e) =>
+                          setEditingTheme({
+                            ...editingTheme,
+                            atmosphere: {
+                              ...editingTheme.atmosphere,
+                              pageBackground: e.target.value
+                            }
+                          })
+                        }
+                        className="flex-1 px-2.5 py-1 text-xs rounded border border-border bg-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-content-secondary mb-1">Section Surface Card</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={editingTheme.atmosphere?.sectionBackground || '#F7F3EB'}
+                        onChange={(e) =>
+                          setEditingTheme({
+                            ...editingTheme,
+                            atmosphere: {
+                              ...editingTheme.atmosphere,
+                              sectionBackground: e.target.value
+                            }
+                          })
+                        }
+                        className="w-7 h-7 rounded border border-border cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={editingTheme.atmosphere?.sectionBackground || '#F7F3EB'}
+                        onChange={(e) =>
+                          setEditingTheme({
+                            ...editingTheme,
+                            atmosphere: {
+                              ...editingTheme.atmosphere,
+                              sectionBackground: e.target.value
+                            }
+                          })
+                        }
+                        className="flex-1 px-2.5 py-1 text-xs rounded border border-border bg-white font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1275,6 +1468,69 @@ export const AdminFestivals: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Authoritative Restore Default ZaDa Brand Confirmation Modal */}
+      {isResetConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-card border border-border-subtle max-w-md w-full p-6 shadow-xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3 border-b border-border-subtle pb-3">
+              <div className="p-2 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-base text-content-primary">
+                  Restore Default ZaDa Brand Identity?
+                </h3>
+                <p className="text-xs text-content-muted mt-0.5">
+                  Authoritative brand reset across storefront and database
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-content-secondary leading-relaxed bg-canvas-subtle p-3.5 rounded-xl border border-border-subtle">
+              <div className="flex items-center gap-2 font-bold text-content-primary">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Scope of Reset Action:</span>
+              </div>
+              <ul className="list-disc pl-5 space-y-1 text-[11px] text-content-muted">
+                <li>Deactivates all festival theme overlays and promotional takeovers.</li>
+                <li>Restores canonical ZaDa brand CSS custom properties (Emerald Green & Heritage Gold).</li>
+                <li>Authoritatively updates Supabase <code className="bg-white px-1 rounded font-mono">store_settings</code> and <code className="bg-white px-1 rounded font-mono">festival_themes</code>.</li>
+                <li>Immediately updates storefront across open tabs without requiring logout or hard refresh.</li>
+                <li>Remains persistently default across subsequent browser refreshes and admin sessions.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={() => setIsResetConfirmModalOpen(false)}
+                disabled={isResettingDefault}
+                className="px-3.5 py-2 rounded-btn border border-border-subtle text-xs font-semibold text-content-secondary hover:bg-canvas-subtle"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isResettingDefault}
+                onClick={async () => {
+                  setIsResettingDefault(true);
+                  try {
+                    await resetToDefault();
+                    setIsResetConfirmModalOpen(false);
+                  } finally {
+                    setIsResettingDefault(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-btn bg-brand-primary hover:bg-brand-primary-hover text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isResettingDefault ? 'animate-spin' : ''}`} />
+                <span>{isResettingDefault ? 'Restoring Default...' : 'Confirm Restore Default'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -122,6 +122,9 @@ describe('ZaDa Foods — Festival Theme & Seasonal Decoration System', () => {
       const restoreBtn = screen.getByRole('button', { name: /Restore Default ZaDa/i });
       fireEvent.click(restoreBtn);
 
+      const confirmBtn = await screen.findByRole('button', { name: /Confirm Restore Default/i });
+      fireEvent.click(confirmBtn);
+
       await waitFor(() => {
         expect(screen.getByText(/Active Standard Storefront/i)).toBeInTheDocument();
       });
