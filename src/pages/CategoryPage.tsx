@@ -1,20 +1,31 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowUpDown, Check, X, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowUpDown, Check, X, Sparkles, AlertCircle, Gift, ShoppingBag } from 'lucide-react';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 import { Footer } from '../components/Footer';
 import { ProductCard } from '../components/ProductCard';
 import { INITIAL_CATEGORIES } from '../data/mockData';
 import { useAdminData } from '../context/AdminDataContext';
+import { useCart } from '../context/CartContext';
 
 type SortOption = 'featured' | 'price-low' | 'price-high' | 'rating';
 
-export const CategoryPage: React.FC = () => {
+interface CategoryPageProps {
+  isCombosPage?: boolean;
+}
+
+export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
   const { slug } = useParams<{ slug: string }>();
+  const isCombos = isCombosPage || slug === 'combos';
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { products, categories, categoryBanners } = useAdminData();
+  const { products, categories, categoryBanners, combos } = useAdminData();
+  const { addComboToCart } = useCart();
+
+  const activeCombos = useMemo(() => {
+    return (combos || []).filter((c) => c.isActive);
+  }, [combos]);
 
   const activeCategories = categories && categories.length > 0 ? categories : INITIAL_CATEGORIES;
   const currentCategory = activeCategories.find((c) => c.slug === (slug || 'chips')) || activeCategories[0];
@@ -28,12 +39,18 @@ export const CategoryPage: React.FC = () => {
     );
   }, [categoryBanners, currentCategory]);
 
-  const bannerTitle = categoryBanner?.title || currentCategory.name;
-  const bannerSubtitle = categoryBanner?.subtitle || currentCategory.description || 'Authentic Kerala delicacies crafted with farm-fresh ingredients.';
-  const bannerEyebrow = categoryBanner?.eyebrow || "KERALA'S FAVOURITE SELECTION";
-  const bannerBgColor = categoryBanner?.backgroundColor || '#072C20';
+  const bannerTitle = isCombos
+    ? 'Signature Kerala Combos'
+    : (categoryBanner?.title || currentCategory.name);
+  const bannerSubtitle = isCombos
+    ? 'Curated gift bundles and handcrafted combinations of Kerala snacks and specialties at special value.'
+    : (categoryBanner?.subtitle || currentCategory.description || 'Authentic Kerala delicacies crafted with farm-fresh ingredients.');
+  const bannerEyebrow = isCombos
+    ? 'KERALA GIFT PACKS & VALUE COMBOS'
+    : (categoryBanner?.eyebrow || "KERALA'S FAVOURITE SELECTION");
+  const bannerBgColor = isCombos ? '#2A1D13' : (categoryBanner?.backgroundColor || '#072C20');
   const bannerTextColor = categoryBanner?.textColor || '#FFFFFF';
-  const bannerImageUrl = categoryBanner?.imageUrl || '';
+  const bannerImageUrl = isCombos ? '' : (categoryBanner?.imageUrl || '');
   
   // State for interactive catalogue toolbar
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
@@ -156,8 +173,8 @@ export const CategoryPage: React.FC = () => {
     <div className="min-h-screen bg-canvas pb-24 md:pb-16 text-content-primary">
       {/* Header with authentic mobile header matching Screen 2 and desktop header */}
       <Header
-        title={currentCategory.name}
-        subtitle={`${displayedProducts.length} ${displayedProducts.length === 1 ? 'product' : 'products'}`}
+        title={isCombos ? 'Combos & Bundles' : currentCategory.name}
+        subtitle={isCombos ? `${activeCombos.length} Value Bundles` : `${displayedProducts.length} ${displayedProducts.length === 1 ? 'product' : 'products'}`}
         showBack={true}
         showSearch={true}
       />
@@ -166,7 +183,7 @@ export const CategoryPage: React.FC = () => {
         {/* Category Navigation Bar: Obvious active states for cross-category discovery */}
         <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth" aria-label="Category navigation">
           {activeCategories.map((cat) => {
-            const isCurrent = cat.slug === currentCategory.slug;
+            const isCurrent = !isCombos && cat.slug === currentCategory.slug;
             return (
               <button
                 key={cat.id}
@@ -185,6 +202,21 @@ export const CategoryPage: React.FC = () => {
               </button>
             );
           })}
+
+          {/* Dedicated Combos & Bundles Discovery Pill */}
+          <button
+            onClick={() => {
+              navigate('/combos');
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
+              isCombos
+                ? 'bg-[#07382A] text-white shadow-xs border border-[#07382A]'
+                : 'bg-white text-content-primary border border-[#EAE5DC] hover:bg-[#F9F7F3] hover:border-brand-primary/40'
+            }`}
+            aria-current={isCombos ? 'page' : undefined}
+          >
+            🎁 Combos &amp; Bundles
+          </button>
         </section>
 
         {/* Dynamic Category Hero Banner: CSS-first styling, zero-image default, responsive */}
@@ -231,7 +263,122 @@ export const CategoryPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Subcategory Filter Pills (when category has subcategories) */}
+        {isCombos ? (
+          /* Dedicated Curated Combos Showcase View */
+          <section className="space-y-4 pt-2">
+            {activeCombos.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeCombos.map((combo) => {
+                  const savings = combo.originalPrice && combo.originalPrice > combo.comboPrice
+                    ? combo.originalPrice - combo.comboPrice
+                    : 0;
+                  const savingsPercent = combo.originalPrice && combo.originalPrice > combo.comboPrice
+                    ? Math.round((savings / combo.originalPrice) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={combo.id}
+                      className="bg-white rounded-2xl border border-[#EAE5DC] p-4 flex flex-col justify-between hover:border-[#A67732] shadow-xs hover:shadow-sm transition-all group"
+                    >
+                      <div className="space-y-3">
+                        <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-gradient-to-br from-[#072C20] to-[#0A3D2D] border border-stone-200 flex items-center justify-center">
+                          {combo.imageUrl ? (
+                            <img
+                              src={combo.imageUrl}
+                              alt={combo.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="text-center p-4">
+                              <Gift className="w-8 h-8 text-[#A67732] mx-auto mb-1.5 opacity-80" />
+                              <span className="font-serif text-sm font-bold text-stone-700">{combo.name}</span>
+                            </div>
+                          )}
+
+                          {savings > 0 && (
+                            <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white shadow-sm flex items-center gap-1">
+                              <span>SAVE ₹{savings}</span>
+                              {savingsPercent > 0 && <span className="opacity-90">({savingsPercent}% OFF)</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="font-serif font-bold text-base text-[#1C1917] group-hover:text-[#A67732] transition-colors">
+                            {combo.name}
+                          </h3>
+                          {combo.description && (
+                            <p className="text-xs text-[#71717A] line-clamp-2 mt-1 leading-relaxed">
+                              {combo.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {combo.items && combo.items.length > 0 && (
+                          <div className="space-y-1 pt-1">
+                            <span className="text-[10px] uppercase font-bold text-[#A67732] tracking-wider block">
+                              Bundle Includes ({combo.items.length} items):
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {combo.items.map((it, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] px-2 py-0.5 rounded-md bg-[#FAF6EE] text-[#1C1917] border border-[#EAE3D6] inline-flex items-center gap-1"
+                                >
+                                  <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                  <span>{it.quantity}× {it.productName || 'Item'}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-[#EAE5DC] flex items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg font-bold text-[#1C1917] font-mono">
+                              ₹{combo.comboPrice}
+                            </span>
+                            {combo.originalPrice && combo.originalPrice > combo.comboPrice && (
+                              <span className="text-xs text-[#71717A] line-through font-mono">
+                                ₹{combo.originalPrice}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-emerald-700 font-semibold block">
+                            Inclusive of all taxes
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => addComboToCart(combo, 1)}
+                          className="px-3.5 py-2 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Add to Cart</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-[#EAE5DC] p-8 text-center my-6 max-w-md mx-auto shadow-xs">
+                <Gift className="w-10 h-10 text-[#A67732] mx-auto mb-2 opacity-80" />
+                <h3 className="font-serif text-lg font-bold text-[#1C1917]">No Combos Available</h3>
+                <p className="text-xs text-[#71717A] mt-1">Check back soon for new curated regional gift packs and deals.</p>
+              </div>
+            )}
+          </section>
+        ) : (
+          <>
+            {/* Subcategory Filter Pills (when category has subcategories) */}
         {subcategoryPills.length > 1 && (
           <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth" aria-label="Subcategory filters">
             {subcategoryPills.map((pill) => {
@@ -415,6 +562,8 @@ export const CategoryPage: React.FC = () => {
               Clear All Filters
             </button>
           </section>
+        )}
+          </>
         )}
       </main>
 

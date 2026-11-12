@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useAdminData } from '../../context/AdminDataContext';
 import { Product, ProductVariant, Category } from '../../types';
+import { PointListEditor } from '../../components/PointListEditor';
+import { ImageUploadPreview } from '../../components/ImageUploadPreview';
 
 export const AdminProducts: React.FC = () => {
   const {
@@ -44,6 +46,9 @@ export const AdminProducts: React.FC = () => {
 
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [reassignCategoryId, setReassignCategoryId] = useState<string>('');
+  const [descriptionMode, setDescriptionMode] = useState<'bullets' | 'text'>('bullets');
+  const [ingredientsMode, setIngredientsMode] = useState<'bullets' | 'text'>('bullets');
 
   const handleConfirmDeleteProduct = async () => {
     if (!productToDelete) return;
@@ -199,15 +204,17 @@ export const AdminProducts: React.FC = () => {
     const matchedCat = categories.find((c) => c.id === formData.categoryId);
     const categorySlug = matchedCat ? matchedCat.slug : formData.categorySlug;
 
-    const images = [
-      {
-        id: `img-${Date.now()}`,
-        imageUrl: formData.imageUrl || 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=600&q=80',
-        altText: formData.name,
-        displayOrder: 1,
-        isPrimary: true
-      }
-    ];
+    const images = formData.imageUrl && formData.imageUrl.trim()
+      ? [
+          {
+            id: `img-${Date.now()}`,
+            imageUrl: formData.imageUrl.trim(),
+            altText: formData.name,
+            displayOrder: 1,
+            isPrimary: true
+          }
+        ]
+      : [];
 
     if (editingProduct) {
       updateProduct(editingProduct.id, {
@@ -289,7 +296,7 @@ export const AdminProducts: React.FC = () => {
       name: newCategoryName,
       slug,
       description: newCategoryDesc || `Handcrafted Kerala ${newCategoryName} made with authentic recipes.`,
-      imageUrl: newCategoryImg || 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=300&q=80',
+      imageUrl: newCategoryImg && newCategoryImg.trim() ? newCategoryImg.trim() : '/assets/cat-chips.png',
       displayOrder: categories.length + 1,
       subcategories: []
     });
@@ -570,28 +577,69 @@ export const AdminProducts: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                  placeholder="Detailed culinary and preparation story..."
-                />
+              {/* Product Description with Bullet Point List Editor & Plaintext Toggle */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-content-primary block">Description &amp; Highlights</label>
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionMode(m => m === 'bullets' ? 'text' : 'bullets')}
+                    className="text-[11px] text-brand-primary hover:underline font-semibold"
+                  >
+                    {descriptionMode === 'bullets' ? 'Switch to Raw Text' : 'Switch to Bullet Points'}
+                  </button>
+                </div>
+
+                {descriptionMode === 'bullets' ? (
+                  <PointListEditor
+                    label=""
+                    points={formData.description ? formData.description.split('\n').filter(Boolean) : ['']}
+                    onChange={(points) => setFormData({ ...formData, description: points.join('\n') })}
+                    placeholder="Type key product story / feature point..."
+                    helperText="Press Enter for next bullet point. Backspace on empty line removes it."
+                  />
+                ) : (
+                  <textarea
+                    rows={4}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono"
+                    placeholder="Detailed culinary and preparation story (each line will render as a point)..."
+                  />
+                )}
               </div>
 
               {/* Ingredients & Attributes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-content-primary block mb-1">Ingredients Declaration</label>
-                  <input
-                    type="text"
-                    value={formData.ingredients}
-                    onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
-                    className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                    placeholder="e.g. Raw Bananas, Pure Coconut Oil, Salt"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-content-primary block">Ingredients Declaration</label>
+                    <button
+                      type="button"
+                      onClick={() => setIngredientsMode(m => m === 'bullets' ? 'text' : 'bullets')}
+                      className="text-[10px] text-brand-primary hover:underline font-semibold"
+                    >
+                      {ingredientsMode === 'bullets' ? 'Plain Text' : 'Item List'}
+                    </button>
+                  </div>
+
+                  {ingredientsMode === 'bullets' ? (
+                    <PointListEditor
+                      label=""
+                      points={formData.ingredients ? formData.ingredients.split(/,\s*|\n/).filter(Boolean) : ['']}
+                      onChange={(points) => setFormData({ ...formData, ingredients: points.join(', ') })}
+                      placeholder="e.g. Raw Kerala Bananas"
+                      helperText="Enter adds ingredient item."
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.ingredients}
+                      onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
+                      className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
+                      placeholder="e.g. Raw Bananas, Pure Coconut Oil, Salt"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -605,16 +653,14 @@ export const AdminProducts: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUploadPreview
+                label="Product Showcase Image"
+                value={formData.imageUrl}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                aspectRatio="1:1"
+                placeholder="https://... or upload local file"
+                helpText="Square (1:1) PNG or WEBP recommended for authentic product cards."
+              />
 
               {/* Checkbox Flags */}
               <div className="flex flex-wrap gap-4 pt-1 border-t border-border-subtle/60">
@@ -869,12 +915,13 @@ export const AdminProducts: React.FC = () => {
                 className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
               />
 
-              <input
-                type="text"
-                placeholder="Category Image URL (https://...)"
+              <ImageUploadPreview
+                label="Category Showcase Image"
                 value={newCategoryImg}
-                onChange={(e) => setNewCategoryImg(e.target.value)}
-                className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
+                onChange={(url) => setNewCategoryImg(url)}
+                aspectRatio="1:1"
+                placeholder="https://... or upload local file"
+                helpText="Transparent circular or square category icon (e.g. /assets/cat-chips.png)."
               />
 
               <div className="flex justify-end pt-2">
@@ -962,7 +1009,7 @@ export const AdminProducts: React.FC = () => {
 
       {/* Category Delete Confirmation Modal */}
       {categoryToDelete && (() => {
-        const assignedProducts = products.filter((p) => p.categoryId === categoryToDelete.id);
+        const assignedProducts = products.filter((p) => p.categoryId === categoryToDelete.id || p.categorySlug === categoryToDelete.slug);
         const hasAssigned = assignedProducts.length > 0;
 
         return (
@@ -989,14 +1036,34 @@ export const AdminProducts: React.FC = () => {
                       Cannot delete category with assigned products.
                     </p>
                     <p className="text-[11px] leading-relaxed">
-                      There are <span className="font-bold">{assignedProducts.length} product(s)</span> currently assigned to this category. Foreign key constraints and catalog integrity prevent deleting this category until all assigned products are either reassigned to another category or deleted.
+                      There are <span className="font-bold">{assignedProducts.length} product(s)</span> currently assigned to this category. Select a target category below to automatically migrate these products, or cancel to keep the category.
                     </p>
                   </div>
 
-                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                    <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wider">Assigned Products:</p>
+                  <div className="space-y-1">
+                    <label className="font-bold text-xs text-content-primary block">
+                      Target Category for Reassignment *
+                    </label>
+                    <select
+                      value={reassignCategoryId}
+                      onChange={(e) => setReassignCategoryId(e.target.value)}
+                      className="w-full px-3 py-2 border border-border-subtle rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                    >
+                      <option value="">-- Choose destination category --</option>
+                      {categories.filter((c) => c.id !== categoryToDelete.id).map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} (/{c.slug})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 border border-border-subtle/70 rounded-lg p-2 bg-canvas-subtle/50">
+                    <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wider">
+                      Products to be reassigned ({assignedProducts.length}):
+                    </p>
                     {assignedProducts.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-canvas-subtle text-xs border border-border-subtle">
+                      <div key={p.id} className="flex items-center justify-between py-1 text-xs">
                         <span className="font-medium text-content-primary truncate">{p.name}</span>
                         <span className="text-[10px] text-content-muted font-mono">{p.slug}</span>
                       </div>
@@ -1027,13 +1094,47 @@ export const AdminProducts: React.FC = () => {
 
               <div className="flex justify-end items-center gap-2 pt-2 border-t border-border-subtle">
                 {hasAssigned ? (
-                  <button
-                    type="button"
-                    onClick={() => setCategoryToDelete(null)}
-                    className="px-4 py-2 text-xs font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary-hover shadow-sm"
-                  >
-                    Understood / Close
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategoryToDelete(null);
+                        setReassignCategoryId('');
+                      }}
+                      disabled={isDeletingCategory}
+                      className="px-4 py-2 text-xs font-semibold rounded-lg border border-border-subtle text-content-secondary hover:bg-canvas-subtle"
+                    >
+                      Understood / Close
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="reassign-and-delete-category-btn"
+                      disabled={!reassignCategoryId || isDeletingCategory}
+                      onClick={async () => {
+                        if (!reassignCategoryId) return;
+                        setIsDeletingCategory(true);
+                        try {
+                          const res = await deleteCategory(categoryToDelete.id, reassignCategoryId);
+                          if (res.success) {
+                            setCategoryToDelete(null);
+                            setReassignCategoryId('');
+                          }
+                        } finally {
+                          setIsDeletingCategory(false);
+                        }
+                      }}
+                      className="px-4 py-2 text-xs font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                    >
+                      {isDeletingCategory ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Reassigning &amp; Deleting...</span>
+                        </>
+                      ) : (
+                        <span>Reassign Products &amp; Delete Category</span>
+                      )}
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button

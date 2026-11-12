@@ -34,37 +34,23 @@ export const AccountPage: React.FC = () => {
     navigate('/login');
   };
 
-  const userName = user ? user.fullName : 'Numan Sidique';
-  const userEmail = user ? user.email : 'numan@example.com';
-  const userPhone = user?.phone || '+91 98765 43210';
-  const initialLetter = userName.charAt(0).toUpperCase();
+  const isGuest = !user;
+  const userName = user ? user.fullName : 'Guest Customer';
+  const userEmail = user ? user.email : '';
+  const userPhone = user?.phone || '';
+  const initialLetter = user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'G';
 
   // Modal states for customer actions
   const [activeModal, setActiveModal] = useState<
     'NONE' | 'ORDERS' | 'ADDRESSES' | 'WISHLIST' | 'REVIEWS' | 'PROFILE' | 'PASSWORD_RESET'
   >('NONE');
 
-  // Customer addresses state (persisted locally)
+  // Customer addresses state (strictly namespaced by user ID, never shared)
   const [savedAddresses, setSavedAddresses] = useState<Address[]>(() => {
+    if (!user?.id) return [];
     try {
-      const saved = localStorage.getItem('zada_customer_addresses');
-      return saved
-        ? JSON.parse(saved)
-        : [
-            {
-              id: 'addr-1',
-              userId: user?.id || 'cust-1',
-              tag: 'Home',
-              recipientName: userName,
-              phone: userPhone,
-              streetAddress: 'Apartment 4B, Emerald Heights, Marine Drive',
-              landmark: 'Near Calicut Beach',
-              city: 'Kozhikode',
-              state: 'Kerala',
-              postalCode: '673001',
-              isDefault: true
-            }
-          ];
+      const saved = localStorage.getItem(`zada_addresses_${user.id}`);
+      return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
@@ -72,13 +58,15 @@ export const AccountPage: React.FC = () => {
 
   const saveAddressesToStorage = (addrs: Address[]) => {
     setSavedAddresses(addrs);
-    localStorage.setItem('zada_customer_addresses', JSON.stringify(addrs));
+    if (user?.id) {
+      localStorage.setItem(`zada_addresses_${user.id}`, JSON.stringify(addrs));
+    }
   };
 
   // Address Modal Form State
   const [newAddrTag, setNewAddrTag] = useState<'Home' | 'Work' | 'Other'>('Home');
-  const [newAddrName, setNewAddrName] = useState(userName);
-  const [newAddrPhone, setNewAddrPhone] = useState(userPhone);
+  const [newAddrName, setNewAddrName] = useState(user?.fullName || '');
+  const [newAddrPhone, setNewAddrPhone] = useState(user?.phone || '');
   const [newAddrStreet, setNewAddrStreet] = useState('');
   const [newAddrLandmark, setNewAddrLandmark] = useState('');
   const [newAddrCity, setNewAddrCity] = useState('Kozhikode');
@@ -92,20 +80,26 @@ export const AccountPage: React.FC = () => {
   const [reviewText, setReviewText] = useState('');
 
   // Profile Form State
-  const [profileName, setProfileName] = useState(userName);
-  const [profilePhone, setProfilePhone] = useState(userPhone);
+  const [profileName, setProfileName] = useState(user?.fullName || '');
+  const [profilePhone, setProfilePhone] = useState(user?.phone || '');
 
-  // Customer's orders
-  const customerOrders = orders.filter(
-    (o) =>
-      o.customerEmail.toLowerCase().trim() === userEmail.toLowerCase().trim() ||
-      o.userId === user?.id
-  );
+  // Customer's orders strictly isolated to authenticated user
+  const customerOrders = user
+    ? orders.filter(
+        (o) =>
+          (user.id && o.userId === user.id) ||
+          (user.email && o.customerEmail.toLowerCase().trim() === user.email.toLowerCase().trim())
+      )
+    : [];
 
-  // Filtered customer reviews
-  const customerReviews = reviews.filter(
-    (r) => r.reviewerName.toLowerCase() === userName.toLowerCase() || r.userId === user?.id
-  );
+  // Filtered customer reviews strictly isolated
+  const customerReviews = user
+    ? reviews.filter(
+        (r) =>
+          (user.id && r.userId === user.id) ||
+          (user.fullName && r.reviewerName.toLowerCase() === user.fullName.toLowerCase())
+      )
+    : [];
 
   const handleAddAddress = (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,22 +193,42 @@ export const AccountPage: React.FC = () => {
 
       <main className="max-w-md mx-auto px-3.5 pt-2 space-y-2">
         {/* User Profile Card matching Screen 7 */}
-        <section
-          onClick={() => setActiveModal('PROFILE')}
-          className="bg-white rounded-xl p-3 border border-[#EAE5DC] shadow-sm flex items-center justify-between cursor-pointer hover:bg-[#F9F7F3] transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#072C20] text-white flex items-center justify-center font-bold text-xl font-serif shrink-0">
-              {initialLetter}
+        {user ? (
+          <section
+            onClick={() => setActiveModal('PROFILE')}
+            className="bg-white rounded-xl p-3 border border-[#EAE5DC] shadow-sm flex items-center justify-between cursor-pointer hover:bg-[#F9F7F3] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#072C20] text-white flex items-center justify-center font-bold text-xl font-serif shrink-0">
+                {initialLetter}
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-bold text-sm sm:text-base text-[#1C1917]">{userName}</p>
+                <p className="text-xs text-[#71717A]">{userEmail}</p>
+                {userPhone && <p className="text-xs text-[#71717A]">{userPhone}</p>}
+              </div>
             </div>
-            <div className="space-y-0.5">
-              <p className="font-bold text-sm sm:text-base text-[#1C1917]">{userName}</p>
-              <p className="text-xs text-[#71717A]">{userEmail}</p>
-              <p className="text-xs text-[#71717A]">{userPhone}</p>
+            <ChevronRight className="w-4 h-4 text-[#71717A]" />
+          </section>
+        ) : (
+          <section className="bg-white rounded-xl p-4 border border-[#EAE5DC] shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#FAF6EE] text-[#072C20] border border-[#EAE5DC] flex items-center justify-center font-bold shrink-0">
+                <UserIcon className="w-6 h-6 text-[#072C20]" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-bold text-sm sm:text-base text-[#1C1917]">Welcome, Guest</p>
+                <p className="text-xs text-[#71717A]">Sign in to access orders, saved addresses &amp; wishlist</p>
+              </div>
             </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-[#71717A]" />
-        </section>
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-lg bg-[#072C20] text-white text-xs font-bold hover:bg-[#051c14] transition-colors shadow-sm shrink-0"
+            >
+              Sign In
+            </Link>
+          </section>
+        )}
 
         {/* Account Menu Navigation List matching Screen 7 */}
         <section className="bg-white rounded-xl border border-[#EAE5DC] shadow-sm divide-y divide-[#EAE5DC]/60 overflow-hidden">
@@ -328,20 +342,36 @@ export const AccountPage: React.FC = () => {
             <ChevronRight className="w-3.5 h-3.5 text-[#71717A]" />
           </Link>
 
-          {/* 8. Logout */}
-          <button
-            onClick={handleLogout}
-            className="w-full text-left py-2 px-3 flex items-center justify-between hover:bg-[#F9F7F3] transition-colors"
-          >
-            <div className="flex items-center gap-2.5">
-              <LogOut className="w-4 h-4 text-[#1C1917] stroke-[1.8]" />
-              <div>
-                <p className="text-xs font-bold text-[#1C1917]">Logout</p>
-                <p className="text-[10px] text-[#71717A]">Sign out from your account</p>
+          {/* 8. Logout or Sign In */}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="w-full text-left py-2 px-3 flex items-center justify-between hover:bg-[#F9F7F3] transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <LogOut className="w-4 h-4 text-[#1C1917] stroke-[1.8]" />
+                <div>
+                  <p className="text-xs font-bold text-[#1C1917]">Logout</p>
+                  <p className="text-[10px] text-[#71717A]">Sign out from your account</p>
+                </div>
               </div>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-[#71717A]" />
-          </button>
+              <ChevronRight className="w-3.5 h-3.5 text-[#71717A]" />
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="w-full text-left py-2 px-3 flex items-center justify-between hover:bg-[#F9F7F3] transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <UserIcon className="w-4 h-4 text-brand-primary stroke-[1.8]" />
+                <div>
+                  <p className="text-xs font-bold text-brand-primary">Sign In / Register</p>
+                  <p className="text-[10px] text-[#71717A]">Access your personal account, orders &amp; addresses</p>
+                </div>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-[#71717A]" />
+            </Link>
+          )}
         </section>
 
         {/* Promo Notification Banner matching Screen 7 */}
@@ -367,46 +397,72 @@ export const AccountPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-3">
-              {customerOrders.length === 0 ? (
-                <p className="p-6 text-center text-content-muted">No orders placed yet.</p>
-              ) : (
-                customerOrders.map((ord) => (
-                  <div key={ord.id} className="p-3 border border-border-subtle rounded-card space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-content-primary">{ord.orderNumber}</span>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          ord.fulfillmentStatus === 'DELIVERED'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        {ord.fulfillmentStatus}
-                      </span>
-                    </div>
+            {isGuest ? (
+              <div className="p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-canvas-subtle mx-auto flex items-center justify-center text-content-muted">
+                  <ShoppingBag className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-content-primary">Guest Session</h3>
+                <p className="text-content-secondary text-xs">
+                  Sign in to your customer account to view your past orders, reorder favorites, and track delivery status.
+                </p>
+                <div className="pt-2 flex flex-col gap-2">
+                  <Link
+                    to="/login"
+                    className="w-full py-2 rounded-btn bg-brand-primary text-white font-bold text-center hover:bg-brand-primary-hover shadow-sm"
+                  >
+                    Sign In / Register
+                  </Link>
+                  <Link
+                    to="/order-tracking/guest"
+                    className="w-full py-2 rounded-btn border border-border-subtle text-content-secondary font-medium text-center hover:bg-canvas-subtle"
+                  >
+                    Track Guest Order with Order #
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {customerOrders.length === 0 ? (
+                  <p className="p-6 text-center text-content-muted">No orders placed yet.</p>
+                ) : (
+                  customerOrders.map((ord) => (
+                    <div key={ord.id} className="p-3 border border-border-subtle rounded-card space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-content-primary">{ord.orderNumber}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ord.fulfillmentStatus === 'DELIVERED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {ord.fulfillmentStatus}
+                        </span>
+                      </div>
 
-                    <div className="space-y-1">
-                      {ord.items.map((it, idx) => (
-                        <p key={idx} className="text-content-secondary">
-                          • {it.productName} ({it.variantWeightLabel}) x{it.quantity}
-                        </p>
-                      ))}
-                    </div>
+                      <div className="space-y-1">
+                        {ord.items.map((it, idx) => (
+                          <p key={idx} className="text-content-secondary">
+                            • {it.productName} ({it.variantWeightLabel}) x{it.quantity}
+                          </p>
+                        ))}
+                      </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
-                      <span className="font-bold text-content-primary">Total: ₹{ord.totalAmount}</span>
-                      <Link
-                        to={`/order-tracking/${ord.id}`}
-                        className="text-brand-primary font-bold hover:underline"
-                      >
-                        Track Order →
-                      </Link>
+                      <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+                        <span className="font-bold text-content-primary">Total: ₹{ord.totalAmount}</span>
+                        <Link
+                          to={`/order-tracking/${ord.id}`}
+                          className="text-brand-primary font-bold hover:underline"
+                        >
+                          Track Order →
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -424,126 +480,152 @@ export const AccountPage: React.FC = () => {
               </button>
             </div>
 
-            {/* List Saved Addresses */}
-            <div className="space-y-2.5">
-              {savedAddresses.map((addr) => (
-                <div key={addr.id} className="p-3 border border-border-subtle rounded-card relative space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-content-primary">
-                      {addr.recipientName} ({addr.tag})
-                    </span>
-                    {addr.isDefault ? (
-                      <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                        Default
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleSetDefaultAddress(addr.id)}
-                        className="text-[10px] text-brand-primary font-semibold hover:underline"
-                      >
-                        Set as Default
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-content-secondary leading-relaxed">
-                    {addr.streetAddress}{addr.landmark ? `, ${addr.landmark}` : ''}<br />
-                    {addr.city}, {addr.state} - {addr.postalCode}
-                  </p>
-                  <p className="text-[11px] text-content-muted">Phone: {addr.phone}</p>
-                  <div className="pt-1 flex justify-end">
-                    <button
-                      onClick={() => handleDeleteAddress(addr.id)}
-                      className="text-rose-500 hover:text-rose-700 text-xs font-medium"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            {isGuest ? (
+              <div className="p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-canvas-subtle mx-auto flex items-center justify-center text-content-muted">
+                  <MapPin className="w-6 h-6" />
                 </div>
-              ))}
-            </div>
-
-            {/* Add Address Form */}
-            <form onSubmit={handleAddAddress} className="pt-3 border-t border-border-subtle space-y-2.5">
-              <h3 className="font-bold text-content-primary uppercase text-[10px] tracking-wider">
-                Add New Delivery Address
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                <select
-                  value={newAddrTag}
-                  onChange={(e) => setNewAddrTag(e.target.value as any)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs bg-white font-semibold"
-                >
-                  <option value="Home">Home</option>
-                  <option value="Work">Work</option>
-                  <option value="Other">Other</option>
-                </select>
-                <input
-                  type="text"
-                  required
-                  placeholder="Recipient Name"
-                  value={newAddrName}
-                  onChange={(e) => setNewAddrName(e.target.value)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="Phone"
-                  value={newAddrPhone}
-                  onChange={(e) => setNewAddrPhone(e.target.value)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-                />
+                <h3 className="font-bold text-content-primary">Guest Session</h3>
+                <p className="text-content-secondary text-xs">
+                  Delivery addresses are synced across your devices when you sign in. Guests do not have saved addresses.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/login"
+                    className="block w-full py-2 rounded-btn bg-brand-primary text-white font-bold text-center hover:bg-brand-primary-hover shadow-sm"
+                  >
+                    Sign In to Save Addresses
+                  </Link>
+                </div>
               </div>
+            ) : (
+              <>
+                {/* List Saved Addresses */}
+                <div className="space-y-2.5">
+                  {savedAddresses.length === 0 ? (
+                    <p className="p-4 text-center text-content-muted">No saved addresses yet.</p>
+                  ) : (
+                    savedAddresses.map((addr) => (
+                      <div key={addr.id} className="p-3 border border-border-subtle rounded-card relative space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-content-primary">
+                            {addr.recipientName} ({addr.tag})
+                          </span>
+                          {addr.isDefault ? (
+                            <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                              Default
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSetDefaultAddress(addr.id)}
+                              className="text-[10px] text-brand-primary font-semibold hover:underline"
+                            >
+                              Set as Default
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-content-secondary leading-relaxed">
+                          {addr.streetAddress}{addr.landmark ? `, ${addr.landmark}` : ''}<br />
+                          {addr.city}, {addr.state} - {addr.postalCode}
+                        </p>
+                        <p className="text-[11px] text-content-muted">Phone: {addr.phone}</p>
+                        <div className="pt-1 flex justify-end">
+                          <button
+                            onClick={() => handleDeleteAddress(addr.id)}
+                            className="text-rose-500 hover:text-rose-700 text-xs font-medium"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
 
-              <input
-                type="text"
-                required
-                placeholder="Street Address / House No."
-                value={newAddrStreet}
-                onChange={(e) => setNewAddrStreet(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-              />
+                {/* Add Address Form */}
+                <form onSubmit={handleAddAddress} className="pt-3 border-t border-border-subtle space-y-2.5">
+                  <h3 className="font-bold text-content-primary uppercase text-[10px] tracking-wider">
+                    Add New Delivery Address
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={newAddrTag}
+                      onChange={(e) => setNewAddrTag(e.target.value as any)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs bg-white font-semibold"
+                    >
+                      <option value="Home">Home</option>
+                      <option value="Work">Work</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Recipient Name"
+                      value={newAddrName}
+                      onChange={(e) => setNewAddrName(e.target.value)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Phone"
+                      value={newAddrPhone}
+                      onChange={(e) => setNewAddrPhone(e.target.value)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="City"
-                  value={newAddrCity}
-                  onChange={(e) => setNewAddrCity(e.target.value)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="State"
-                  value={newAddrState}
-                  onChange={(e) => setNewAddrState(e.target.value)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="PIN Code"
-                  value={newAddrPostal}
-                  onChange={(e) => setNewAddrPostal(e.target.value)}
-                  className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-                />
-              </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Street Address / House No."
+                    value={newAddrStreet}
+                    onChange={(e) => setNewAddrStreet(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                  />
 
-              <input
-                type="text"
-                placeholder="Landmark (Optional)"
-                value={newAddrLandmark}
-                onChange={(e) => setNewAddrLandmark(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-border-subtle rounded text-xs"
-              />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={newAddrCity}
+                      onChange={(e) => setNewAddrCity(e.target.value)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                    />
+                    <input
+                      type="text"
+                      placeholder="State"
+                      value={newAddrState}
+                      onChange={(e) => setNewAddrState(e.target.value)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="PIN Code"
+                      value={newAddrPostal}
+                      onChange={(e) => setNewAddrPostal(e.target.value)}
+                      className="px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                className="w-full py-2 bg-brand-primary text-white font-bold rounded-btn text-xs hover:bg-brand-primary-hover shadow-sm"
-              >
-                Save Delivery Address
-              </button>
-            </form>
+                  <input
+                    type="text"
+                    placeholder="Landmark (Optional)"
+                    value={newAddrLandmark}
+                    onChange={(e) => setNewAddrLandmark(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-border-subtle rounded text-xs"
+                  />
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-brand-primary text-white font-bold rounded-btn text-xs hover:bg-brand-primary-hover shadow-sm"
+                  >
+                    Save Delivery Address
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -700,63 +782,85 @@ export const AccountPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-3">
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                />
+            {isGuest ? (
+              <div className="p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-canvas-subtle mx-auto flex items-center justify-center text-content-muted">
+                  <UserIcon className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-content-primary">Guest Profile</h3>
+                <p className="text-content-secondary text-xs">
+                  You are currently visiting as a guest. Sign in or register to manage your personal profile, credentials, and settings.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    to="/login"
+                    className="block w-full py-2 rounded-btn bg-brand-primary text-white font-bold text-center hover:bg-brand-primary-hover shadow-sm"
+                  >
+                    Sign In / Register
+                  </Link>
+                </div>
               </div>
+            ) : (
+              <>
+                <form onSubmit={handleSaveProfile} className="space-y-3">
+                  <div>
+                    <label className="font-bold text-content-primary block mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
+                    />
+                  </div>
 
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Email Address</label>
-                <input
-                  type="email"
-                  disabled
-                  value={userEmail}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-canvas-subtle text-content-muted"
-                />
-              </div>
+                  <div>
+                    <label className="font-bold text-content-primary block mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      disabled
+                      value={userEmail}
+                      className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs bg-canvas-subtle text-content-muted"
+                    />
+                  </div>
 
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Phone Number</label>
-                <input
-                  type="text"
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                />
-              </div>
+                  <div>
+                    <label className="font-bold text-content-primary block mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(e.target.value)}
+                      className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
+                    />
+                  </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-brand-primary text-white font-bold rounded-btn text-xs hover:bg-brand-primary-hover shadow-sm"
-                >
-                  Save Profile Details
-                </button>
-              </div>
-            </form>
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-brand-primary text-white font-bold rounded-btn text-xs hover:bg-brand-primary-hover shadow-sm"
+                    >
+                      Save Profile Details
+                    </button>
+                  </div>
+                </form>
 
-            <div className="pt-3 border-t border-border-subtle space-y-1.5">
-              <h3 className="font-bold text-content-primary">Security & Password</h3>
-              <div className="p-2.5 bg-amber-50 rounded border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
-                <span className="font-bold block text-amber-950 mb-0.5">⚠️ Staging Notice:</span>
-                Password reset via transactional email is unavailable until external SMTP credentials (AWS SES / SendGrid) are provisioned.
-              </div>
-              <button
-                type="button"
-                onClick={handlePasswordReset}
-                className="w-full py-2 bg-canvas-subtle hover:bg-canvas-subtle/80 text-content-muted font-bold rounded-btn text-xs border border-border-subtle flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Password Reset (Disabled in Staging)</span>
-              </button>
-            </div>
+                <div className="pt-3 border-t border-border-subtle space-y-1.5">
+                  <h3 className="font-bold text-content-primary">Security &amp; Password</h3>
+                  <div className="p-2.5 bg-amber-50 rounded border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                    <span className="font-bold block text-amber-950 mb-0.5">⚠️ Staging Notice:</span>
+                    Password reset via transactional email is unavailable until external SMTP credentials (AWS SES / SendGrid) are provisioned.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    className="w-full py-2 bg-canvas-subtle hover:bg-canvas-subtle/80 text-content-muted font-bold rounded-btn text-xs border border-border-subtle flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Password Reset (Disabled in Staging)</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

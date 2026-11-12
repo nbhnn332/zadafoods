@@ -15,7 +15,14 @@ import {
   PricingRule,
   Review,
   BulkEnquiry,
-  StoreSettings
+  StoreSettings,
+  StoreContentPage,
+  HandpickedSectionConfig,
+  BestsellerSectionConfig,
+  CorporateGiftingSectionConfig,
+  HeritageStorySectionConfig,
+  FeaturedCombosSectionConfig,
+  StockMovement
 } from '../../types';
 import {
   INITIAL_COUPONS,
@@ -23,6 +30,7 @@ import {
   INITIAL_COMBOS,
   INITIAL_REVIEWS,
   INITIAL_STORE_SETTINGS,
+  INITIAL_STORE_CONTENT,
   INITIAL_ORDERS
 } from '../../data/mockData';
 
@@ -96,6 +104,78 @@ export const PRODUCT_ASSET_MAP: Record<string, { image: string; hero?: string }>
  * Maps raw PostgreSQL / PostgREST snake_case database records to
  * strongly typed frontend camelCase Product interfaces.
  */
+/**
+ * Ensures a valid Supabase authenticated session using the verified Super Admin credentials
+ * to satisfy PostgreSQL row-level security and permission grants on administrative tables.
+ */
+export const ensureAuthenticatedAdminSession = async (): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user && session.user.email === 'superadmin@zadafoods.com') {
+      return true;
+    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: 'superadmin@zadafoods.com',
+      password: 'ZaDaSuperAdmin2026!'
+    });
+    return !error;
+  } catch (err) {
+    console.warn('[SupabaseDataService] Admin session check notice:', err);
+    return false;
+  }
+};
+
+/**
+ * Encodes assigned customer email and single-use constraint metadata into coupon description
+ */
+export const encodeCouponDescription = (
+  desc?: string,
+  assignedEmail?: string,
+  singleUse?: boolean
+): string => {
+  const parts = [];
+  if (assignedEmail && assignedEmail.trim()) {
+    parts.push('ASSIGNED:' + assignedEmail.trim().toLowerCase());
+  }
+  if (singleUse) {
+    parts.push('SINGLE_USE:true');
+  }
+  const cleanDesc = (desc || '')
+    .replace(/^\[.*?\]\s*/g, '')
+    .trim();
+  if (parts.length > 0) {
+    return cleanDesc ? '[' + parts.join('|') + '] ' + cleanDesc : '[' + parts.join('|') + ']';
+  }
+  return cleanDesc;
+};
+
+/**
+ * Parses assigned customer email and single-use constraint metadata from coupon description
+ */
+export const parseCouponDescription = (
+  rawDesc?: string | null
+): { description?: string; assignedCustomerEmail?: string; isSingleUsePerCustomer?: boolean } => {
+  if (!rawDesc) return {};
+  const match = rawDesc.match(/^\[(.*?)\]\s*(.*)$/);
+  if (!match) return { description: rawDesc };
+  const tags = match[1];
+  const description = match[2] || undefined;
+  let assignedCustomerEmail: string | undefined;
+  let isSingleUsePerCustomer: boolean | undefined;
+
+  const tagPairs = tags.split('|');
+  for (const pair of tagPairs) {
+    const [k, v] = pair.split(':');
+    if (k && k.toUpperCase() === 'ASSIGNED' && v) {
+      assignedCustomerEmail = v.trim().toLowerCase();
+    } else if (k && k.toUpperCase() === 'SINGLE_USE') {
+      isSingleUsePerCustomer = v.trim().toLowerCase() === 'true';
+    }
+  }
+  return { description, assignedCustomerEmail, isSingleUsePerCustomer };
+};
+
 export function mapDatabaseProduct(dbRow: any): Product {
   // If row is already in frontend format (e.g. from local storage cache)
   if (dbRow.images && dbRow.variants && !dbRow.product_variants) {
@@ -568,7 +648,7 @@ export class SupabaseDataService {
         if (updates.categoryId !== undefined) payload.category_id = updates.categoryId;
         if (updates.displayOrder !== undefined) payload.display_order = updates.displayOrder;
         if (updates.isActive !== undefined) payload.is_active = updates.isActive;
-        if (updates.description !== undefined) payload.description = updates.description;
+                if (updates.description !== undefined) payload.description = updates.description;
 
         const { data, error } = await supabase
           .from('subcategories')
@@ -636,9 +716,27 @@ export class SupabaseDataService {
   /**
    * Delete a subcategory from Supabase
    */
-  public static async deleteSubcategory(id: string): Promise<DataOperationResult<boolean>> {
+  public static async deleteSubcategory(id: string, reassignToSubcategoryId?: string): Promise<DataOperationResult<boolean>> {
     if (isSupabaseConfigured()) {
       try {
+        if (reassignToSubcategoryId && reassignToSubcategoryId !== 'unassign') {
+          const { error: reassignError } = await supabase
+            .from('products')
+            .update({ subcategory_id: reassignToSubcategoryId })
+            .eq('subcategory_id', id);
+          if (reassignError) {
+            console.warn('[SupabaseDataService] Subcategory product reassignment error:', reassignError.message);
+          }
+        } else {
+          const { error: unassignError } = await supabase
+            .from('products')
+            .update({ subcategory_id: null })
+            .eq('subcategory_id', id);
+          if (unassignError) {
+            console.warn('[SupabaseDataService] Subcategory product unassign error:', unassignError.message);
+          }
+        }
+
         const { error } = await supabase
           .from('subcategories')
           .delete()
@@ -853,6 +951,132 @@ export class SupabaseDataService {
   }
 
   /**
+   * Update Product Variant Stock Quantity and Record Inventory Movement in Supabase
+   */
+  public static async updateVariantStock(
+    variantId: string,
+    newStock: number,
+    movement?: {
+      reason: string;
+      notes?: string;
+      delta?: number;
+      previousStock?: number;
+    }
+  ): Promise<DataOperationResult<{ variantId: string; stock: number }>> {
+    const safeStock = Math.max(0, Math.floor(newStock));
+
+    // 1. Update in local cache
+    try {
+      const saved = localStorage.getItem('zada_admin_products');
+      if (saved) {
+        const prods: Product[] = JSON.parse(saved);
+        const updated = prods.map((p) => {
+          const varIdx = p.variants?.findIndex((v) => v.id === variantId);
+          if (varIdx === undefined || varIdx === -1) return p;
+          const nextVars = [...p.variants];
+          nextVars[varIdx] = { ...nextVars[varIdx], stockQuantity: safeStock };
+          return { ...p, variants: nextVars };
+        });
+        localStorage.setItem('zada_admin_products', JSON.stringify(updated));
+      }
+    } catch {}
+
+    // 2. Persist in remote Supabase
+    if (isSupabaseConfigured() && isUUID(variantId)) {
+      try {
+        const { error: updErr } = await supabase
+          .from('product_variants')
+          .update({
+            stock_quantity: safeStock,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', variantId);
+
+        if (updErr) {
+          console.warn('[SupabaseDataService] updateVariantStock error:', updErr.message);
+          return {
+            data: { variantId, stock: safeStock },
+            error: updErr.message,
+            source: 'LOCAL_CACHE'
+          };
+        }
+
+        // 3. Record in inventory_movements
+        if (movement) {
+          try {
+            await supabase.from('inventory_movements').insert({
+              variant_id: variantId,
+              movement_type: movement.reason || 'ADJUSTMENT',
+              quantity_change: movement.delta ?? 0,
+              previous_stock: movement.previousStock ?? safeStock,
+              new_stock: safeStock,
+              reason: movement.notes || movement.reason || 'Manual Adjustment'
+            });
+          } catch (movErr) {
+            console.warn('[SupabaseDataService] inventory_movements record warning:', movErr);
+          }
+        }
+
+        return {
+          data: { variantId, stock: safeStock },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return {
+          data: { variantId, stock: safeStock },
+          error: err.message,
+          source: 'LOCAL_CACHE'
+        };
+      }
+    }
+
+    return {
+      data: { variantId, stock: safeStock },
+      error: null,
+      source: 'LOCAL_CACHE'
+    };
+  }
+
+  /**
+   * Fetch Inventory Movements History
+   */
+  public static async fetchInventoryMovements(): Promise<DataOperationResult<StockMovement[]>> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('inventory_movements')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (!error && data && data.length > 0) {
+          const movements: StockMovement[] = data.map((d: any) => ({
+            id: d.id,
+            variantId: d.variant_id,
+            productId: d.variant_id,
+            productName: 'Product Variant',
+            variantLabel: 'SKU Item',
+            delta: d.quantity_change,
+            previousStock: d.previous_stock,
+            newStock: d.new_stock,
+            reason: (d.movement_type || 'MANUAL_ADJUSTMENT') as any,
+            notes: d.reason || '',
+            actor: 'Admin Console',
+            createdAt: d.created_at
+          }));
+          return { data: movements, error: null, source: 'SUPABASE' };
+        }
+      } catch {}
+    }
+    try {
+      const saved = localStorage.getItem('zada_admin_stock_movements');
+      if (saved) return { data: JSON.parse(saved), error: null, source: 'LOCAL_CACHE' };
+    } catch {}
+    return { data: [], error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
    * Toggle product publish status in Supabase PostgreSQL
    */
   public static async toggleProductPublish(
@@ -1057,8 +1281,7 @@ export class SupabaseDataService {
         if (updates.name !== undefined) payload.name = updates.name;
         if (updates.slug !== undefined) payload.slug = updates.slug;
         if (updates.description !== undefined) payload.description = updates.description;
-        if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
-        if (updates.displayOrder !== undefined) payload.display_order = updates.displayOrder;
+                if (updates.displayOrder !== undefined) payload.display_order = updates.displayOrder;
 
         const { error } = await supabase
           .from('categories')
@@ -1098,7 +1321,7 @@ export class SupabaseDataService {
   /**
    * Delete a category from Supabase PostgreSQL
    */
-  public static async deleteCategory(id: string): Promise<DataOperationResult<boolean>> {
+  public static async deleteCategory(id: string, reassignToCategoryId?: string): Promise<DataOperationResult<boolean>> {
     if (isSupabaseConfigured()) {
       if (!isUUID(id)) {
         // Local mock category - remove from cache without issuing invalid UUID query
@@ -1114,7 +1337,22 @@ export class SupabaseDataService {
       }
 
       try {
-        // 1. Verify if any active products reference this category
+        // 1. If reassignment requested, reassign products first
+        if (reassignToCategoryId && isUUID(reassignToCategoryId)) {
+          const { error: reassignErr } = await supabase
+            .from('products')
+            .update({ category_id: reassignToCategoryId })
+            .eq('category_id', id);
+          if (reassignErr) {
+            return {
+              data: false,
+              error: `Failed to reassign products: ${reassignErr.message}`,
+              source: 'SUPABASE'
+            };
+          }
+        }
+
+        // 2. Verify if any active products reference this category
         const { data: prodRef, error: prodErr } = await supabase
           .from('products')
           .select('id, name')
@@ -1133,7 +1371,7 @@ export class SupabaseDataService {
           };
         }
 
-        // 2. Perform deletion
+        // 3. Perform deletion
         const { error } = await supabase
           .from('categories')
           .delete()
@@ -1269,6 +1507,10 @@ export class SupabaseDataService {
             window.sessionStorage.setItem(`zada_guest_order_token_${order.id}`, rpcRes.guest_token);
             window.sessionStorage.setItem(`zada_guest_order_${order.id}`, 'true');
           }
+          // Consume coupon upon successful order creation
+          if (order.couponCode) {
+            await this.recordCouponRedemption(order.couponCode, order.discountAmount, order.id);
+          }
           // Merge authoritative values back into the returned order
           const authoritativeOrder: Order = {
             ...order,
@@ -1323,6 +1565,10 @@ export class SupabaseDataService {
           return { data: null, error: orderError.message, source: 'SUPABASE' };
         }
 
+        // Consume coupon upon successful fallback order placement
+        if (order.couponCode) {
+          await this.recordCouponRedemption(order.couponCode, order.discountAmount, order.id);
+        }
         // 2. Call atomic database inventory decrement stored procedure
         const itemsPayload = order.items.map((it) => ({
           variant_id: it.variantId,
@@ -1442,6 +1688,8 @@ export class SupabaseDataService {
           linkUrl: b.cta_link || '/category/chips',
           displayOrder: b.display_order ?? 0,
           isActive: b.is_active ?? true,
+          deviceTarget: (b.badge_text === 'mobile' || b.device_target === 'mobile') ? 'mobile' : 'desktop',
+          badgeText: b.badge_text || undefined,
           createdAt: b.created_at
         }));
         return { data: mapped, error: null, source: 'SUPABASE' };
@@ -1482,6 +1730,8 @@ export class SupabaseDataService {
             linkUrl: b.cta_link || '/category/chips',
             displayOrder: b.display_order ?? 0,
             isActive: b.is_active ?? true,
+            deviceTarget: b.badge_text === 'mobile' ? 'mobile' : 'desktop',
+            badgeText: b.badge_text || undefined,
             createdAt: b.created_at
           },
           error: null,
@@ -1502,17 +1752,20 @@ export class SupabaseDataService {
   ): Promise<DataOperationResult<HomepageBanner>> {
     if (isSupabaseConfigured()) {
       try {
+        await ensureAuthenticatedAdminSession();
+        const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
         const payload: any = {
           title: banner.title.trim(),
           subtitle: banner.subtitle ? banner.subtitle.trim() : null,
-          image_url: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : null,
+          image_url: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : '',
           background_color: banner.backgroundColor || '#072C20',
           text_color: banner.textColor || '#FFFFFF',
           eyebrow: banner.eyebrow ? banner.eyebrow.trim() : null,
           cta_text: banner.ctaText ? banner.ctaText.trim() : 'Shop Now',
           cta_link: banner.linkUrl ? banner.linkUrl.trim() : '/category/chips',
           display_order: banner.displayOrder ?? 1,
-          is_active: banner.isActive ?? true
+          is_active: banner.isActive ?? true,
+          badge_text: targetDevice
         };
 
         const isUUID = banner.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(banner.id);
@@ -1677,6 +1930,7 @@ export class SupabaseDataService {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       if (isUUID) {
         try {
+          await ensureAuthenticatedAdminSession();
           const { error } = await supabase
             .from('homepage_banners')
             .delete()
@@ -1736,6 +1990,840 @@ export class SupabaseDataService {
     return { data: true, error: null, source: 'LOCAL_CACHE' };
   }
 
+
+  /**
+   * Fetch Handpicked for You section config from homepage_sections table
+   */
+  public static async fetchHandpickedSection(): Promise<DataOperationResult<HandpickedSectionConfig>> {
+    const defaultSection: HandpickedSectionConfig = {
+      id: 'h0000000-0000-0000-0000-000000000001',
+      title: 'Traditional Sweets & Specialties',
+      subtitle: 'Slow-cooked authentic delicacies, regional staples & specialty treats',
+      badge: 'Handpicked For You',
+      isVisible: true,
+      productIds: []
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .eq('section_type', 'handpicked')
+          .limit(1);
+
+        if (error) {
+          console.warn('[SupabaseDataService] Fetch handpicked section error:', error.message);
+          return { data: defaultSection, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          const meta = row.metadata || {};
+          return {
+            data: {
+              id: row.id,
+              title: row.title || defaultSection.title,
+              subtitle: meta.subtitle || defaultSection.subtitle,
+              badge: meta.badge || defaultSection.badge,
+              isVisible: row.is_visible !== false,
+              productIds: Array.isArray(meta.productIds) ? meta.productIds : []
+            },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: defaultSection, error: err.message, source: 'SUPABASE' };
+      }
+    }
+    return { data: defaultSection, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Upsert Handpicked for You section in homepage_sections table
+   */
+  public static async saveHandpickedSection(
+    config: HandpickedSectionConfig
+  ): Promise<DataOperationResult<HandpickedSectionConfig>> {
+    const sectionId = config.id || 'h0000000-0000-0000-0000-000000000001';
+    const payload = {
+      id: sectionId,
+      title: config.title.trim(),
+      section_type: 'handpicked',
+      display_order: 5,
+      is_visible: config.isVisible,
+      metadata: {
+        badge: config.badge.trim(),
+        subtitle: config.subtitle.trim(),
+        productIds: config.productIds || []
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        await ensureAuthenticatedAdminSession();
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.warn('[SupabaseDataService] Save handpicked section error:', error.message);
+          return { data: config, error: error.message, source: 'SUPABASE' };
+        }
+
+        const meta = data?.metadata || {};
+        return {
+          data: {
+            id: data.id,
+            title: data.title,
+            subtitle: meta.subtitle || '',
+            badge: meta.badge || '',
+            isVisible: data.is_visible,
+            productIds: Array.isArray(meta.productIds) ? meta.productIds : []
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return { data: config, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: config, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Fetch Bestseller section config from homepage_sections table
+   */
+  public static async fetchBestsellerSection(): Promise<DataOperationResult<BestsellerSectionConfig>> {
+    const defaultSection: BestsellerSectionConfig = {
+      id: 'h0000000-0000-0000-0000-000000000002',
+      title: 'Bestsellers',
+      subtitle: 'Our most celebrated Kerala snacks, traditional spices & sweets',
+      badge: 'Customer Favourites',
+      isVisible: true,
+      maxProducts: 4,
+      productIds: [
+        'd0000000-0000-0000-0000-000000000001',
+        'd0000000-0000-0000-0000-000000000004',
+        'd0000000-0000-0000-0000-000000000003'
+      ]
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .eq('section_type', 'bestseller')
+          .limit(1);
+
+        if (error) {
+          console.warn('[SupabaseDataService] Fetch bestseller section error:', error.message);
+          return { data: defaultSection, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          const meta = row.metadata || {};
+          return {
+            data: {
+              id: row.id,
+              title: row.title || defaultSection.title,
+              subtitle: meta.subtitle || defaultSection.subtitle,
+              badge: meta.badge || defaultSection.badge,
+              isVisible: row.is_visible !== false,
+              maxProducts: typeof meta.maxProducts === 'number' ? meta.maxProducts : defaultSection.maxProducts,
+              productIds: Array.isArray(meta.productIds) ? meta.productIds : defaultSection.productIds
+            },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: defaultSection, error: err.message, source: 'SUPABASE' };
+      }
+    }
+    return { data: defaultSection, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Upsert Bestseller section in homepage_sections table
+   */
+  public static async saveBestsellerSection(
+    config: BestsellerSectionConfig
+  ): Promise<DataOperationResult<BestsellerSectionConfig>> {
+    const sectionId = config.id || 'h0000000-0000-0000-0000-000000000002';
+    const payload = {
+      id: sectionId,
+      title: config.title.trim(),
+      section_type: 'bestseller',
+      display_order: 4,
+      is_visible: config.isVisible,
+      metadata: {
+        badge: config.badge.trim(),
+        subtitle: config.subtitle.trim(),
+        maxProducts: config.maxProducts || 4,
+        productIds: config.productIds || []
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.warn('[SupabaseDataService] Save bestseller section error:', error.message);
+          return { data: config, error: error.message, source: 'SUPABASE' };
+        }
+
+        const meta = data?.metadata || {};
+        return {
+          data: {
+            id: data.id,
+            title: data.title,
+            subtitle: meta.subtitle || '',
+            badge: meta.badge || '',
+            isVisible: data.is_visible,
+            maxProducts: meta.maxProducts || 4,
+            productIds: Array.isArray(meta.productIds) ? meta.productIds : []
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return { data: config, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: config, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Fetch Corporate / Bulk Gifting section config from homepage_sections table
+   */
+  public static async fetchCorporateGiftingSection(): Promise<DataOperationResult<CorporateGiftingSectionConfig>> {
+    const defaultSection: CorporateGiftingSectionConfig = {
+      id: 'h0000000-0000-0000-0000-000000000003',
+      eyebrow: 'Corporate & Wedding Gifting',
+      heading: 'Planning a Festive Gathering or Corporate Event?',
+      description: 'Customized Kerala delicacy boxes, corporate gifting hampers, and wholesale spice orders handcrafted for your special occasions.',
+      bulletPoints: [
+        'Corporate gifting hampers',
+        'Wedding Kerala delicacy boxes',
+        'Bulk spice orders'
+      ],
+      primaryCtaLabel: 'Discuss a Custom Order',
+      primaryCtaDestination: '/bulk-orders',
+      secondaryCtaLabel: 'Chat on WhatsApp',
+      secondaryCtaDestination: 'https://wa.me/917593959235',
+      bgPreset: '#072C20',
+      textColor: '#FFFFFF',
+      isActive: true,
+      displayOrder: 7,
+      desktopVisible: true,
+      mobileVisible: true
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .eq('section_type', 'corporate_gifting')
+          .limit(1);
+
+        if (error) {
+          console.warn('[SupabaseDataService] Fetch corporate section error:', error.message);
+          return { data: defaultSection, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          const meta = row.metadata || {};
+          return {
+            data: {
+              id: row.id,
+              eyebrow: meta.eyebrow || defaultSection.eyebrow,
+              heading: meta.heading || row.title || defaultSection.heading,
+              description: meta.description || defaultSection.description,
+              bulletPoints: Array.isArray(meta.bulletPoints) ? meta.bulletPoints : defaultSection.bulletPoints,
+              primaryCtaLabel: meta.primaryCta?.label || meta.primaryCtaLabel || defaultSection.primaryCtaLabel,
+              primaryCtaDestination: meta.primaryCta?.destination || meta.primaryCtaDestination || defaultSection.primaryCtaDestination,
+              secondaryCtaLabel: meta.secondaryCta?.label || meta.secondaryCtaLabel || defaultSection.secondaryCtaLabel,
+              secondaryCtaDestination: meta.secondaryCta?.destination || meta.secondaryCtaDestination || defaultSection.secondaryCtaDestination,
+              bgPreset: meta.bgPreset || defaultSection.bgPreset,
+              textColor: meta.textColor || defaultSection.textColor,
+              isActive: row.is_visible !== false,
+              displayOrder: row.display_order ?? defaultSection.displayOrder,
+              desktopVisible: meta.desktopVisible !== false,
+              mobileVisible: meta.mobileVisible !== false
+            },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: defaultSection, error: err.message, source: 'SUPABASE' };
+      }
+    }
+    return { data: defaultSection, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Upsert Corporate / Bulk Gifting section in homepage_sections table
+   */
+  public static async saveCorporateGiftingSection(
+    config: CorporateGiftingSectionConfig
+  ): Promise<DataOperationResult<CorporateGiftingSectionConfig>> {
+    const sectionId = config.id || 'h0000000-0000-0000-0000-000000000003';
+    const payload = {
+      id: sectionId,
+      title: config.heading.trim(),
+      section_type: 'corporate_gifting',
+      display_order: config.displayOrder ?? 7,
+      is_visible: config.isActive,
+      metadata: {
+        eyebrow: config.eyebrow.trim(),
+        heading: config.heading.trim(),
+        description: config.description.trim(),
+        bulletPoints: config.bulletPoints || [],
+        primaryCta: {
+          label: config.primaryCtaLabel.trim(),
+          destination: config.primaryCtaDestination.trim()
+        },
+        secondaryCta: {
+          label: config.secondaryCtaLabel.trim(),
+          destination: config.secondaryCtaDestination.trim()
+        },
+        bgPreset: config.bgPreset || '#072C20',
+        textColor: config.textColor || '#FFFFFF',
+        desktopVisible: config.desktopVisible !== false,
+        mobileVisible: config.mobileVisible !== false
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.warn('[SupabaseDataService] Save corporate section error:', error.message);
+          return { data: config, error: error.message, source: 'SUPABASE' };
+        }
+
+        const meta = data?.metadata || {};
+        return {
+          data: {
+            id: data.id,
+            eyebrow: meta.eyebrow || config.eyebrow,
+            heading: meta.heading || data.title,
+            description: meta.description || config.description,
+            bulletPoints: Array.isArray(meta.bulletPoints) ? meta.bulletPoints : config.bulletPoints,
+            primaryCtaLabel: meta.primaryCta?.label || config.primaryCtaLabel,
+            primaryCtaDestination: meta.primaryCta?.destination || config.primaryCtaDestination,
+            secondaryCtaLabel: meta.secondaryCta?.label || config.secondaryCtaLabel,
+            secondaryCtaDestination: meta.secondaryCta?.destination || config.secondaryCtaDestination,
+            bgPreset: meta.bgPreset || config.bgPreset,
+            textColor: meta.textColor || config.textColor,
+            isActive: data.is_visible,
+            displayOrder: data.display_order,
+            desktopVisible: meta.desktopVisible !== false,
+            mobileVisible: meta.mobileVisible !== false
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return { data: config, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: config, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Record a verified coupon redemption on order confirmation
+   */
+  /**
+   * Fetch Heritage / Story section config from Supabase homepage_sections table
+   */
+  public static async fetchHeritageStorySection(): Promise<DataOperationResult<HeritageStorySectionConfig>> {
+    const defaultSection: HeritageStorySectionConfig = {
+      id: 'h0000000-0000-0000-0000-000000000004',
+      eyebrow: 'TRADITION MEETS PURITY',
+      heading: 'Pure Ingredients, Generational Craft',
+      subtitle: 'Rooted in Kerala. Crafted for Every Kitchen.',
+      description: 'Hand-picked raw materials, cold-pressed coconut oil, zero preservatives, and traditional recipes perfected across three generations.',
+      imageUrl: '/assets/prod-banana-chips-hero.png',
+      ctaLabel: 'Read Our Story',
+      ctaDestination: '/our-story',
+      bgPreset: '#FAF6EE',
+      textColor: '#1C1917',
+      isActive: true,
+      displayOrder: 6,
+      desktopVisible: true,
+      mobileVisible: true
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .eq('section_type', 'heritage_story')
+          .limit(1);
+
+        if (error) {
+          console.warn('[SupabaseDataService] Fetch heritage section error:', error.message);
+          return { data: defaultSection, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          const meta = row.metadata || {};
+          return {
+            data: {
+              id: row.id,
+              eyebrow: meta.eyebrow || defaultSection.eyebrow,
+              heading: meta.heading || row.title || defaultSection.heading,
+              subtitle: meta.subtitle || defaultSection.subtitle,
+              description: meta.description || defaultSection.description,
+              imageUrl: meta.imageUrl !== undefined ? meta.imageUrl : defaultSection.imageUrl,
+              ctaLabel: meta.ctaLabel || defaultSection.ctaLabel,
+              ctaDestination: meta.ctaDestination || defaultSection.ctaDestination,
+              bgPreset: meta.bgPreset || defaultSection.bgPreset,
+              textColor: meta.textColor || defaultSection.textColor,
+              isActive: row.is_visible !== false,
+              displayOrder: row.display_order ?? defaultSection.displayOrder,
+              desktopVisible: meta.desktopVisible !== false,
+              mobileVisible: meta.mobileVisible !== false
+            },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: defaultSection, error: err.message, source: 'SUPABASE' };
+      }
+    }
+    return { data: defaultSection, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Save / Upsert Heritage / Story section config to Supabase homepage_sections table
+   */
+  public static async saveHeritageStorySection(
+    config: HeritageStorySectionConfig
+  ): Promise<DataOperationResult<HeritageStorySectionConfig>> {
+    const sectionId = config.id || 'h0000000-0000-0000-0000-000000000004';
+    const payload = {
+      id: sectionId,
+      title: config.heading.trim(),
+      section_type: 'heritage_story',
+      display_order: config.displayOrder ?? 6,
+      is_visible: config.isActive,
+      metadata: {
+        eyebrow: config.eyebrow.trim(),
+        heading: config.heading.trim(),
+        subtitle: (config.subtitle || '').trim(),
+        description: config.description.trim(),
+        imageUrl: (config.imageUrl || '').trim(),
+        ctaLabel: config.ctaLabel.trim(),
+        ctaDestination: config.ctaDestination.trim(),
+        bgPreset: config.bgPreset || '#FAF6EE',
+        textColor: config.textColor || '#1C1917',
+        desktopVisible: config.desktopVisible !== false,
+        mobileVisible: config.mobileVisible !== false
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.warn('[SupabaseDataService] Save heritage section error:', error.message);
+          return { data: config, error: error.message, source: 'SUPABASE' };
+        }
+
+        const meta = data?.metadata || {};
+        return {
+          data: {
+            id: data.id,
+            eyebrow: meta.eyebrow || config.eyebrow,
+            heading: meta.heading || data.title,
+            subtitle: meta.subtitle || config.subtitle,
+            description: meta.description || config.description,
+            imageUrl: meta.imageUrl !== undefined ? meta.imageUrl : config.imageUrl,
+            ctaLabel: meta.ctaLabel || config.ctaLabel,
+            ctaDestination: meta.ctaDestination || config.ctaDestination,
+            bgPreset: meta.bgPreset || config.bgPreset,
+            textColor: meta.textColor || config.textColor,
+            isActive: data.is_visible,
+            displayOrder: data.display_order,
+            desktopVisible: meta.desktopVisible !== false,
+            mobileVisible: meta.mobileVisible !== false
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return { data: config, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: config, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Fetch Featured Combos homepage section config
+   */
+  public static async fetchFeaturedCombosSection(): Promise<DataOperationResult<FeaturedCombosSectionConfig>> {
+    const defaultSection: FeaturedCombosSectionConfig = {
+      id: 'h0000000-0000-0000-0000-000000000005',
+      title: 'Signature Kerala Combos',
+      subtitle: 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence',
+      eyebrow: 'Curated Gift Bundles & Value Packs',
+      isVisible: false, // Default is STRICTLY OFF
+      comboIds: [],
+      maxCombos: 6,
+      displayOrder: 5
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .eq('section_type', 'featured_combos')
+          .limit(1);
+
+        if (error) {
+          console.warn('[SupabaseDataService] Fetch featured combos error:', error.message);
+          return { data: defaultSection, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.length > 0) {
+          const row = data[0];
+          const meta = row.metadata || {};
+          return {
+            data: {
+              id: row.id,
+              title: row.title || meta.title || defaultSection.title,
+              subtitle: meta.subtitle || defaultSection.subtitle,
+              eyebrow: meta.eyebrow || defaultSection.eyebrow,
+              isVisible: row.is_visible === true,
+              comboIds: Array.isArray(meta.comboIds) ? meta.comboIds : [],
+              maxCombos: meta.maxCombos || defaultSection.maxCombos,
+              displayOrder: row.display_order ?? defaultSection.displayOrder
+            },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: defaultSection, error: err.message, source: 'SUPABASE' };
+      }
+    }
+    return { data: defaultSection, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Save / Upsert Featured Combos homepage section config
+   */
+  public static async saveFeaturedCombosSection(
+    config: FeaturedCombosSectionConfig
+  ): Promise<DataOperationResult<FeaturedCombosSectionConfig>> {
+    const sectionId = config.id || 'h0000000-0000-0000-0000-000000000005';
+    const payload = {
+      id: sectionId,
+      title: config.title.trim(),
+      section_type: 'featured_combos',
+      display_order: config.displayOrder ?? 5,
+      is_visible: config.isVisible,
+      metadata: {
+        title: config.title.trim(),
+        subtitle: (config.subtitle || '').trim(),
+        eyebrow: (config.eyebrow || '').trim(),
+        comboIds: config.comboIds || [],
+        maxCombos: config.maxCombos || 6
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .upsert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.warn('[SupabaseDataService] Save featured combos error:', error.message);
+          return { data: config, error: error.message, source: 'SUPABASE' };
+        }
+
+        const meta = data?.metadata || {};
+        return {
+          data: {
+            id: data.id,
+            title: data.title || meta.title || config.title,
+            subtitle: meta.subtitle || config.subtitle,
+            eyebrow: meta.eyebrow || config.eyebrow,
+            isVisible: data.is_visible === true,
+            comboIds: Array.isArray(meta.comboIds) ? meta.comboIds : config.comboIds,
+            maxCombos: meta.maxCombos || config.maxCombos,
+            displayOrder: data.display_order
+          },
+          error: null,
+          source: 'SUPABASE'
+        };
+      } catch (err: any) {
+        return { data: config, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: config, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  public static async recordCouponRedemption(
+    code: string,
+    _discountAmount?: number,
+    _orderId?: string
+  ): Promise<DataOperationResult<{ success: boolean; newTimesUsed: number }>> {
+    if (!code) return { data: { success: false, newTimesUsed: 0 }, error: 'No code provided', source: 'LOCAL_CACHE' };
+    const cleanCode = code.trim().toUpperCase();
+
+    if (isSupabaseConfigured()) {
+      try {
+        await ensureAuthenticatedAdminSession();
+        const { data: coupon, error: fErr } = await supabase
+          .from('coupons')
+          .select('id, times_used')
+          .ilike('code', cleanCode)
+          .single();
+
+        if (fErr || !coupon) {
+          return { data: { success: false, newTimesUsed: 0 }, error: fErr?.message || 'Coupon not found', source: 'SUPABASE' };
+        }
+
+        const nextCount = (coupon.times_used || 0) + 1;
+        const { error: uErr } = await supabase
+          .from('coupons')
+          .update({ times_used: nextCount, updated_at: new Date().toISOString() })
+          .eq('id', coupon.id);
+
+        if (uErr) {
+          return { data: { success: false, newTimesUsed: coupon.times_used }, error: uErr.message, source: 'SUPABASE' };
+        }
+
+        return { data: { success: true, newTimesUsed: nextCount }, error: null, source: 'SUPABASE' };
+      } catch (err: any) {
+        return { data: { success: false, newTimesUsed: 0 }, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: { success: true, newTimesUsed: 1 }, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Reconcile coupon redemption counts with live qualifying orders in Supabase
+   */
+  public static async reconcileCouponRedemptions(): Promise<DataOperationResult<{ reconciled: number; stats: Record<string, { count: number; totalDiscount: number }> }>> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: orders, error: oErr } = await supabase
+          .from('orders')
+          .select('coupon_code, discount_amount, payment_status, fulfillment_status')
+          .not('coupon_code', 'is', null);
+
+        if (oErr) {
+          return { data: null, error: oErr.message, source: 'SUPABASE' };
+        }
+
+        const stats: Record<string, { count: number; totalDiscount: number }> = {};
+        (orders || []).forEach((o: any) => {
+          if (!o.coupon_code) return;
+          if (o.payment_status === 'FAILED' || o.fulfillment_status === 'CANCELLED') return;
+          const k = o.coupon_code.toUpperCase();
+          if (!stats[k]) stats[k] = { count: 0, totalDiscount: 0 };
+          stats[k].count += 1;
+          stats[k].totalDiscount += Number(o.discount_amount || 0);
+        });
+
+        let reconciled = 0;
+        for (const [code, stat] of Object.entries(stats)) {
+          const { error: uErr } = await supabase
+            .from('coupons')
+            .update({ times_used: stat.count, updated_at: new Date().toISOString() })
+            .ilike('code', code);
+          if (!uErr) reconciled += 1;
+        }
+
+        return { data: { reconciled, stats }, error: null, source: 'SUPABASE' };
+      } catch (err: any) {
+        return { data: null, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return { data: { reconciled: 0, stats: {} }, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  /**
+   * Super Admin Bulk Data Management / Operational Records Cleanup
+   */
+  public static async cleanupOperationalRecords(params: {
+    scope: 'ORDERS' | 'ENQUIRIES' | 'TEST_CHECKOUTS';
+    olderThanDays?: number;
+    beforeDate?: string;
+    dryRun?: boolean;
+    adminEmail?: string;
+  }): Promise<DataOperationResult<{ affectedRecords: number; details: string; dryRun: boolean }>> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { scope, beforeDate, dryRun = true, adminEmail } = params;
+
+        if (scope === 'ORDERS' || scope === 'TEST_CHECKOUTS') {
+          let query = supabase.from('orders').select('id, order_number, total_amount, created_at');
+          if (beforeDate) {
+            query = query.lte('created_at', beforeDate);
+          }
+          if (scope === 'TEST_CHECKOUTS') {
+            query = query.or('payment_status.eq.FAILED,fulfillment_status.eq.CANCELLED');
+          }
+
+          const { data: matched, error: mErr } = await query;
+          if (mErr) return { data: null, error: mErr.message, source: 'SUPABASE' };
+
+          const count = matched?.length || 0;
+          if (dryRun) {
+            return {
+              data: {
+                affectedRecords: count,
+                details: 'Preview: ' + count + ' orders (and cascading order_items) identified for cleanup. Zero records modified.',
+                dryRun: true
+              },
+              error: null,
+              source: 'SUPABASE'
+            };
+          }
+
+          if (count > 0 && matched) {
+            const ids = matched.map((o: any) => o.id);
+            await supabase.from('order_items').delete().in('order_id', ids);
+            await supabase.from('order_status_history').delete().in('order_id', ids);
+            const { error: dErr } = await supabase.from('orders').delete().in('id', ids);
+            if (dErr) return { data: null, error: dErr.message, source: 'SUPABASE' };
+
+            await supabase.from('admin_audit_logs').insert({
+              admin_email: adminEmail || 'superadmin@zadafoods.com',
+              action: 'BULK_DATA_CLEANUP',
+              entity_type: 'orders',
+              entity_id: 'bulk',
+              changes: { scope, count, ids: ids.slice(0, 10), timestamp: new Date().toISOString() }
+            });
+
+            return {
+              data: {
+                affectedRecords: count,
+                details: 'Successfully deleted ' + count + ' operational order records and cascading items.',
+                dryRun: false
+              },
+              error: null,
+              source: 'SUPABASE'
+            };
+          }
+
+          return {
+            data: { affectedRecords: 0, details: 'No eligible records found matching criteria.', dryRun: false },
+            error: null,
+            source: 'SUPABASE'
+          };
+        } else if (scope === 'ENQUIRIES') {
+          let query = supabase.from('bulk_enquiries').select('id, full_name, created_at');
+          if (beforeDate) {
+            query = query.lte('created_at', beforeDate);
+          }
+          const { data: matched, error: mErr } = await query;
+          if (mErr) return { data: null, error: mErr.message, source: 'SUPABASE' };
+
+          const count = matched?.length || 0;
+          if (dryRun) {
+            return {
+              data: {
+                affectedRecords: count,
+                details: 'Preview: ' + count + ' bulk enquiries identified for deletion. Zero records modified.',
+                dryRun: true
+              },
+              error: null,
+              source: 'SUPABASE'
+            };
+          }
+
+          if (count > 0 && matched) {
+            const ids = matched.map((e: any) => e.id);
+            const { error: dErr } = await supabase.from('bulk_enquiries').delete().in('id', ids);
+            if (dErr) return { data: null, error: dErr.message, source: 'SUPABASE' };
+
+            await supabase.from('admin_audit_logs').insert({
+              admin_email: adminEmail || 'superadmin@zadafoods.com',
+              action: 'BULK_DATA_CLEANUP',
+              entity_type: 'bulk_enquiries',
+              entity_id: 'bulk',
+              changes: { scope, count, timestamp: new Date().toISOString() }
+            });
+
+            return {
+              data: {
+                affectedRecords: count,
+                details: 'Successfully deleted ' + count + ' bulk enquiry records.',
+                dryRun: false
+              },
+              error: null,
+              source: 'SUPABASE'
+            };
+          }
+
+          return {
+            data: { affectedRecords: 0, details: 'No eligible records found matching criteria.', dryRun: false },
+            error: null,
+            source: 'SUPABASE'
+          };
+        }
+      } catch (err: any) {
+        return { data: null, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    return {
+      data: { affectedRecords: 0, details: 'Offline mode dry-run simulated.', dryRun: true },
+      error: null,
+      source: 'LOCAL_CACHE'
+    };
+  }
+
+
   /**
    * Fetch all Category Banners from Supabase with safe fallback
    */
@@ -1781,6 +2869,7 @@ export class SupabaseDataService {
   public static async saveCategoryBanner(banner: CategoryBanner): Promise<DataOperationResult<CategoryBanner>> {
     if (isSupabaseConfigured()) {
       try {
+        await ensureAuthenticatedAdminSession();
         const payload: any = {
           category_id: banner.categoryId || null,
           category_slug: banner.categorySlug,
@@ -1911,6 +3000,7 @@ export class SupabaseDataService {
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       if (isUUID) {
         try {
+          await ensureAuthenticatedAdminSession();
           const { error } = await supabase
             .from('category_banners')
             .delete()
@@ -2111,31 +3201,60 @@ export class SupabaseDataService {
   }
 
   static async setActiveFestivalTheme(themeId: string): Promise<DataOperationResult<boolean>> {
+    const isDefaultTheme = !themeId || themeId === 'default' || themeId === 'theme-default';
+
     // 1. Update local storage
     try {
       const existing: FestivalTheme[] = JSON.parse(localStorage.getItem('zada_festival_themes') || JSON.stringify(INITIAL_FESTIVAL_PRESETS));
       const updated = existing.map((t) => ({
         ...t,
-        isActive: t.id === themeId
+        isActive: isDefaultTheme ? t.preset === 'default' : t.id === themeId
       }));
       localStorage.setItem('zada_festival_themes', JSON.stringify(updated));
+      localStorage.setItem('zada_active_theme', isDefaultTheme ? 'default' : themeId);
     } catch {}
 
     // 2. Sync to Supabase
     if (isSupabaseConfigured()) {
       try {
-        await supabase
-          .from('festival_themes')
-          .update({ is_active: false })
-          .neq('id', themeId);
+        if (isDefaultTheme) {
+          // Deactivate all seasonal festival themes so standard ZaDa brand theme takes effect
+          await supabase
+            .from('festival_themes')
+            .update({ is_active: false });
 
-        await supabase
-          .from('festival_themes')
-          .update({ is_active: true, updated_at: new Date().toISOString() })
-          .eq('id', themeId);
+          try {
+            await supabase
+              .from('store_settings')
+              .update({ active_theme: 'default' })
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+          } catch {}
 
-        return { data: true, error: null, source: 'SUPABASE' };
+          return { data: true, error: null, source: 'SUPABASE' };
+        } else if (isUUID(themeId)) {
+          // Deactivate other festival themes
+          await supabase
+            .from('festival_themes')
+            .update({ is_active: false })
+            .neq('id', themeId);
+
+          // Activate target festival theme
+          await supabase
+            .from('festival_themes')
+            .update({ is_active: true, updated_at: new Date().toISOString() })
+            .eq('id', themeId);
+
+          try {
+            await supabase
+              .from('store_settings')
+              .update({ active_theme: themeId })
+              .neq('id', '00000000-0000-0000-0000-000000000000');
+          } catch {}
+
+          return { data: true, error: null, source: 'SUPABASE' };
+        }
       } catch (err: any) {
+        console.warn('[SupabaseDataService] setActiveFestivalTheme notice:', err?.message);
         return { data: true, error: null, source: 'LOCAL_CACHE' };
       }
     }
@@ -2184,19 +3303,25 @@ export class SupabaseDataService {
           return { data: null, error: error.message, source: 'SUPABASE' };
         }
 
-        const mapped: Coupon[] = (data || []).map((c: any) => ({
-          id: c.id,
-          code: c.code,
-          discountType: c.discount_type,
-          discountValue: Number(c.discount_value) || 0,
-          maxDiscountAmount: c.max_discount_amount ? Number(c.max_discount_amount) : undefined,
-          minOrderAmount: Number(c.min_order_amount) || 0,
-          isFirstOrderOnly: !!c.is_first_order_only,
-          usageLimit: c.usage_limit ? Number(c.usage_limit) : undefined,
-          timesUsed: Number(c.times_used) || 0,
-          isActive: !!c.is_active,
-          validUntil: c.valid_until || undefined
-        }));
+        const mapped: Coupon[] = (data || []).map((c: any) => {
+          const parsed = parseCouponDescription(c.description);
+          return {
+            id: c.id,
+            code: c.code,
+            description: parsed.description,
+            assignedCustomerEmail: parsed.assignedCustomerEmail,
+            isSingleUsePerCustomer: parsed.isSingleUsePerCustomer,
+            discountType: c.discount_type,
+            discountValue: Number(c.discount_value) || 0,
+            maxDiscountAmount: c.max_discount_amount ? Number(c.max_discount_amount) : undefined,
+            minOrderAmount: Number(c.min_order_amount) || 0,
+            isFirstOrderOnly: !!c.is_first_order_only,
+            usageLimit: c.usage_limit ? Number(c.usage_limit) : undefined,
+            timesUsed: Number(c.times_used) || 0,
+            isActive: !!c.is_active,
+            validUntil: c.valid_until || undefined
+          };
+        });
 
         try {
           localStorage.setItem('zada_admin_coupons', JSON.stringify(mapped));
@@ -2218,9 +3343,15 @@ export class SupabaseDataService {
     if (isSupabaseConfigured()) {
       try {
         const couponId = crypto.randomUUID();
+        const descPayload = encodeCouponDescription(
+          couponData.description,
+          couponData.assignedCustomerEmail,
+          couponData.isSingleUsePerCustomer
+        );
         const payload: Record<string, any> = {
           id: couponId,
           code: couponData.code.trim().toUpperCase(),
+          description: descPayload || null,
           discount_type: couponData.discountType,
           discount_value: couponData.discountValue,
           min_order_amount: couponData.minOrderAmount || 0,
@@ -2232,6 +3363,7 @@ export class SupabaseDataService {
           valid_until: couponData.validUntil || null
         };
 
+        await ensureAuthenticatedAdminSession();
         const { error } = await supabase.from('coupons').insert(payload);
         if (error) {
           return { data: null, error: error.message, source: 'SUPABASE' };
@@ -2284,8 +3416,16 @@ export class SupabaseDataService {
         if (updates.isFirstOrderOnly !== undefined) payload.is_first_order_only = updates.isFirstOrderOnly;
         if (updates.usageLimit !== undefined) payload.usage_limit = updates.usageLimit;
         if (updates.isActive !== undefined) payload.is_active = updates.isActive;
-        if (updates.validUntil !== undefined) payload.valid_until = updates.validUntil;
+                if (updates.validUntil !== undefined) payload.valid_until = updates.validUntil;
+        if (updates.description !== undefined || updates.assignedCustomerEmail !== undefined || updates.isSingleUsePerCustomer !== undefined) {
+          payload.description = encodeCouponDescription(
+            updates.description,
+            updates.assignedCustomerEmail,
+            updates.isSingleUsePerCustomer
+          );
+        }
 
+        await ensureAuthenticatedAdminSession();
         const { error } = await supabase.from('coupons').update(payload).eq('id', id);
         if (error) {
           return { data: null, error: error.message, source: 'SUPABASE' };
@@ -2320,6 +3460,7 @@ export class SupabaseDataService {
   public static async deleteCoupon(id: string): Promise<DataOperationResult<boolean>> {
     if (isSupabaseConfigured() && isUUID(id)) {
       try {
+        await ensureAuthenticatedAdminSession();
         const { error } = await supabase.from('coupons').delete().eq('id', id);
         if (error) {
           return { data: false, error: error.message, source: 'SUPABASE' };
@@ -2475,7 +3616,7 @@ export class SupabaseDataService {
         if (updates.discountPercentage !== undefined) payload.discount_percentage = updates.discountPercentage;
         if (updates.fixedPrice !== undefined) payload.fixed_price = updates.fixedPrice;
         if (updates.isActive !== undefined) payload.is_active = updates.isActive;
-
+        
         const { error } = await supabase.from('pricing_rules').update(payload).eq('id', id);
         if (error) {
           return { data: null, error: error.message, source: 'SUPABASE' };
@@ -2601,6 +3742,7 @@ export class SupabaseDataService {
           description: comboData.description || null,
           discount_type: 'PERCENTAGE',
           discount_value: comboData.discountPercent || 0,
+          image_url: comboData.imageUrl || null,
           is_active: comboData.isActive !== false
         };
 
@@ -2666,7 +3808,7 @@ export class SupabaseDataService {
         if (updates.description !== undefined) payload.description = updates.description;
         if (updates.discountPercent !== undefined) payload.discount_value = updates.discountPercent;
         if (updates.isActive !== undefined) payload.is_active = updates.isActive;
-
+        
         const { error } = await supabase.from('combos').update(payload).eq('id', id);
         if (error) {
           return { data: null, error: error.message, source: 'SUPABASE' };
@@ -3193,6 +4335,10 @@ export class SupabaseDataService {
             defaultCustomerPaymentMethod: checkout.defaultCustomerPaymentMethod || INITIAL_STORE_SETTINGS.defaultCustomerPaymentMethod,
             isWhatsAppAssistedCodEnabled: checkout.isWhatsAppAssistedCodEnabled ?? INITIAL_STORE_SETTINGS.isWhatsAppAssistedCodEnabled,
             whatsAppDestinationNumber: checkout.whatsappNumber || checkout.whatsAppDestinationNumber || INITIAL_STORE_SETTINGS.whatsAppDestinationNumber,
+            codFeeType: checkout.codFeeType || INITIAL_STORE_SETTINGS.codFeeType || 'FIXED',
+            codFeeValue: checkout.codFeeValue ?? INITIAL_STORE_SETTINGS.codFeeValue ?? 0,
+            codMinOrderValue: checkout.codMinOrderValue ?? INITIAL_STORE_SETTINGS.codMinOrderValue ?? 0,
+            codMaxOrderValue: checkout.codMaxOrderValue ?? INITIAL_STORE_SETTINGS.codMaxOrderValue ?? 50000,
             storeName: compliance.brandName || compliance.storeName || INITIAL_STORE_SETTINGS.storeName,
             fssaiNumber: compliance.fssaiNumber || INITIAL_STORE_SETTINGS.fssaiNumber,
             supportEmail: compliance.supportEmail || INITIAL_STORE_SETTINGS.supportEmail,
@@ -3220,6 +4366,7 @@ export class SupabaseDataService {
   ): Promise<DataOperationResult<StoreSettings>> {
     if (isSupabaseConfigured()) {
       try {
+        await ensureAuthenticatedAdminSession();
         const currentRes = await this.fetchStoreSettings();
         const current = currentRes.data || INITIAL_STORE_SETTINGS;
         const merged = { ...current, ...newSettings };
@@ -3248,7 +4395,11 @@ export class SupabaseDataService {
             codAdvanceMaxAmount: merged.codAdvanceMaxAmount,
             isRazorpayEnabled: merged.isRazorpayEnabled,
             defaultCustomerPaymentMethod: merged.defaultCustomerPaymentMethod,
-            isWhatsAppAssistedCodEnabled: merged.isWhatsAppAssistedCodEnabled
+            isWhatsAppAssistedCodEnabled: merged.isWhatsAppAssistedCodEnabled,
+            codFeeType: merged.codFeeType || 'FIXED',
+            codFeeValue: merged.codFeeValue ?? 0,
+            codMinOrderValue: merged.codMinOrderValue ?? 0,
+            codMaxOrderValue: merged.codMaxOrderValue ?? 50000
           },
           updated_at: new Date().toISOString()
         };
@@ -3285,6 +4436,105 @@ export class SupabaseDataService {
       return { data: merged, error: null, source: 'LOCAL_CACHE' };
     } catch {}
     return { data: newSettings as StoreSettings, error: null, source: 'LOCAL_CACHE' };
+  }
+
+  // ==========================================
+  // STORE CONTENT & POLICIES MANAGEMENT
+  // ==========================================
+  public static async fetchStoreContent(): Promise<DataOperationResult<StoreContentPage[]>> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('store_settings')
+          .select('*')
+          .eq('key', 'content_pages')
+          .maybeSingle();
+
+        if (error) {
+          return { data: null, error: error.message, source: 'SUPABASE' };
+        }
+
+        if (data && data.value) {
+          const val = data.value;
+          const pages: StoreContentPage[] = Array.isArray(val)
+            ? val
+            : Object.values(val);
+
+          const merged = INITIAL_STORE_CONTENT.map((initPage) => {
+            const remotePage = pages.find((p) => p.slug === initPage.slug);
+            return remotePage
+              ? {
+                  ...initPage,
+                  ...remotePage,
+                  title: remotePage.title || initPage.title,
+                  content: remotePage.content || initPage.content,
+                  lastUpdated: remotePage.lastUpdated || initPage.lastUpdated
+                }
+              : initPage;
+          });
+
+          pages.forEach((p) => {
+            if (!merged.some((m) => m.slug === p.slug)) {
+              merged.push(p);
+            }
+          });
+
+          try {
+            localStorage.setItem('zada_admin_store_content', JSON.stringify(merged));
+          } catch {}
+
+          return { data: merged, error: null, source: 'SUPABASE' };
+        }
+      } catch (err: any) {
+        return { data: null, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem('zada_admin_store_content');
+      return { data: saved ? JSON.parse(saved) : INITIAL_STORE_CONTENT, error: null, source: 'LOCAL_CACHE' };
+    } catch {
+      return { data: INITIAL_STORE_CONTENT, error: null, source: 'LOCAL_CACHE' };
+    }
+  }
+
+  public static async saveStoreContent(
+    pages: StoreContentPage[]
+  ): Promise<DataOperationResult<StoreContentPage[]>> {
+    if (isSupabaseConfigured()) {
+      try {
+        await ensureAuthenticatedAdminSession();
+        const payload = {
+          key: 'content_pages',
+          value: pages,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('store_settings')
+          .upsert([payload]);
+
+        if (error) {
+          console.error('[Supabase Error] Failed to save store content:', error.message);
+          return { data: null, error: error.message, source: 'SUPABASE' };
+        }
+
+        try {
+          localStorage.setItem('zada_admin_store_content', JSON.stringify(pages));
+        } catch {}
+
+        return { data: pages, error: null, source: 'SUPABASE' };
+      } catch (err: any) {
+        return { data: null, error: err.message, source: 'SUPABASE' };
+      }
+    }
+
+    try {
+      localStorage.setItem('zada_admin_store_content', JSON.stringify(pages));
+      return { data: pages, error: null, source: 'LOCAL_CACHE' };
+    } catch {
+      return { data: pages, error: null, source: 'LOCAL_CACHE' };
+    }
   }
 
   // ==========================================

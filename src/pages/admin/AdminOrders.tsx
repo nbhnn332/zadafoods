@@ -435,6 +435,12 @@ export const AdminOrders: React.FC = () => {
                     <span>Shipping Fee:</span>
                     <span>₹{selectedOrder.shippingCharge}</span>
                   </div>
+                  {selectedOrder.codFee && selectedOrder.codFee > 0 ? (
+                    <div className="flex justify-between text-content-muted" data-testid="admin-cod-surcharge">
+                      <span>COD Surcharge:</span>
+                      <span>+₹{selectedOrder.codFee}</span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between text-sm font-bold text-content-primary border-t border-border-subtle pt-1">
                     <span>Total Amount:</span>
                     <span>₹{selectedOrder.totalAmount}</span>
@@ -787,6 +793,12 @@ export const AdminOrders: React.FC = () => {
                       {invoiceOrder.shippingCharge === 0 ? 'FREE' : `₹${invoiceOrder.shippingCharge.toFixed(2)}`}
                     </span>
                   </div>
+                  {invoiceOrder.codFee && invoiceOrder.codFee > 0 ? (
+                    <div className="flex justify-between py-1 border-b border-stone-100">
+                      <span className="text-stone-600">COD Surcharge:</span>
+                      <span className="font-mono font-semibold">+₹{invoiceOrder.codFee.toFixed(2)}</span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between py-2 border-t-2 border-stone-800 text-sm font-extrabold text-stone-900">
                     <span>Grand Total:</span>
                     <span className="font-mono">₹{invoiceOrder.totalAmount.toFixed(2)}</span>

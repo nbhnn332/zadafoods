@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
-import { Save, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Save, ExternalLink, Eye, Edit3 } from 'lucide-react';
 import { useAdminData } from '../../context/AdminDataContext';
 import { Link } from 'react-router-dom';
+import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 
 export const AdminContent: React.FC = () => {
   const { storeContent, updateStoreContent } = useAdminData();
   const [selectedSlug, setSelectedSlug] = useState<string>(storeContent[0]?.slug || 'about');
+  const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+  const [isSaving, setIsSaving] = useState(false);
 
   const currentPage = storeContent.find((p) => p.slug === selectedSlug) || storeContent[0];
   const [editedTitle, setEditedTitle] = useState(currentPage?.title || '');
   const [editedContent, setEditedContent] = useState(currentPage?.content || '');
+
+  // Synchronize local input state whenever the authoritative storeContent loads or page changes
+  useEffect(() => {
+    if (currentPage) {
+      setEditedTitle(currentPage.title);
+      setEditedContent(currentPage.content);
+    }
+  }, [currentPage?.slug, currentPage?.title, currentPage?.content]);
 
   const handleSelectPage = (slug: string) => {
     setSelectedSlug(slug);
@@ -20,10 +31,15 @@ export const AdminContent: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPage) return;
-    updateStoreContent(currentPage.slug, editedContent, editedTitle);
+    setIsSaving(true);
+    try {
+      updateStoreContent(currentPage.slug, editedContent, editedTitle);
+    } finally {
+      setTimeout(() => setIsSaving(false), 400);
+    }
   };
 
   return (
@@ -41,7 +57,7 @@ export const AdminContent: React.FC = () => {
 
         {currentPage && (
           <Link
-            to={`/${currentPage.slug}`}
+            to={currentPage.slug === 'about' ? '/our-story' : `/${currentPage.slug}`}
             target="_blank"
             className="px-3 py-1.5 rounded-btn border border-border-subtle bg-white text-content-primary text-xs font-semibold hover:bg-canvas-subtle flex items-center gap-1.5 shadow-sm self-start"
           >
@@ -84,13 +100,39 @@ export const AdminContent: React.FC = () => {
                 <p className="text-[11px] text-content-muted">Last Updated: {currentPage?.lastUpdated}</p>
               </div>
 
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-btn bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover shadow-sm flex items-center gap-1.5"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save & Publish</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <div className="flex border border-border-subtle rounded-btn overflow-hidden bg-canvas-subtle">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('editor')}
+                    className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1 ${
+                      activeTab === 'editor' ? 'bg-white shadow-2xs text-brand-primary' : 'text-content-muted'
+                    }`}
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Editor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('preview')}
+                    className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1 ${
+                      activeTab === 'preview' ? 'bg-white shadow-2xs text-brand-primary' : 'text-content-muted'
+                    }`}
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Markdown Preview</span>
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-btn bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{isSaving ? 'Saving...' : 'Save & Publish'}</span>
+                </button>
+              </div>
             </div>
 
             <div>
@@ -104,19 +146,28 @@ export const AdminContent: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="font-bold text-content-primary block mb-1">
-                Body Content (Markdown Supported)
-              </label>
-              <textarea
-                rows={16}
-                required
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono leading-relaxed"
-                placeholder="Write page content in clean markdown or formatted text..."
-              />
-            </div>
+            {activeTab === 'editor' ? (
+              <div>
+                <label className="font-bold text-content-primary block mb-1">
+                  Body Content (Markdown Supported: # Headings, **bold**, *italic*, - bullet lists, 1. numbered lists, &gt; quotes, [links](url))
+                </label>
+                <textarea
+                  rows={16}
+                  required
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono leading-relaxed"
+                  placeholder="Write page content in clean markdown or formatted text..."
+                />
+              </div>
+            ) : (
+              <div className="border border-border-subtle rounded-input p-4 bg-canvas-subtle/30 min-h-[300px]">
+                <p className="text-[10px] font-bold text-content-muted uppercase tracking-wider mb-2 border-b border-border-subtle pb-1">
+                  Live Preview: {editedTitle}
+                </p>
+                <MarkdownRenderer content={editedContent} />
+              </div>
+            )}
           </form>
         </div>
       </div>

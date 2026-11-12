@@ -36,3 +36,7 @@ supabase/.temp
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Scratch temporary scripts
+scratch/
+

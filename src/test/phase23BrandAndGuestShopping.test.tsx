@@ -69,6 +69,28 @@ describe('ZaDa Foods — Phase 23: Brand Repositioning & Guest Shopping QA', () 
   });
 
   describe('2. Guest Checkout Experience (Zero Mandatory Login)', () => {
+    beforeEach(() => {
+      localStorage.setItem(
+        'zada_guest_cart',
+        JSON.stringify([
+          {
+            productId: 'prod-001',
+            variantId: 'var-001',
+            productName: 'Malabar Cardamom',
+            productSlug: 'malabar-cardamom',
+            categorySlug: 'spices',
+            variantWeightLabel: '100g',
+            imageUrl: '/assets/cardamom.jpg',
+            unitPrice: 350,
+            mrp: 400,
+            quantity: 1,
+            isCodEligible: true,
+            availableStock: 10
+          }
+        ])
+      );
+    });
+
     it('displays the Continue as Guest checkout form when visitor is unauthenticated', () => {
       renderApp('/checkout');
       expect(screen.getByText(/Continue as Guest/i)).toBeInTheDocument();

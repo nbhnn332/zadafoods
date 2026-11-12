@@ -191,7 +191,9 @@ export const AdminFestivals: React.FC = () => {
           </button>
 
           <button
-            onClick={resetToDefault}
+            onClick={async () => {
+              await resetToDefault();
+            }}
             className="px-3.5 py-2 rounded-btn bg-canvas-subtle border border-border-subtle hover:bg-canvas text-content-secondary text-xs font-medium transition-colors flex items-center gap-1.5"
             title="Deactivate all festival overlays and return to clean default ZaDa aesthetic"
           >

@@ -15,10 +15,10 @@ describe('Authentication Flow (Decision #2)', () => {
     localStorage.clear();
   });
 
-  it('provides default customer session for Numan Sidique', () => {
+  it('initializes unauthenticated visitor strictly as guest (null user) with zero identity leakage', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
-    expect(result.current.user?.fullName).toBe('Numan Sidique');
-    expect(result.current.user?.email).toBe('numan@example.com');
+    expect(result.current.user).toBeNull();
+    expect(result.current.isAuthenticated).toBe(false);
   });
 
   it('registers a new customer with email and password', async () => {

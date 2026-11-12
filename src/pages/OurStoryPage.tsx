@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   Sparkles,
   ShieldCheck,
-  Phone,
-  Mail,
   MapPin,
   CheckCircle2,
   ArrowRight,
@@ -17,9 +15,19 @@ import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 import { Footer } from '../components/Footer';
 import { useAdminData } from '../context/AdminDataContext';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 export const OurStoryPage: React.FC = () => {
-  const { settings } = useAdminData();
+  const { settings, storeContent } = useAdminData();
+  const aboutPage = storeContent.find((p) => p.slug === 'about' || p.slug === 'our-story');
+
+  const defaultHeroTitle = 'Rooted in Kerala. Crafted with Care.';
+  const displayHeroTitle =
+    aboutPage?.title &&
+    aboutPage.title !== 'Our Kerala Heritage & Pure Flavors' &&
+    aboutPage.title !== 'Preserving the Art of Traditional Kerala Delicacies'
+      ? aboutPage.title
+      : defaultHeroTitle;
 
   const craftsmanshipPillars = [
     {
@@ -90,7 +98,7 @@ export const OurStoryPage: React.FC = () => {
             </span>
 
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-white">
-              Rooted in Kerala. Crafted with Care.
+              {displayHeroTitle}
               <span className="block text-xl sm:text-2xl font-normal text-amber-200 mt-1">
                 Authentic Kerala Flavours, Rooted in Tradition.
               </span>
@@ -102,33 +110,38 @@ export const OurStoryPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 2. Our Heritage Section */}
+        {/* 2. Our Heritage Section (Authoritative Content from Database) */}
         <section className="space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[#A67732]">
               OUR HERITAGE & ORIGINS
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
-              Preserving the Art of Traditional Kerala Delicacies
+              {aboutPage?.title && aboutPage.title !== 'Our Kerala Heritage & Pure Flavors'
+                ? aboutPage.title
+                : 'Preserving the Art of Traditional Kerala Delicacies'}
             </h2>
           </div>
 
           <div className="bg-white rounded-2xl border border-[#EAE5DC] p-6 sm:p-10 shadow-2xs space-y-6 text-content-secondary leading-relaxed text-sm sm:text-base">
-            <p>
-              In the fragrant kitchens of Kerala, food has never been about shortcuts. From the rhythmic hand-slicing of raw Nedran bananas harvested in the lush foothills of Wayanad, to the gentle slow simmering of caramelized jaggery and whole cashews in heavy brass urulis, great flavours require patience, respect, and generational skill.
-            </p>
-            <p>
-              ZaDa Foods was founded to honour these culinary traditions. In an era where mass manufacturing frequently replaces pure cold-pressed coconut oil with hydrogenated fats and artificial enhancers, we remain committed to traditional small-batch preparation that lets genuine Kerala ingredients shine.
-            </p>
-
-            {/* Typographic Pull Quote with CSS Borders */}
-            <blockquote className="border-l-4 border-[#A67732] pl-4 sm:pl-6 py-2 my-4 bg-[#FAF7F2] rounded-r-xl font-serif text-base sm:text-lg text-[#072C20] italic font-semibold">
-              "We believe authentic flavour starts at the farm gate. When the bananas are freshly harvested and the oil is pure, nothing needs to be masked."
-            </blockquote>
-
-            <p>
-              From our signature crispy banana chips seasoned with coarse sea salt, to our Kozhikode black and cashew halwas cooked over hours, every ZaDa Foods delicacy is prepared with the same integrity we demand for our own families.
-            </p>
+            {aboutPage?.content && aboutPage.content !== 'Content is being updated by our editorial team.' ? (
+              <MarkdownRenderer content={aboutPage.content} />
+            ) : (
+              <>
+                <p>
+                  In the fragrant kitchens of Kerala, food has never been about shortcuts. From the rhythmic hand-slicing of raw Nendran bananas harvested in the lush foothills of Wayanad, to the gentle slow simmering of caramelized jaggery and whole cashews in heavy brass urulis, great flavours require patience, respect, and generational skill.
+                </p>
+                <p>
+                  ZaDa Foods was founded to honour these culinary traditions. In an era where mass manufacturing frequently replaces pure cold-pressed coconut oil with hydrogenated fats and artificial enhancers, we remain committed to traditional small-batch preparation that lets genuine Kerala ingredients shine.
+                </p>
+                <blockquote className="border-l-4 border-[#A67732] pl-4 sm:pl-6 py-2 my-4 bg-[#FAF7F2] rounded-r-xl font-serif text-base sm:text-lg text-[#072C20] italic font-semibold">
+                  "We believe authentic flavour starts at the farm gate. When the bananas are freshly harvested and the oil is pure, nothing needs to be masked."
+                </blockquote>
+                <p>
+                  From our signature crispy banana chips seasoned with coarse sea salt, to our Kozhikode black and cashew halwas cooked over hours, every ZaDa Foods delicacy is prepared with the same integrity we demand for our own families.
+                </p>
+              </>
+            )}
           </div>
         </section>
 
@@ -166,14 +179,14 @@ export const OurStoryPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 4. Our Principles: Typographic Statements */}
+        {/* 4. Core Brand Principles */}
         <section className="space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[#A67732]">
-              GUIDING VALUES
+              OUR COMMITMENTS
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
-              Our Four Commitments
+              Four Uncompromising Principles
             </h2>
           </div>
 
@@ -181,86 +194,70 @@ export const OurStoryPage: React.FC = () => {
             {brandPrinciples.map((principle) => (
               <div
                 key={principle.number}
-                className="bg-white rounded-2xl border border-[#EAE5DC] p-5 shadow-2xs space-y-2 flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-[#EAE5DC] p-5 shadow-2xs flex flex-col justify-between space-y-3"
               >
-                <div className="space-y-2">
-                  <span className="font-mono text-xs font-extrabold text-[#A67732] block">
+                <div>
+                  <span className="font-mono text-xs font-bold text-[#A67732] block mb-1">
                     {principle.number}
                   </span>
-                  <h4 className="font-serif font-bold text-sm text-[#1C1917]">
+                  <h3 className="font-serif font-bold text-sm text-[#1C1917]">
                     {principle.title}
-                  </h4>
-                  <p className="text-xs text-content-secondary leading-relaxed">
+                  </h3>
+                  <p className="text-xs text-content-secondary mt-1.5 leading-relaxed">
                     {principle.detail}
                   </p>
                 </div>
-                <div className="pt-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#072C20]" />
+                <div className="pt-2 border-t border-border-subtle flex items-center gap-1.5 text-[11px] font-semibold text-[#072C20]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Verified Standard</span>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 5. Verified Business & Regulatory Details */}
-        <section className="bg-white rounded-2xl border border-[#EAE5DC] p-6 sm:p-8 shadow-2xs space-y-6">
-          <div className="border-b border-[#EAE5DC] pb-4">
-            <h3 className="font-serif font-bold text-lg text-[#1C1917]">
-              Business & Regulatory Information
-            </h3>
-            <p className="text-xs text-content-muted mt-0.5">
-              Verified operating details and central food safety certification.
+        {/* 5. Production Transparency & Kitchen Location */}
+        <section className="bg-white rounded-3xl border border-[#EAE5DC] p-6 sm:p-10 shadow-2xs space-y-6">
+          <div className="max-w-2xl space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#A67732]">
+              ORIGIN & COMPLIANCE
+            </span>
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
+              Rooted in Kozhikode & Punalur, Kerala
+            </h2>
+            <p className="text-xs sm:text-sm text-content-secondary leading-relaxed">
+              Every package is processed, batch-tested, and nitrogen-sealed in our hygienic certified packaging facilities adhering to central and state FSSAI safety codes.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            {/* Helpline */}
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAE5DC]/60">
-              <Phone className="w-4 h-4 text-[#A67732] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[10px] text-content-muted font-semibold uppercase">Helpline Support</p>
-                <a
-                  href={`tel:${settings.supportPhone}`}
-                  className="font-bold text-[#1C1917] hover:text-brand-primary transition-colors block mt-0.5"
-                >
-                  {settings.supportPhone}
-                </a>
-                <p className="text-[10px] text-content-muted mt-0.5">Mon–Sat, 9AM – 7PM</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <div className="p-4 rounded-xl bg-canvas-subtle border border-border-subtle space-y-1 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-[#072C20]">
+                <MapPin className="w-4 h-4 text-[#A67732]" />
+                <span>Facility Location</span>
               </div>
+              <p className="text-content-secondary leading-relaxed text-[11px]">
+                Malabar Heritage Snackworks<br />
+                Wayanad Road, Kozhikode<br />
+                Kerala, India - 673001
+              </p>
             </div>
 
-            {/* Email */}
-            <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAE5DC]/60">
-              <Mail className="w-4 h-4 text-[#A67732] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[10px] text-content-muted font-semibold uppercase">Customer Care</p>
-                <a
-                  href={`mailto:${settings.supportEmail}`}
-                  className="font-bold text-[#1C1917] hover:text-brand-primary transition-colors block mt-0.5 truncate"
-                >
-                  {settings.supportEmail}
-                </a>
-                <p className="text-[10px] text-content-muted mt-0.5">Prompt Email Assistance</p>
-              </div>
-            </div>
-
-            {/* FSSAI */}
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAE5DC]/60">
               <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
               <div>
                 <p className="text-[10px] text-content-muted font-semibold uppercase">FSSAI Certified</p>
-                <p className="font-bold text-[#1C1917] font-mono mt-0.5">{settings.fssaiNumber}</p>
+                <p className="font-bold text-[#1C1917] font-mono mt-0.5">{settings.fssaiNumber || '21326145000345'}</p>
                 <p className="text-[10px] text-content-muted mt-0.5">Central Food Safety License</p>
               </div>
             </div>
 
-            {/* Address */}
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAE5DC]/60">
-              <MapPin className="w-4 h-4 text-[#A67732] shrink-0 mt-0.5" />
+              <HeartHandshake className="w-4 h-4 text-[#A67732]" />
               <div>
-                <p className="text-[10px] text-content-muted font-semibold uppercase">Manufactured By</p>
-                <p className="font-bold text-[#1C1917] mt-0.5">ZADA FOODS</p>
-                <p className="text-[10px] text-content-muted mt-0.5">Punalur, Kollam (Dist), Kerala – 691305</p>
+                <p className="text-[10px] text-content-muted font-semibold uppercase">Customer Care</p>
+                <p className="font-bold text-[#1C1917] mt-0.5">{settings.supportPhone || '+91 75939 59235'}</p>
+                <p className="text-[10px] text-content-muted mt-0.5">{settings.supportEmail || 'care@zadafoods.com'}</p>
               </div>
             </div>
           </div>
@@ -298,7 +295,6 @@ export const OurStoryPage: React.FC = () => {
       </main>
 
       <Footer />
-
       <BottomNav />
     </div>
   );

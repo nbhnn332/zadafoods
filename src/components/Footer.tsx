@@ -51,7 +51,7 @@ export const Footer: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#052219] border border-[#144234] text-[#FAF7F2] text-xs font-semibold hover:border-[#A67732] hover:text-[#A67732] transition-colors"
-                aria-label="Direct WhatsApp Ordering with ZaDa Foods"
+                aria-label="ZaDa Foods WhatsApp Customer Care"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
                 <span>WhatsApp Care</span>

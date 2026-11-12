@@ -5,6 +5,7 @@ import { useAdminData } from '../context/AdminDataContext';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 import { Footer } from '../components/Footer';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 export const ContentPage: React.FC<{ forcedSlug?: string }> = ({ forcedSlug }) => {
   const { slug } = useParams<{ slug: string }>();
@@ -43,9 +44,9 @@ export const ContentPage: React.FC<{ forcedSlug?: string }> = ({ forcedSlug }) =
             </p>
           </div>
 
-          {/* Formatted Markdown/Text Body */}
-          <div className="prose prose-sm max-w-none text-content-secondary leading-relaxed space-y-4 whitespace-pre-line text-xs sm:text-sm">
-            {page.content}
+          {/* Formatted Markdown Body */}
+          <div className="text-content-secondary leading-relaxed text-xs sm:text-sm">
+            <MarkdownRenderer content={page.content} />
           </div>
 
           {/* Support Helpline Box */}

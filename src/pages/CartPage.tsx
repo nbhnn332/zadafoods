@@ -1,23 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { useCart, DEMO_CART_ITEMS } from '../context/CartContext';
 import { useAdminData } from '../context/AdminDataContext';
-import { getCartWhatsAppUrl } from '../lib/whatsapp';
-import {
-  formatPremiumWhatsAppOrderMessage,
-  buildWhatsAppChatUrl,
-  DEFAULT_WHATSAPP_DESTINATION
-} from '../lib/commerce/whatsappRouting';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { settings } = useAdminData();
-  const isWhatsAppMode = settings?.checkoutMode === 'WHATSAPP' || settings?.primaryCheckoutMode === 'WHATSAPP';
-  const {
+    const {
     items,
     updateQuantity,
     removeFromCart,
@@ -31,6 +23,7 @@ export const CartPage: React.FC = () => {
     totalItemUnits
   } = useCart();
 
+  const { settings } = useAdminData();
   const [couponInput, setCouponInput] = useState('');
 
   // Support demo preview for reference comparison without violating Phase 6A empty initial state
@@ -220,6 +213,11 @@ export const CartPage: React.FC = () => {
                 {displayDelivery === 0 ? 'FREE' : `₹${displayDelivery}`}
               </span>
             </div>
+            {settings?.isCodGloballyEnabled !== false && Number(settings?.codFeeValue) > 0 && (
+              <div className="text-[11px] text-[#71717A] bg-[#FAF8F5] p-2 rounded-lg border border-[#EAE5DC]">
+                ℹ️ Cash on Delivery surcharge (+₹{settings.codFeeValue}) applies if COD is chosen at checkout.
+              </div>
+            )}
             <div className="border-t border-[#EAE5DC] pt-2.5 flex justify-between items-center text-sm font-bold text-[#1C1917]">
               <span>Total</span>
               <span className="text-base font-bold text-[#1C1917]">₹{displayTotal}</span>
@@ -229,73 +227,20 @@ export const CartPage: React.FC = () => {
 
         {/* Proceed to Checkout CTA */}
         <div className="pt-1 space-y-2">
-          {isWhatsAppMode ? (
-            <>
-              <button
-                onClick={() => {
-                  const destNumber =
-                    settings?.whatsAppDestinationNumber ||
-                    settings?.supportWhatsApp ||
-                    DEFAULT_WHATSAPP_DESTINATION;
-                  const message = formatPremiumWhatsAppOrderMessage({
-                    items: displayedItems.map((item) => ({
-                      productName: item.productName,
-                      variantWeightLabel: item.variantWeightLabel,
-                      quantity: item.quantity,
-                      unitPrice: item.unitPrice,
-                      lineTotal: item.unitPrice * item.quantity
-                    })),
-                    subtotal: displaySubtotal,
-                    discountAmount: displayDiscount,
-                    couponCode: appliedCoupon,
-                    shippingCharge: displayDelivery,
-                    totalAmount: displayTotal
-                  });
-                  const waUrl = buildWhatsAppChatUrl(destNumber, message);
-                  window.open(waUrl, '_blank', 'noopener,noreferrer');
-                }}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] active:scale-[0.99] text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-5 h-5 fill-white" />
-                <span>Order on WhatsApp (₹{displayTotal})</span>
-              </button>
+          <button
+            onClick={() => navigate(isDemoActive ? '/checkout?demo=true' : '/checkout')}
+            className="w-full py-3.5 px-4 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.99] text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>Proceed to Checkout</span>
+            <span className="text-sm font-bold">→</span>
+          </button>
 
-              <button
-                onClick={() => navigate(isDemoActive ? '/checkout?demo=true' : '/checkout')}
-                className="w-full py-2.5 px-4 rounded-xl border border-[#EAE5DC] hover:bg-[#FAF8F5] text-[#71717A] text-xs font-semibold transition-colors text-center"
-              >
-                Add Delivery Address & Send via WhatsApp →
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => navigate(isDemoActive ? '/checkout?demo=true' : '/checkout')}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.99] text-white text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
-              >
-                <span>Proceed to Checkout</span>
-                <span className="text-sm font-bold">→</span>
-              </button>
-
-              <a
-                href={getCartWhatsAppUrl(
-                  displayedItems.map((item) => ({
-                    productName: item.productName,
-                    variantWeightLabel: item.variantWeightLabel,
-                    unitPrice: item.unitPrice,
-                    quantity: item.quantity
-                  })),
-                  displayTotal
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 text-[#072C20] text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-4 h-4 text-[#25D366] fill-[#25D366]" />
-                <span>Enquire or Order Cart on WhatsApp</span>
-              </a>
-            </>
-          )}
+          <button
+            onClick={() => navigate(isDemoActive ? '/checkout?demo=true' : '/checkout')}
+            className="w-full py-2.5 px-4 rounded-xl border border-[#EAE5DC] hover:bg-[#FAF8F5] text-[#71717A] text-xs font-semibold transition-colors text-center"
+          >
+            Add Delivery Address &amp; Review Order →
+          </button>
         </div>
       </main>
 

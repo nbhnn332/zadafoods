@@ -18,16 +18,11 @@ import { ProductVariant } from '../types';
 import { useCart } from '../context/CartContext';
 import { useAdminData } from '../context/AdminDataContext';
 import { useToast } from '../context/ToastContext';
-import {
-  formatPremiumWhatsAppOrderMessage,
-  buildWhatsAppChatUrl,
-  DEFAULT_WHATSAPP_DESTINATION
-} from '../lib/commerce/whatsappRouting';
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { products, reviews, addReview, settings } = useAdminData();
+  const { products, reviews, addReview } = useAdminData();
   const { addToCart } = useCart();
   const { showToast } = useToast();
 
@@ -161,32 +156,6 @@ export const ProductDetailPage: React.FC = () => {
     if (!product) return;
     if (selectedVariant.stockQuantity <= 0) {
       showToast('Out of Stock', 'This pack size is currently unavailable.', 'error');
-      return;
-    }
-
-    // Phase 24 Part 2: If in WhatsApp Direct Ordering Mode, open WhatsApp directly
-    if (settings.checkoutMode === 'WHATSAPP' || settings.primaryCheckoutMode === 'WHATSAPP') {
-      const itemTotal = selectedVariant.sellingPrice * quantity;
-      const deliveryFee = itemTotal >= (settings.freeShippingThreshold || 499) ? 0 : (settings.standardDeliveryFee || 40);
-      const finalTotal = itemTotal + deliveryFee;
-
-      const message = formatPremiumWhatsAppOrderMessage({
-        items: [
-          {
-            productName: product.name,
-            variantWeightLabel: selectedVariant.weightLabel || `${selectedVariant.weightValue}g`,
-            quantity,
-            unitPrice: selectedVariant.sellingPrice,
-            lineTotal: itemTotal
-          }
-        ],
-        subtotal: itemTotal,
-        shippingCharge: deliveryFee,
-        totalAmount: finalTotal
-      });
-
-      const url = buildWhatsAppChatUrl(DEFAULT_WHATSAPP_DESTINATION, message);
-      window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
 

@@ -127,9 +127,11 @@ export interface WhatsAppCustomerDetails {
   city?: string;
   state?: string;
   postalCode?: string;
+  instructions?: string;
 }
 
 export interface WhatsAppOrderSummaryParams {
+  orderNumber?: string;
   items: WhatsAppOrderItem[];
   subtotal: number;
   discountAmount?: number;
@@ -154,9 +156,9 @@ export function formatPremiumWhatsAppOrderMessage(params: WhatsAppOrderSummaryPa
   const lines: string[] = [
     `Hello ZaDa Foods,`,
     ``,
-    `I would like to place an order.`,
+    `I would like to place an order.${params.orderNumber ? ` (Order Ref: ${params.orderNumber})` : ''}`,
     ``,
-    `ORDER SUMMARY`,
+    `ORDER SUMMARY${params.orderNumber ? ` — #${params.orderNumber}` : ''}`,
     `━━━━━━━━━━━━━━━━━━`,
     ``,
     itemBlocks,
@@ -183,6 +185,7 @@ export function formatPremiumWhatsAppOrderMessage(params: WhatsAppOrderSummaryPa
     const addrParts = [params.customer.streetAddress, params.customer.city, params.customer.state].filter(Boolean);
     if (addrParts.length > 0) lines.push(`Delivery Address: ${addrParts.join(', ')}`);
     if (params.customer.postalCode) lines.push(`Pincode: ${params.customer.postalCode}`);
+    if (params.customer.instructions) lines.push(`Delivery Instructions: ${params.customer.instructions}`);
   }
 
   lines.push(``);

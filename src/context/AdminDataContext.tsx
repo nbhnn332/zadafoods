@@ -20,7 +20,12 @@ import {
   CustomerDirectoryEntry,
   CategoryBanner,
   AdminAccount,
-  AdminPermission
+  AdminPermission,
+  HandpickedSectionConfig,
+  BestsellerSectionConfig,
+  CorporateGiftingSectionConfig,
+  HeritageStorySectionConfig,
+  FeaturedCombosSectionConfig
 } from '../types';
 import { INITIAL_ADMINS, PROTECTED_SUPER_ADMIN, isSuperAdminEmail } from '../types/permissions';
 import {
@@ -52,7 +57,7 @@ interface AdminDataContextType {
   products: Product[];
   addCategory: (category: Omit<Category, 'id'>) => void;
   updateCategory: (id: string, category: Partial<Category>) => void;
-  deleteCategory: (id: string) => Promise<{ success: boolean; error?: string }>;
+  deleteCategory: (id: string, reassignToCategoryId?: string) => Promise<{ success: boolean; error?: string }>;
   deletedCategoryIds: string[];
   addSubcategory: (subcategory: Omit<Subcategory, 'id' | 'createdAt'>) => Promise<boolean>;
   updateSubcategory: (id: string, updates: Partial<Subcategory>) => Promise<boolean>;
@@ -125,8 +130,16 @@ interface AdminDataContextType {
   purgeSeedBanners: () => Promise<void>;
   homepageSections: HomepageSection[];
   updateHomepageSections: (sections: HomepageSection[]) => void;
-
-  // Category Banners CMS
+  handpickedSection: HandpickedSectionConfig;
+  updateHandpickedSection: (config: HandpickedSectionConfig) => Promise<{ success: boolean; error?: string }>;
+  bestsellerSection: BestsellerSectionConfig;
+  updateBestsellerSection: (config: BestsellerSectionConfig) => Promise<{ success: boolean; error?: string }>;
+  corporateGiftingSection: CorporateGiftingSectionConfig;
+  updateCorporateGiftingSection: (config: CorporateGiftingSectionConfig) => Promise<{ success: boolean; error?: string }>;
+  heritageStorySection: HeritageStorySectionConfig;
+  updateHeritageStorySection: (config: HeritageStorySectionConfig) => Promise<{ success: boolean; error?: string }>;
+  featuredCombosSection: FeaturedCombosSectionConfig;
+  updateFeaturedCombosSection: (config: FeaturedCombosSectionConfig) => Promise<{ success: boolean; error?: string }>;
   categoryBanners: CategoryBanner[];
   addCategoryBanner: (banner: Omit<CategoryBanner, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateCategoryBanner: (id: string, updates: Partial<CategoryBanner>) => void;
@@ -294,6 +307,139 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   });
 
+  const [handpickedSection, setHandpickedSection] = useState<HandpickedSectionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_handpicked_section');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'h0000000-0000-0000-0000-000000000001',
+      title: 'Traditional Sweets & Specialties',
+      subtitle: 'Slow-cooked authentic delicacies, regional staples & specialty treats',
+      badge: 'Handpicked For You',
+      isVisible: true,
+      productIds: ['prod-cashew-halwa', '11111111-1111-1111-1111-000000000002']
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zada_admin_handpicked_section', JSON.stringify(handpickedSection));
+    } catch {}
+  }, [handpickedSection]);
+
+  const [bestsellerSection, setBestsellerSection] = useState<BestsellerSectionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_bestseller_section');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'h0000000-0000-0000-0000-000000000002',
+      title: 'Bestsellers',
+      subtitle: 'Our most celebrated Kerala snacks, traditional spices & sweets',
+      badge: 'Customer Favourites',
+      isVisible: true,
+      maxProducts: 4,
+      productIds: [
+        'd0000000-0000-0000-0000-000000000001',
+        'd0000000-0000-0000-0000-000000000004',
+        'd0000000-0000-0000-0000-000000000003'
+      ]
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zada_admin_bestseller_section', JSON.stringify(bestsellerSection));
+    } catch {}
+  }, [bestsellerSection]);
+
+  const [corporateGiftingSection, setCorporateGiftingSection] = useState<CorporateGiftingSectionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_corporate_section');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'h0000000-0000-0000-0000-000000000003',
+      eyebrow: 'Corporate & Wedding Gifting',
+      heading: 'Planning a Festive Gathering or Corporate Event?',
+      description: 'Customized Kerala delicacy boxes, corporate gifting hampers, and wholesale spice orders handcrafted for your special occasions.',
+      bulletPoints: [
+        'Corporate gifting hampers',
+        'Wedding Kerala delicacy boxes',
+        'Bulk spice orders'
+      ],
+      primaryCtaLabel: 'Discuss a Custom Order',
+      primaryCtaDestination: '/bulk-orders',
+      secondaryCtaLabel: 'Chat on WhatsApp',
+      secondaryCtaDestination: 'https://wa.me/917593959235',
+      bgPreset: '#072C20',
+      textColor: '#FFFFFF',
+      isActive: true,
+      displayOrder: 7,
+      desktopVisible: true,
+      mobileVisible: true
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zada_admin_corporate_section', JSON.stringify(corporateGiftingSection));
+    } catch {}
+  }, [corporateGiftingSection]);
+
+  const [heritageStorySection, setHeritageStorySection] = useState<HeritageStorySectionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_heritage_story_section');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'h0000000-0000-0000-0000-000000000004',
+      eyebrow: 'TRADITION MEETS PURITY',
+      heading: 'Pure Ingredients, Generational Craft',
+      subtitle: 'Rooted in Kerala. Crafted for Every Kitchen.',
+      description: 'Hand-picked raw materials, cold-pressed coconut oil, zero preservatives, and traditional recipes perfected across three generations.',
+      imageUrl: '/assets/prod-banana-chips-hero.png',
+      ctaLabel: 'Read Our Story',
+      ctaDestination: '/our-story',
+      bgPreset: '#FAF6EE',
+      textColor: '#1C1917',
+      isActive: true,
+      displayOrder: 6,
+      desktopVisible: true,
+      mobileVisible: true
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zada_admin_heritage_story_section', JSON.stringify(heritageStorySection));
+    } catch {}
+  }, [heritageStorySection]);
+
+  const [featuredCombosSection, setFeaturedCombosSection] = useState<FeaturedCombosSectionConfig>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_featured_combos_section');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      id: 'h0000000-0000-0000-0000-000000000005',
+      title: 'Signature Kerala Combos',
+      subtitle: 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence',
+      eyebrow: 'Curated Gift Bundles & Value Packs',
+      isVisible: false,
+      comboIds: [],
+      maxCombos: 6,
+      displayOrder: 5
+    };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('zada_admin_featured_combos_section', JSON.stringify(featuredCombosSection));
+    } catch {}
+  }, [featuredCombosSection]);
+
   const [categoryBanners, setCategoryBanners] = useState<CategoryBanner[]>(() => {
     const raw = loadInitial('zada_admin_category_banners', INITIAL_CATEGORY_BANNERS);
     try {
@@ -398,7 +544,28 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         SupabaseDataService.fetchReviewsAdmin(),
         SupabaseDataService.fetchEnquiriesAdmin(),
         SupabaseDataService.fetchStoreSettings(),
-        SupabaseDataService.fetchOrdersAdmin()
+        SupabaseDataService.fetchOrdersAdmin(),
+        typeof SupabaseDataService.fetchInventoryMovements === 'function'
+          ? SupabaseDataService.fetchInventoryMovements()
+          : Promise.resolve({ data: [], error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchBestsellerSection === 'function'
+          ? SupabaseDataService.fetchBestsellerSection()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchCorporateGiftingSection === 'function'
+          ? SupabaseDataService.fetchCorporateGiftingSection()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchHeritageStorySection === 'function'
+          ? SupabaseDataService.fetchHeritageStorySection()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchFeaturedCombosSection === 'function'
+          ? SupabaseDataService.fetchFeaturedCombosSection()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchHandpickedSection === 'function'
+          ? SupabaseDataService.fetchHandpickedSection()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any),
+        typeof SupabaseDataService.fetchStoreContent === 'function'
+          ? SupabaseDataService.fetchStoreContent()
+          : Promise.resolve({ data: null, error: null, source: 'LOCAL_CACHE' } as any)
       ])
         .then((results) => {
           if (!isMounted) return;
@@ -414,6 +581,32 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
           const enqRes = results[9].status === 'fulfilled' ? results[9].value : null;
           const setRes = results[10].status === 'fulfilled' ? results[10].value : null;
           const ordRes = results[11].status === 'fulfilled' ? results[11].value : null;
+          const movRes = results[12].status === 'fulfilled' ? results[12].value : null;
+          const bestRes = results[13]?.status === 'fulfilled' ? results[13].value : null;
+          const corpRes = results[14]?.status === 'fulfilled' ? results[14].value : null;
+          const heritRes = results[15]?.status === 'fulfilled' ? results[15].value : null;
+          const featComboRes = results[16]?.status === 'fulfilled' ? results[16].value : null;
+          const handRes = results[17]?.status === 'fulfilled' ? results[17].value : null;
+          const contentRes = results[18]?.status === 'fulfilled' ? results[18].value : null;
+
+          if (bestRes?.data) {
+            setBestsellerSection(bestRes.data);
+          }
+          if (corpRes?.data) {
+            setCorporateGiftingSection(corpRes.data);
+          }
+          if (heritRes?.data) {
+            setHeritageStorySection(heritRes.data);
+          }
+          if (featComboRes?.data) {
+            setFeaturedCombosSection(featComboRes.data);
+          }
+          if (handRes?.data) {
+            setHandpickedSection(handRes.data);
+          }
+          if (contentRes?.data && contentRes.data.length > 0) {
+            setStoreContent(contentRes.data);
+          }
 
           if (prodRes?.data && prodRes.data.length > 0) {
             // Filter out any products deleted by admin so they never resurrect on refresh
@@ -472,6 +665,10 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
           if (ordRes?.data && ordRes.data.length > 0) {
             setOrders(ordRes.data);
+          }
+
+          if (movRes?.data && movRes.data.length > 0) {
+            setStockMovements(movRes.data);
           }
         })
         .catch((err) => {
@@ -603,27 +800,35 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     })();
   };
 
-  const deleteCategory = async (id: string): Promise<{ success: boolean; error?: string }> => {
-    // Check if category has any active products
-    const assignedProducts = products.filter((p) => p.categoryId === id);
-    if (assignedProducts.length > 0) {
-      const msg = `Cannot delete category: ${assignedProducts.length} product(s) (such as "${assignedProducts[0].name}") are assigned to it. Please reassign or delete these products first.`;
-      showToast('Cannot Delete Category', msg, 'warning');
-      return { success: false, error: msg };
-    }
-
+  const deleteCategory = async (id: string, reassignToCategoryId?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await SupabaseDataService.deleteCategory(id);
-      if (res.error || res.data === false) {
-        const errorMsg = res.error || 'Failed to delete category from database.';
+      // Check if products are currently assigned to this category
+      const assignedProducts = products.filter((p) => p.categoryId === id);
+      if (assignedProducts.length > 0 && !reassignToCategoryId) {
+        const errorMsg = `Cannot delete category: ${assignedProducts.length} product(s) (e.g. "${assignedProducts[0].name}") are currently assigned to this category. Reassign or delete products first.`;
+        showToast('Delete Failed', errorMsg, 'error');
+        return { success: false, error: errorMsg };
+      }
+
+      const res = reassignToCategoryId
+        ? await SupabaseDataService.deleteCategory(id, reassignToCategoryId)
+        : await SupabaseDataService.deleteCategory(id);
+
+      if (!res || res.error || res.data === false) {
+        const errorMsg = res?.error || 'Failed to delete category from database.';
         showToast('Delete Failed', errorMsg, 'error');
         return { success: false, error: errorMsg };
       }
 
       setDeletedCategoryIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
       setCategories((prev) => prev.filter((c) => c.id !== id));
+      if (reassignToCategoryId) {
+        setProducts((prev) =>
+          prev.map((p) => (p.categoryId === id ? { ...p, categoryId: reassignToCategoryId } : p))
+        );
+      }
       logAdminAction('DELETE_CATEGORY', 'CATEGORY', `Deleted category ${id}`, id);
-      showToast('Category Removed', 'Category has been deleted permanently.', 'info');
+      showToast('Category Removed', 'Category has been deleted permanently from database.', 'info');
       return { success: true };
     } catch (err: any) {
       const msg = err.message || 'An unexpected error occurred while deleting category.';
@@ -688,7 +893,7 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         );
       }
 
-      await SupabaseDataService.deleteSubcategory(id);
+      await SupabaseDataService.deleteSubcategory(id, reassignToSubcategoryId);
       setSubcategories((prev) => prev.filter((s) => s.id !== id));
       logAdminAction('DELETE_SUBCATEGORY', 'SUBCATEGORY', `Deleted subcategory ${id}`, id);
       showToast('Subcategory Deleted', 'Subcategory removed from catalog.', 'info');
@@ -953,6 +1158,16 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         createdAt: new Date().toISOString()
       };
       setStockMovements((prev) => [movement, ...prev]);
+
+      // Authoritative Supabase Stock Persistence: Update variant stock and record movement
+      if (typeof SupabaseDataService.updateVariantStock === 'function') {
+        SupabaseDataService.updateVariantStock(variantId, finalStock, {
+          reason,
+          notes: notes || `Stock updated via ${reason}`,
+          delta: netDelta,
+          previousStock: oldStock
+        }).catch((err) => console.warn('[Inventory] Supabase stock persist warning:', err));
+      }
       logAdminAction(
         'ADJUST_STOCK',
         'INVENTORY',
@@ -1510,14 +1725,21 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const reorderBanners = async (bannerId: string, direction: 'UP' | 'DOWN'): Promise<{ success: boolean; error?: string }> => {
-    const index = banners.findIndex((b) => b.id === bannerId);
+    const currentBanner = banners.find((b) => b.id === bannerId);
+    if (!currentBanner) return { success: false, error: 'Banner not found' };
+
+    const targetDevice = currentBanner.deviceTarget || 'desktop';
+    const deviceBanners = banners
+      .filter((b) => (b.deviceTarget || 'desktop') === targetDevice)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+
+    const index = deviceBanners.findIndex((b) => b.id === bannerId);
     if (index === -1) return { success: false, error: 'Banner not found' };
 
     const targetIdx = direction === 'UP' ? index - 1 : index + 1;
-    if (targetIdx < 0 || targetIdx >= banners.length) return { success: true };
+    if (targetIdx < 0 || targetIdx >= deviceBanners.length) return { success: true };
 
-    const currentBanner = banners[index];
-    const targetBanner = banners[targetIdx];
+    const targetBanner = deviceBanners[targetIdx];
 
     const newOrderCurrent = targetBanner.displayOrder;
     const newOrderTarget = currentBanner.displayOrder;
@@ -1539,7 +1761,7 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const purgeSeedBanners = async (): Promise<void> => {
     // Explicit admin action to purge initial seed banners from both state and storage
-    const seedIds = ['b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002', 'ban-1', 'ban-2'];
+    const seedIds = ['a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000002', 'ban-1', 'ban-2'];
     const nextDeleted = Array.from(new Set([...deletedBannerIds, ...seedIds]));
     setDeletedBannerIds(nextDeleted);
     try {
@@ -1554,6 +1776,105 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
     logAdminAction('PURGE_SEED_BANNERS', 'HOMEPAGE_CMS', 'Purged default demo seed banners');
     showToast('Clean Slate Enabled', 'Unwanted demo/seed banners permanently purged.', 'success');
+  };
+
+  const updateHandpickedSection = async (
+    config: HandpickedSectionConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    setHandpickedSection(config);
+    try {
+      localStorage.setItem('zada_admin_handpicked_section', JSON.stringify(config));
+    } catch {}
+    if (isSupabaseConfigured()) {
+      const res = await SupabaseDataService.saveHandpickedSection(config);
+      if (res.error) {
+        showToast('Sync Warning', 'Saved locally, but remote sync error: ' + res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+    }
+    logAdminAction('UPDATE_HANDPICKED', 'CMS', 'Updated Handpicked for You section');
+    showToast('Handpicked Section Updated', 'Catalog selections are now live.', 'success');
+    return { success: true };
+  };
+
+  const updateBestsellerSection = async (
+    config: BestsellerSectionConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    setBestsellerSection(config);
+    try {
+      localStorage.setItem('zada_admin_bestseller_section', JSON.stringify(config));
+    } catch {}
+    if (isSupabaseConfigured() && typeof SupabaseDataService.saveBestsellerSection === 'function') {
+      const res = await SupabaseDataService.saveBestsellerSection(config);
+      if (res.error) {
+        showToast('Sync Warning', 'Saved locally, remote notice: ' + res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+    }
+    logAdminAction('UPDATE_BESTSELLERS', 'CMS', 'Updated Bestsellers collection');
+    showToast('Bestsellers Updated', 'Bestseller collection selections are now live.', 'success');
+    return { success: true };
+  };
+
+  const updateCorporateGiftingSection = async (
+    config: CorporateGiftingSectionConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    setCorporateGiftingSection(config);
+    try {
+      localStorage.setItem('zada_admin_corporate_section', JSON.stringify(config));
+    } catch {}
+    if (isSupabaseConfigured() && typeof SupabaseDataService.saveCorporateGiftingSection === 'function') {
+      const res = await SupabaseDataService.saveCorporateGiftingSection(config);
+      if (res.error) {
+        showToast('Sync Warning', 'Saved locally, remote notice: ' + res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+    }
+    logAdminAction('UPDATE_CORPORATE_BANNER', 'CMS', 'Updated Corporate Gifting banner section');
+    showToast('Corporate Section Updated', 'Corporate gifting promotional content saved.', 'success');
+    return { success: true };
+  };
+
+  const updateHeritageStorySection = async (
+    config: HeritageStorySectionConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    setHeritageStorySection(config);
+    try {
+      localStorage.setItem('zada_admin_heritage_story_section', JSON.stringify(config));
+    } catch {}
+    if (isSupabaseConfigured() && typeof SupabaseDataService.saveHeritageStorySection === 'function') {
+      const res = await SupabaseDataService.saveHeritageStorySection(config);
+      if (res.error) {
+        showToast('Sync Warning', 'Saved locally, remote notice: ' + res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+    }
+    logAdminAction('UPDATE_HERITAGE_BANNER', 'CMS', 'Updated Heritage / Story Banner section');
+    showToast('Heritage Banner Updated', 'Heritage banner configuration saved.', 'success');
+    return { success: true };
+  };
+
+
+  const updateFeaturedCombosSection = async (
+    config: FeaturedCombosSectionConfig
+  ): Promise<{ success: boolean; error?: string }> => {
+    setFeaturedCombosSection(config);
+    try {
+      localStorage.setItem('zada_admin_featured_combos_section', JSON.stringify(config));
+    } catch {}
+    if (isSupabaseConfigured() && typeof SupabaseDataService.saveFeaturedCombosSection === 'function') {
+      const res = await SupabaseDataService.saveFeaturedCombosSection(config);
+      if (res.error) {
+        showToast('Sync Warning', 'Saved locally, remote notice: ' + res.error, 'warning');
+        return { success: false, error: res.error };
+      }
+    }
+    logAdminAction('UPDATE_FEATURED_COMBOS_SECTION', 'CMS', `Updated Featured Combos visibility: ${config.isVisible ? 'ENABLED' : 'DISABLED'}`);
+    showToast('Combos Merchandising Saved', `Homepage Combos section is now ${config.isVisible ? 'Active' : 'Hidden'}.`, 'success');
+
+
+
+    return { success: true };
   };
 
   const updateHomepageSections = (sections: HomepageSection[]) => {
@@ -1783,20 +2104,45 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const updateStoreContent = (slug: string, content: string, title?: string) => {
-    setStoreContent((prev) =>
-      prev.map((p) =>
-        p.slug === slug
-          ? {
-              ...p,
-              content,
-              title: title || p.title,
-              lastUpdated: new Date().toISOString().split('T')[0]
-            }
-          : p
-      )
-    );
+    const updatedDate = new Date().toISOString().split('T')[0];
+    let updatedPages: StoreContentPage[] = [];
+    setStoreContent((prev) => {
+      const exists = prev.some((p) => p.slug === slug);
+      if (exists) {
+        updatedPages = prev.map((p) =>
+          p.slug === slug
+            ? {
+                ...p,
+                content,
+                title: title || p.title,
+                lastUpdated: updatedDate
+              }
+            : p
+        );
+      } else {
+        updatedPages = [
+          ...prev,
+          {
+            slug,
+            title: title || slug,
+            content,
+            lastUpdated: updatedDate
+          }
+        ];
+      }
+      return updatedPages;
+    });
+
     logAdminAction('UPDATE_STORE_CONTENT', 'CONTENT_PAGE', `Updated content for ${slug}`);
     showToast('Content Saved', `Page "${slug}" published with latest updates.`, 'success');
+
+    if (isSupabaseConfigured()) {
+      SupabaseDataService.saveStoreContent(updatedPages);
+    } else {
+      try {
+        localStorage.setItem('zada_admin_store_content', JSON.stringify(updatedPages));
+      } catch {}
+    }
   };
 
   // 12. Admin Management Operations
@@ -1884,6 +2230,37 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
             }
 
             if (authData.user?.id) {
+              authUserId = authData.user.id;
+              try {
+                await supabase.from('profiles').upsert({
+                  id: authUserId,
+                  email: emailNorm,
+                  full_name: adminData.fullName.trim(),
+                  role: 'admin'
+                });
+                await supabase.from('admin_roles').upsert({
+                  user_id: authUserId,
+                  role: 'admin'
+                });
+                await supabase.from('admin_accounts').upsert({
+                  id: authUserId,
+                  email: emailNorm,
+                  full_name: adminData.fullName.trim(),
+                  role: 'admin',
+                  status: 'active',
+                  is_active: true
+                });
+                if (adminData.permissions && adminData.permissions.length > 0) {
+                  await supabase.from('admin_permissions').delete().eq('user_id', authUserId);
+                  const permRows = adminData.permissions.map((p) => ({
+                    user_id: authUserId,
+                    permission: p
+                  }));
+                  await supabase.from('admin_permissions').insert(permRows);
+                }
+              } catch (dbErr) {
+                console.warn('[AdminDataContext] Admin remote table provisioning notice:', dbErr);
+              }
               authUserId = authData.user.id;
             }
           }
@@ -2162,6 +2539,16 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         purgeSeedBanners,
         homepageSections,
         updateHomepageSections,
+        handpickedSection,
+        updateHandpickedSection,
+        bestsellerSection,
+        updateBestsellerSection,
+        corporateGiftingSection,
+        updateCorporateGiftingSection,
+        heritageStorySection,
+        updateHeritageStorySection,
+        featuredCombosSection,
+        updateFeaturedCombosSection,
         categoryBanners,
         addCategoryBanner,
         updateCategoryBanner,

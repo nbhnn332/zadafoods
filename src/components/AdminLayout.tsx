@@ -22,7 +22,8 @@ import {
   UserCheck,
   FolderTree,
   AlertOctagon,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AdminPermission } from '../types/permissions';
@@ -144,6 +145,8 @@ export const AdminLayout: React.FC = () => {
       group: 'Marketing & Content',
       items: [
         { name: 'Homepage CMS', path: '/admin/cms', icon: Palette, permission: 'cms.homepage' },
+        { name: 'Bestseller Collection', path: '/admin/bestsellers', icon: Sparkles, permission: 'cms.homepage' },
+        { name: 'Handpicked For You', path: '/admin/handpicked', icon: Sparkles, permission: 'cms.homepage' },
         { name: 'Festival Themes & Promotions', path: '/admin/festivals', icon: Sparkles, permission: 'cms.homepage' },
         { name: 'Reviews Moderation', path: '/admin/reviews', icon: Star, permission: 'reviews.moderate' },
         { name: 'Bulk Enquiries', path: '/admin/enquiries', icon: Users, permission: 'enquiries.manage' },
@@ -156,10 +159,29 @@ export const AdminLayout: React.FC = () => {
         { name: 'Admin Management', path: '/admin/admins', icon: ShieldCheck, permission: 'admins.manage', superAdminOnly: true },
         { name: 'Reports & CSV Export', path: '/admin/reports', icon: BarChart3, permission: 'reports.export' },
         { name: 'Audit Logs', path: '/admin/audit-logs', icon: History, permission: 'audit_logs.view' },
+        { name: 'Bulk Data Cleanup', path: '/admin/data-management', icon: Trash2, permission: 'admins.manage', superAdminOnly: true },
         { name: 'Store & Payment Settings', path: '/admin/settings', icon: Settings, permission: 'settings.manage' }
       ]
     }
   ];
+
+  // Auto-redirect restricted admin from /admin/dashboard to their first permitted module
+  const allNavItems = navSections.flatMap((s) => s.items);
+  const accessibleItems = allNavItems.filter((item) => {
+    if (item.superAdminOnly) return isSuperAdmin;
+    if (!item.permission) return true;
+    return hasPermission(item.permission);
+  });
+
+  const isAtDashboard =
+    location.pathname === '/admin' ||
+    location.pathname === '/admin/' ||
+    location.pathname === '/admin/dashboard';
+  const canViewDashboard = isSuperAdmin || hasPermission('dashboard.view');
+
+  if (isAtDashboard && !canViewDashboard && accessibleItems.length > 0) {
+    return <Navigate to={accessibleItems[0].path} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col md:flex-row">

@@ -100,16 +100,16 @@ describe('ZaDa Foods — Phase 24: Complete Commerce Workflow, Admin Persistence
       // Razorpay and COD payment method cards should NOT be selectable
       expect(screen.queryByText(/UPI \(GPay \/ PhonePe\), Cards, NetBanking/i)).not.toBeInTheDocument();
 
-      // WhatsApp direct ordering notice is shown
-      expect(screen.getByText(/Direct WhatsApp Ordering/i)).toBeInTheDocument();
+      // Phase 31: Neutral ecommerce verification card is shown (Zero customer-facing WhatsApp ordering labels)
+      expect(screen.getByText(/Order Verification & Concierge Service/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Direct WhatsApp Ordering/i)).not.toBeInTheDocument();
 
-      // Submit button is "Send Order on WhatsApp"
-      expect(screen.getByRole('button', { name: /Send Order on WhatsApp/i })).toBeInTheDocument();
+      // Submit button is neutral "Place Order" (never "Send Order on WhatsApp")
+      expect(screen.getByRole('button', { name: /Place Order/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Send Order on WhatsApp/i })).not.toBeInTheDocument();
     });
 
-    it('Mode A (WhatsApp Direct Ordering): Buy Now on Product Detail Page opens WhatsApp directly with zero database orders', () => {
-      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-
+    it('Mode A (WhatsApp Direct Ordering): Buy Now on Product Detail Page routes to checkout for guest address collection', () => {
       localStorage.setItem('zada_admin_settings', JSON.stringify({
         checkoutMode: 'WHATSAPP',
         whatsAppDestinationNumber: '917593959235'
@@ -120,11 +120,8 @@ describe('ZaDa Foods — Phase 24: Complete Commerce Workflow, Admin Persistence
       const buyNowBtn = screen.getByRole('button', { name: /Buy Now/i });
       fireEvent.click(buyNowBtn);
 
-      expect(openSpy).toHaveBeenCalledWith(
-        expect.stringContaining('https://wa.me/917593959235?text='),
-        '_blank',
-        'noopener,noreferrer'
-      );
+      // Phase 31: Normal ecommerce checkout experience, routes to /checkout without bypassing address validation
+      expect(screen.queryByText(/Direct WhatsApp Ordering/i)).not.toBeInTheDocument();
     });
 
     it('Mode B (Website Checkout): completes directly on the website with zero WhatsApp redirection for COD', async () => {

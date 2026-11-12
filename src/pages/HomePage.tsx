@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Leaf, MessageCircle, ChevronLeft, ChevronRight, Sparkles, Shield, Check } from 'lucide-react';
+import { ArrowRight, Leaf, MessageCircle, ChevronLeft, ChevronRight, Sparkles, Shield, Check, ShoppingBag, Gift } from 'lucide-react';
 import { Header } from '../components/Header';
 import { BottomNav } from '../components/BottomNav';
 import { Footer } from '../components/Footer';
 import { ProductCard } from '../components/ProductCard';
 import { useAdminData } from '../context/AdminDataContext';
+import { useCart } from '../context/CartContext';
 import { normalizeWhatsAppNumber } from '../lib/commerce/whatsappRouting';
 import { Category } from '../types';
 import { FestivalHeroOverlay } from '../components/festival/FestivalHeroOverlay';
@@ -90,18 +91,98 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
 };
 
 export const HomePage: React.FC = () => {
-  const { products, categories, banners, settings } = useAdminData();
+  const {
+    products,
+    categories,
+    banners,
+    settings,
+    handpickedSection,
+    bestsellerSection,
+    corporateGiftingSection,
+    heritageStorySection,
+    featuredCombosSection,
+    combos
+  } = useAdminData();
+  const { addComboToCart } = useCart();
 
-  // Bestsellers & Featured Collections from authoritative database/store state
-  const bestsellers = products.filter((p) => p.isBestseller && p.isPublished).slice(0, 4);
-  const featuredSweets = products.filter((p) => !p.isBestseller && p.isPublished).slice(0, 4);
+  // Safe validator filtering out broken/test products
+  const isCuratedValidProduct = (p?: (typeof products)[0] | null): p is (typeof products)[0] => {
+    if (!p) return false;
+    const name = (p.name || '').trim().toLowerCase();
+    if (name === 'sad' || name === 'test' || name.length < 3) return false;
+    if (!Array.isArray(p.variants) || p.variants.length === 0) return false;
+    return true;
+  };
 
-  // Authoritative active banners dynamically managed from Admin CMS
+  // Bestsellers dynamically populated from explicit Admin Bestsellers curation
+  const bestsellers = useMemo(() => {
+    if (bestsellerSection?.isVisible === false) return [];
+    if (Array.isArray(bestsellerSection?.productIds) && bestsellerSection.productIds.length > 0) {
+      const max = bestsellerSection.maxProducts || 4;
+      const explicit = bestsellerSection.productIds
+        .map((id) => products.find((p) => p.id === id && p.isPublished))
+        .filter(isCuratedValidProduct)
+        .slice(0, max);
+      if (explicit.length > 0) return explicit;
+    }
+    // Fail-safe fallback when collection productIds match neither UUID nor legacy IDs
+    return products.filter((p) => p.isBestseller && p.isPublished).slice(0, bestsellerSection?.maxProducts || 4);
+  }, [bestsellerSection, products]);
+
+  // Featured Combos section: strictly admin-merchandised; default visibility is OFF
+  const featuredCombos = useMemo(() => {
+    if (featuredCombosSection?.isVisible !== true) return [];
+    const max = featuredCombosSection.maxCombos || 6;
+    if (Array.isArray(featuredCombosSection.comboIds) && featuredCombosSection.comboIds.length > 0) {
+      return featuredCombosSection.comboIds
+        .map((id) => combos.find((c) => c.id === id && c.isActive))
+        .filter((c): c is typeof combos[0] => Boolean(c))
+        .slice(0, max);
+    }
+    return [];
+  }, [featuredCombosSection, combos]);
+
+
+  // Dedicated Handpicked For You section strictly based on explicit admin curation
+  const handpickedProducts = useMemo(() => {
+    if (handpickedSection?.isVisible === false) return [];
+    if (Array.isArray(handpickedSection?.productIds) && handpickedSection.productIds.length > 0) {
+      return handpickedSection.productIds
+        .map((id) => products.find((p) => p.id === id && p.isPublished))
+        .filter((p): p is typeof products[0] => Boolean(p));
+    }
+    // Fail-safe: Newly created products must NEVER automatically appear in Handpicked for You.
+    // Strictly requires explicit administrator selection.
+    return [];
+  }, [handpickedSection, products]);
+
+  // Responsive device detection for targeted banners
+  const [isMobileDevice, setIsMobileDevice] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileDevice(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Authoritative active banners dynamically managed from Admin CMS with device targeting
   const activeBanners = useMemo(() => {
-    return (banners || [])
+    const allActive = (banners || [])
       .filter((b) => b.isActive)
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [banners]);
+
+    return allActive.filter((b) => {
+      if (isMobileDevice) {
+        return b.deviceTarget === 'mobile' || b.badgeText === 'mobile';
+      } else {
+        return b.deviceTarget === 'desktop' || (!b.deviceTarget && b.badgeText !== 'mobile');
+      }
+    });
+  }, [banners, isMobileDevice]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -152,6 +233,29 @@ export const HomePage: React.FC = () => {
 
   const handleNextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % activeBanners.length);
+  };
+
+  const showCorporateGifting = useMemo(() => {
+    if (!corporateGiftingSection || corporateGiftingSection.isActive === false) return false;
+    if (isMobileDevice && corporateGiftingSection.mobileVisible === false) return false;
+    if (!isMobileDevice && corporateGiftingSection.desktopVisible === false) return false;
+    return true;
+  }, [corporateGiftingSection, isMobileDevice]);
+
+  const getGiftingBgClass = (preset?: string) => {
+    switch (preset) {
+      case 'burgundy':
+        return 'bg-gradient-to-br from-[#4A1521] to-[#2E0B13]';
+      case 'royal_malabar':
+        return 'bg-gradient-to-br from-[#38220F] to-[#1E1107]';
+      case 'golden_harvest':
+        return 'bg-gradient-to-br from-[#4A3511] to-[#2C1F0A]';
+      case 'deep_teal':
+        return 'bg-gradient-to-br from-[#1E3A2F] to-[#0D211A]';
+      case 'forest_green':
+      default:
+        return 'bg-gradient-to-br from-[#072C20] to-[#0A3D2D]';
+    }
   };
 
   return (
@@ -423,74 +527,40 @@ export const HomePage: React.FC = () => {
           )}
         </section>
 
-        {/* ── SECTION 4: Bestsellers — Warm Ivory Editorial Section ── */}
-        <section
-          className="space-y-4 bg-[#FAF7F2] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
-          aria-labelledby="bestsellers-heading"
-        >
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                {/* Gold eyebrow */}
-                <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#A67732] mb-1">
-                  Customer Favourites
-                </span>
-                <FestivalSectionHeader>
-                  <h2 id="bestsellers-heading" className="font-serif font-bold text-lg sm:text-2xl text-[#1C1917]">
-                    Bestsellers
-                  </h2>
-                </FestivalSectionHeader>
-                <p className="text-xs text-[#71717A] mt-0.5">Customer favorites shipped fresh daily</p>
-              </div>
-              <Link
-                to="/shop"
-                className="text-xs sm:text-sm font-bold text-[#A67732] hover:underline flex items-center gap-1 shrink-0"
-              >
-                <span>View All</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {/* 2-col mobile, 4-col desktop */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
-              {bestsellers.map((prod) => (
-                <ProductCard key={prod.id} product={prod} compactButton={false} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── SECTION 5: Featured / Traditional Products — Deep Forest Editorial ── */}
-        {featuredSweets.length > 0 && (
+        {/* ── SECTION 4: Bestsellers — Warm Ivory Editorial Section (Admin Curated) ── */}
+        {bestsellers.length > 0 && (
           <section
-            className="space-y-4 bg-gradient-to-br from-[#031D16] to-[#072C20] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
-            aria-labelledby="featured-heading"
+            className="space-y-4 bg-[#FAF7F2] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
+            aria-labelledby="bestsellers-heading"
           >
             <div className="max-w-6xl mx-auto">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   {/* Gold eyebrow */}
-                  <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#D4B574] mb-1">
-                    Handpicked For You
+                  <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#A67732] mb-1">
+                    {bestsellerSection?.badge || 'Customer Favourites'}
                   </span>
                   <FestivalSectionHeader>
-                    <h2 id="featured-heading" className="font-serif font-bold text-lg sm:text-2xl text-white">
-                      Traditional Sweets &amp; Specialties
+                    <h2 id="bestsellers-heading" className="font-serif font-bold text-lg sm:text-2xl text-[#1C1917]">
+                      {bestsellerSection?.title || 'Bestsellers'}
                     </h2>
                   </FestivalSectionHeader>
-                  <p className="text-xs text-white/60 mt-0.5">Slow-cooked authentic delicacies, regional staples &amp; specialty treats</p>
+                  <p className="text-xs text-[#71717A] mt-0.5">
+                    {bestsellerSection?.subtitle || 'Customer favorites shipped fresh daily'}
+                  </p>
                 </div>
                 <Link
                   to="/shop"
-                  className="text-xs sm:text-sm font-bold text-[#D4B574] hover:underline flex items-center gap-1 shrink-0"
+                  className="text-xs sm:text-sm font-bold text-[#A67732] hover:underline flex items-center gap-1 shrink-0"
                 >
-                  <span>Explore More</span>
+                  <span>View All</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
+              {/* 2-col mobile, 4-col desktop */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
-                {featuredSweets.map((prod) => (
+                {bestsellers.map((prod) => (
                   <ProductCard key={prod.id} product={prod} compactButton={false} />
                 ))}
               </div>
@@ -498,121 +568,383 @@ export const HomePage: React.FC = () => {
           </section>
         )}
 
-        {/* ── SECTION 6: Our Story Teaser — Warm Ivory Artisanal Card ── */}
-        <section
-          className="rounded-2xl sm:rounded-3xl bg-[#FAF6EE] border border-[#EAE3D6] p-6 sm:p-10 lg:p-12 overflow-hidden relative shadow-xs"
-          aria-label="Our Kerala Heritage"
-        >
-          {/* Subtle decorative gold orb */}
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#A67732]/10 blur-3xl pointer-events-none" />
-
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-              {/* Text Content */}
-              <div className="md:col-span-7 space-y-3 text-center md:text-left">
-                {/* Gold eyebrow */}
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-[#A67732]/15 text-[#A67732] border border-[#A67732]/25">
-                  Our Kerala Heritage
-                </span>
-                {/* Large serif headline */}
-                <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl text-[#1C1917] leading-snug">
-                  Pure Ingredients, Generational Craft
-                  <span className="block text-sm sm:text-base font-normal text-[#A67732] mt-1">
-                    Rooted in Kerala. Crafted for Every Kitchen.
+        {/* ── SECTION 5: Handpicked For You — Warm Ivory Harmonized Section ── */}
+        {handpickedProducts.length > 0 && (
+          <section
+            className="space-y-4 pt-8 sm:pt-10 border-t border-[#EAE3D6]/70"
+            aria-labelledby="featured-heading"
+          >
+            <div className="max-w-6xl mx-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  {/* Gold eyebrow */}
+                  <span className="inline-block text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#A67732] mb-1">
+                    {handpickedSection?.badge || 'Handpicked For You'}
                   </span>
-                </h2>
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-[#52525B] leading-relaxed max-w-lg mx-auto md:mx-0">
-                  Every creation from ZaDa Foods celebrates Kerala's rich spice legacy and authentic regional cuisine. From Malabar black pepper to slow-cooked heritage treats — no preservatives, no shortcuts, just pure Kerala flavours rooted in tradition.
-                </p>
-                <div className="pt-2 flex justify-center md:justify-start">
-                  <Link
-                    to="/our-story"
-                    aria-label="Read Our Story"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#072C20] hover:bg-[#031D16] text-white active:scale-[0.99] text-xs sm:text-sm font-bold shadow-xs transition-all"
-                  >
-                    <span>Read Our Story</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
+                  <FestivalSectionHeader>
+                    <h2 id="featured-heading" className="font-serif font-bold text-lg sm:text-2xl text-[#1C1917]">
+                      {handpickedSection?.title || 'Traditional Sweets & Specialties'}
+                    </h2>
+                  </FestivalSectionHeader>
+                  <p className="text-xs text-[#71717A] mt-0.5">
+                    {handpickedSection?.subtitle || 'Slow-cooked authentic delicacies, regional staples & specialty treats'}
+                  </p>
                 </div>
+                <Link
+                  to="/shop"
+                  className="text-xs sm:text-sm font-bold text-[#A67732] hover:underline flex items-center gap-1 shrink-0"
+                >
+                  <span>Explore More</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
 
-              {/* Image — desktop only (hidden on mobile for clean text focus) */}
-              <div className="hidden md:flex md:col-span-5 items-center justify-center">
-                <div className="relative w-full max-w-[280px] aspect-[4/3] rounded-2xl overflow-hidden border border-[#EAE3D6] shadow-sm bg-white">
-                  <img
-                    src="/assets/prod-banana-chips-hero.png"
-                    alt="Traditional Kerala chips preparation"
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-stretch">
+                {handpickedProducts.map((prod) => (
+                  <ProductCard key={prod.id} product={prod} compactButton={false} />
+                ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* ── SECTION: Curated Combos & Gift Bundles (Admin Merchandised - Default OFF) ── */}
+        {featuredCombosSection?.isVisible === true && featuredCombos.length > 0 && (
+          <section
+            className="space-y-4 bg-gradient-to-br from-[#1C1917] via-[#2A1D13] to-[#1C1917] text-white -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative overflow-hidden"
+            aria-labelledby="combos-heading"
+          >
+            {/* Ambient gold glow */}
+            <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#A67732]/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-[#D4B574]/15 blur-3xl pointer-events-none" />
+
+            <div className="max-w-6xl mx-auto relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#D4B574] mb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-[#FAD982]" />
+                    Curated Gift Bundles &amp; Value Packs
+                  </span>
+                  <FestivalSectionHeader>
+                    <h2 id="combos-heading" className="font-serif font-bold text-lg sm:text-2xl text-white">
+                      Signature Kerala Combos
+                    </h2>
+                  </FestivalSectionHeader>
+                  <p className="text-xs text-white/70 mt-0.5">
+                    Authentic Kerala pairings crafted together for festive gifting and everyday indulgence
+                  </p>
+                </div>
+                <Link
+                  to="/combos"
+                  className="text-xs sm:text-sm font-bold text-[#D4B574] hover:underline flex items-center gap-1 shrink-0"
+                >
+                  <span>Explore Combos</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {featuredCombos.map((combo) => {
+                  const savings = combo.originalPrice && combo.originalPrice > combo.comboPrice
+                    ? combo.originalPrice - combo.comboPrice
+                    : 0;
+                  const savingsPercent = combo.originalPrice && combo.originalPrice > combo.comboPrice
+                    ? Math.round((savings / combo.originalPrice) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={combo.id}
+                      className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:bg-white/10 hover:border-[#D4B574]/40 transition-all duration-300 backdrop-blur-sm group"
+                    >
+                      <div className="space-y-3">
+                        {/* Image / Visual Header */}
+                        <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-gradient-to-br from-[#072C20] to-[#0A3D2D] border border-white/10 flex items-center justify-center">
+                          {combo.imageUrl ? (
+                            <img
+                              src={combo.imageUrl}
+                              alt={combo.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="text-center p-4">
+                              <Gift className="w-8 h-8 text-[#D4B574] mx-auto mb-1.5 opacity-80" />
+                              <span className="font-serif text-sm font-bold text-amber-100">{combo.name}</span>
+                            </div>
+                          )}
+
+                          {/* Savings Badge */}
+                          {savings > 0 && (
+                            <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white shadow-sm flex items-center gap-1">
+                              <span>SAVE ₹{savings}</span>
+                              {savingsPercent > 0 && <span className="opacity-90">({savingsPercent}% OFF)</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Title & Description */}
+                        <div>
+                          <h3 className="font-serif font-bold text-base text-white group-hover:text-[#FAD982] transition-colors">
+                            {combo.name}
+                          </h3>
+                          {combo.description && (
+                            <p className="text-xs text-white/70 line-clamp-2 mt-1 leading-relaxed">
+                              {combo.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Component Items Included */}
+                        {combo.items && combo.items.length > 0 && (
+                          <div className="space-y-1 pt-1">
+                            <span className="text-[10px] uppercase font-bold text-[#D4B574] tracking-wider block">
+                              Bundle Includes ({combo.items.length} items):
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {combo.items.map((it, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/10 inline-flex items-center gap-1"
+                                >
+                                  <Check className="w-2.5 h-2.5 text-[#D4B574]" />
+                                  <span>{it.quantity}× {it.productName || 'Item'}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Pricing & Add to Cart Action */}
+                      <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-lg font-bold text-white font-mono">
+                              ₹{combo.comboPrice}
+                            </span>
+                            {combo.originalPrice && combo.originalPrice > combo.comboPrice && (
+                              <span className="text-xs text-white/50 line-through font-mono">
+                                ₹{combo.originalPrice}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-emerald-400 font-semibold block">
+                            Inclusive of all taxes
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => addComboToCart(combo, 1)}
+                          className="px-3.5 py-2 rounded-xl bg-[#A67732] hover:bg-[#8F6428] active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0"
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>Add to Cart</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── SECTION 6: Heritage / Story Banner — Dynamic Admin CMS ── */}
+        {heritageStorySection?.isActive !== false &&
+          ((isMobileDevice && heritageStorySection?.mobileVisible !== false) ||
+           (!isMobileDevice && heritageStorySection?.desktopVisible !== false)) && (
+          <section
+            className="rounded-2xl sm:rounded-3xl border p-6 sm:p-10 lg:p-12 overflow-hidden relative shadow-xs"
+            style={{
+              backgroundColor: heritageStorySection?.bgPreset || '#FAF6EE',
+              borderColor:
+                heritageStorySection?.bgPreset === '#072C20' || heritageStorySection?.bgPreset === '#1C1917'
+                  ? 'rgba(255,255,255,0.1)'
+                  : '#EAE3D6',
+              color: heritageStorySection?.textColor || '#1C1917'
+            }}
+            aria-label={heritageStorySection?.heading || 'Our Kerala Heritage'}
+          >
+            {/* Subtle decorative gold orb */}
+            <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#A67732]/10 blur-3xl pointer-events-none" />
+
+            <div className="max-w-6xl mx-auto">
+              <div
+                className={`grid grid-cols-1 ${
+                  heritageStorySection?.imageUrl ? 'md:grid-cols-12' : ''
+                } gap-6 items-center`}
+              >
+                {/* Text Content */}
+                <div
+                  className={`${
+                    heritageStorySection?.imageUrl ? 'md:col-span-7' : 'max-w-3xl mx-auto'
+                  } space-y-3 text-center md:text-left`}
+                >
+                  {/* Eyebrow */}
+                  {heritageStorySection?.eyebrow && (
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-[#A67732]/15 text-[#A67732] border border-[#A67732]/25">
+                      {heritageStorySection.eyebrow}
+                    </span>
+                  )}
+                  {/* Large serif headline */}
+                  <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl leading-snug">
+                    {heritageStorySection?.heading || 'Pure Ingredients, Generational Craft'}
+                    {heritageStorySection?.subtitle && (
+                      <span className="block text-sm sm:text-base font-normal text-[#A67732] mt-1">
+                        {heritageStorySection.subtitle}
+                      </span>
+                    )}
+                  </h2>
+                  {/* Description */}
+                  {heritageStorySection?.description && (
+                    <p className="text-xs sm:text-sm opacity-80 leading-relaxed max-w-lg mx-auto md:mx-0">
+                      {heritageStorySection.description}
+                    </p>
+                  )}
+                  {heritageStorySection?.ctaLabel && (
+                    <div className="pt-2 flex justify-center md:justify-start">
+                      <Link
+                        to={heritageStorySection?.ctaDestination || '/our-story'}
+                        aria-label={heritageStorySection.ctaLabel}
+                        className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-all active:scale-[0.99] ${
+    heritageStorySection?.bgPreset === '#072C20' || heritageStorySection?.bgPreset === '#1C1917'
+      ? 'bg-[#A67732] hover:bg-[#8E6426] text-white'
+      : 'bg-[#072C20] hover:bg-[#031D16] text-white'
+  }`}
+                      >
+                        <span>{heritageStorySection.ctaLabel}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image Display */}
+                {heritageStorySection?.imageUrl && (
+                  <div className="flex md:col-span-5 items-center justify-center">
+                    <div className="relative w-full max-w-[320px] aspect-[4/3] rounded-2xl overflow-hidden border border-black/10 shadow-sm bg-black/5">
+                      <img
+                        src={heritageStorySection.imageUrl}
+                        alt={heritageStorySection.heading}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Festival Promotional Split Banners & Curations */}
         <FestivalPromotionSection />
 
-        {/* ── SECTION 7: Bulk Orders / Gifting CTA — Premium Gifting Editorial ── */}
-        <section className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#072C20] to-[#0A3D2D] text-white p-5 sm:p-8 lg:p-10 shadow-sm border border-emerald-950/40 overflow-hidden relative">
-          {/* Decorative gold accent */}
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#A67732]/15 blur-3xl pointer-events-none" />
+        {/* ── SECTION 7: Bulk Orders / Corporate Gifting CTA — Admin CMS Managed ── */}
+        {showCorporateGifting && corporateGiftingSection && (
+          <section
+            style={{ color: corporateGiftingSection.textColor || '#FFFFFF' }}
+            className={`rounded-2xl sm:rounded-3xl ${getGiftingBgClass(corporateGiftingSection.bgPreset)} p-5 sm:p-8 lg:p-10 shadow-sm border border-emerald-950/40 overflow-hidden relative`}
+          >
+            {/* Decorative gold accent */}
+            <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#A67732]/15 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-2xl space-y-3.5">
-            {/* Eyebrow */}
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-amber-400/20 text-amber-300 border border-amber-400/30">
-              Corporate &amp; Wedding Gifting
-            </span>
+            <div className="relative z-10 max-w-2xl space-y-3.5">
+              {/* Eyebrow */}
+              {corporateGiftingSection.eyebrow && (
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-widest bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  {corporateGiftingSection.eyebrow}
+                </span>
+              )}
 
-            {/* Headline */}
-            <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl leading-snug text-white">
-              Planning a Festive Gathering or Corporate Event?
-            </h2>
+              {/* Headline */}
+              <h2 className="font-serif font-bold text-xl sm:text-2xl lg:text-3xl leading-snug">
+                {corporateGiftingSection.heading || 'Planning a Festive Gathering or Corporate Event?'}
+              </h2>
 
-            {/* Sub-items list */}
-            <ul className="space-y-1.5">
-              {[
-                'Corporate gifting hampers',
-                'Wedding Kerala delicacy boxes',
-                'Bulk spice orders',
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-xs sm:text-sm text-white/80">
-                  <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+              {/* Description */}
+              {corporateGiftingSection.description && (
+                <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-xl">
+                  {corporateGiftingSection.description}
+                </p>
+              )}
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
-              {/* Primary */}
-              <Link
-                to="/bulk-orders"
-                aria-label="Request Bulk Quote"
-                className="px-5 py-2.5 rounded-xl bg-[#A67732] hover:bg-[#8F6428] text-white text-xs sm:text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-1.5"
-              >
-                <span>Discuss a Custom Order</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {/* Sub-items bullet list */}
+              {corporateGiftingSection.bulletPoints && corporateGiftingSection.bulletPoints.length > 0 && (
+                <ul className="space-y-1.5">
+                  {corporateGiftingSection.bulletPoints.map((item, idx) => (
+                    <li key={idx} className="flex items-center gap-2 text-xs sm:text-sm text-white/90">
+                      <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-              {/* Secondary WhatsApp */}
-              <a
-                href={`https://wa.me/${normalizeWhatsAppNumber(settings.whatsAppDestinationNumber || settings.supportWhatsApp)}?text=${encodeURIComponent('Hello ZaDa Foods, I would like to enquire about bulk orders.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-400" />
-                <span>Chat on WhatsApp</span>
-              </a>
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
+                {/* Primary CTA */}
+                {corporateGiftingSection.primaryCtaLabel && (
+                  corporateGiftingSection.primaryCtaDestination?.startsWith('http') ? (
+                    <a
+                      href={corporateGiftingSection.primaryCtaDestination}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 rounded-xl bg-[#A67732] hover:bg-[#8F6428] text-white text-xs sm:text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>{corporateGiftingSection.primaryCtaLabel}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <Link
+                      to={corporateGiftingSection.primaryCtaDestination || '/bulk-orders'}
+                      aria-label="Request Bulk Quote"
+                      className="px-5 py-2.5 rounded-xl bg-[#A67732] hover:bg-[#8F6428] text-white text-xs sm:text-sm font-bold shadow-md transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>{corporateGiftingSection.primaryCtaLabel}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  )
+                )}
+
+                {/* Secondary CTA (WhatsApp or Custom URL) */}
+                {corporateGiftingSection.secondaryCtaLabel && (
+                  (() => {
+                    const secUrl = corporateGiftingSection.secondaryCtaDestination ||
+                      `https://wa.me/${normalizeWhatsAppNumber(settings.whatsAppDestinationNumber || settings.supportWhatsApp)}?text=${encodeURIComponent('Hello ZaDa Foods, I would like to enquire about bulk orders.')}`;
+                    const isExternal = secUrl.startsWith('http') || secUrl.startsWith('https://wa.me');
+
+                    return isExternal ? (
+                      <a
+                        href={secUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <MessageCircle className="w-4 h-4 text-emerald-400" />
+                        <span>{corporateGiftingSection.secondaryCtaLabel}</span>
+                      </a>
+                    ) : (
+                      <Link
+                        to={secUrl}
+                        className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold border border-white/20 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <span>{corporateGiftingSection.secondaryCtaLabel}</span>
+                      </Link>
+                    );
+                  })()
+                )}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
       </main>
 

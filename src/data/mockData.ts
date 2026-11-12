@@ -663,7 +663,7 @@ export const INITIAL_COMBOS: ComboBundle[] = [
     name: 'Malabar Heritage Bestseller Pack',
     slug: 'malabar-heritage-bestseller-pack',
     description: 'Our top 3 all-time Kerala favorites: Traditional Nendran Chips, Spicy Tapioca Chips, and Signature Kozhikode Halwa.',
-    imageUrl: 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/assets/cat-combos.png',
     originalPrice: 620,
     comboPrice: 520,
     discountPercent: 16,
@@ -698,7 +698,7 @@ export const INITIAL_COMBOS: ComboBundle[] = [
     name: 'Kerala Tea-Time Crunchy Hamper',
     slug: 'kerala-tea-time-crunchy-hamper',
     description: 'Perfect evening accompaniment: Royal Spicy Kerala Mixture and Pepper Banana Chips.',
-    imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80',
+    imageUrl: '/assets/prod-banana-chips.png',
     originalPrice: 380,
     comboPrice: 320,
     discountPercent: 15,
@@ -1003,7 +1003,7 @@ export const INITIAL_STORE_CONTENT: StoreContentPage[] = [
     title: 'Our Kerala Heritage & Pure Flavors',
     content: `ZaDa Foods was founded with a singular, uncompromising vision: to bring the authentic, golden crunch and nostalgic aroma of traditional Kerala snacks directly to food lovers across India and the globe.
 
-Every single batch of our signature Nendran banana chips is sourced directly from ethical, small-scale farmers in the lush hills of Wayanad and Palakkad. We use 100% pure, cold-pressed, unadulterated coconut oil—no palm oil, no artificial flavor enhancers, and zero chemical preservatives.
+Every single batch of our signature Nendran banana chips is sourced directly from ethical, small-scale farmers in the lush hills of Wayanad and Palakkad. We use 100% pure, cold-pressed, unadulterated coconut oil—no palm oil, no artificial flavor enhancers, and zero synthetic additives.
 
 Our recipes have been handed down through generations of Malabar culinary artisans. From slow-cooked Kozhikode halwa in brass urulis to crunchy ribbon pakoda fried to crisp golden perfection, ZaDa Foods is our tribute to Kerala's rich culinary soul.`,
     lastUpdated: '2026-10-25'

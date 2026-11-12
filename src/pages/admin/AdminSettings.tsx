@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save,
   ShieldCheck,
@@ -56,6 +56,12 @@ export const AdminSettings: React.FC = () => {
   const [codAdvanceMinAmount, setCodAdvanceMinAmount] = useState<number | string>(settings.codAdvanceMinAmount ?? 0);
   const [codAdvanceMaxAmount, setCodAdvanceMaxAmount] = useState<number | string>(settings.codAdvanceMaxAmount ?? 0);
 
+  // Cash on Delivery Extra Handling Fee (Phase 30)
+  const [codFeeType, setCodFeeType] = useState<'FIXED' | 'PERCENTAGE'>(settings.codFeeType ?? 'FIXED');
+  const [codFeeValue, setCodFeeValue] = useState<number | string>(settings.codFeeValue ?? 0);
+  const [codMinOrderValue, setCodMinOrderValue] = useState<number | string>(settings.codMinOrderValue ?? 0);
+  const [codMaxOrderValue, setCodMaxOrderValue] = useState<number | string>(settings.codMaxOrderValue ?? 50000);
+
   // Internal Order Confirmation & Processing Channel (NOT a customer payment method)
   const [isWhatsAppAssistedCodEnabled, setIsWhatsAppAssistedCodEnabled] = useState(
     settings.isWhatsAppAssistedCodEnabled ?? settings.isWhatsAppCheckoutEnabled ?? true
@@ -92,6 +98,50 @@ export const AdminSettings: React.FC = () => {
       : razorpayKeyId.startsWith('rzp_live_');
 
   const normalizedWhatsApp = normalizeWhatsAppNumber(whatsAppDestinationNumber);
+
+  useEffect(() => {
+    if (settings) {
+      setCheckoutMode(
+        settings.checkoutMode === 'WHATSAPP' || settings.primaryCheckoutMode === 'WHATSAPP'
+          ? 'WHATSAPP'
+          : 'WEBSITE'
+      );
+      setIsCodGloballyEnabled(settings.isCodGloballyEnabled ?? true);
+      setIsRazorpayEnabled(settings.isRazorpayEnabled ?? true);
+      setDefaultPaymentMethod(
+        settings.primaryCheckoutMode === 'RAZORPAY' || settings.defaultCustomerPaymentMethod === 'RAZORPAY'
+          ? 'RAZORPAY'
+          : 'COD'
+      );
+      setIsCodAdvanceEnabled(settings.isCodAdvanceEnabled ?? false);
+      setCodAdvanceType(settings.codAdvanceType ?? 'FIXED');
+      setCodAdvanceValue(settings.codAdvanceValue ?? 0);
+      setCodAdvanceMinOrderValue(settings.codAdvanceMinOrderValue ?? 0);
+      setCodAdvanceMinAmount(settings.codAdvanceMinAmount ?? 0);
+      setCodAdvanceMaxAmount(settings.codAdvanceMaxAmount ?? 0);
+      setCodFeeType(settings.codFeeType ?? 'FIXED');
+      setCodFeeValue(settings.codFeeValue ?? 0);
+      setCodMinOrderValue(settings.codMinOrderValue ?? 0);
+      setCodMaxOrderValue(settings.codMaxOrderValue ?? 50000);
+      setIsWhatsAppAssistedCodEnabled(
+        settings.isWhatsAppAssistedCodEnabled ?? settings.isWhatsAppCheckoutEnabled ?? true
+      );
+      setWhatsAppDestinationNumber(
+        settings.whatsAppDestinationNumber || settings.supportWhatsApp || DEFAULT_WHATSAPP_DESTINATION
+      );
+      setStandardDeliveryFee(settings.standardDeliveryFee);
+      setFreeShippingThreshold(settings.freeShippingThreshold);
+      setExpressDeliveryFee(settings.expressDeliveryFee);
+      setFirstOrderDiscountEnabled(settings.firstOrderDiscountEnabled);
+      setFirstOrderDiscountPercent(settings.firstOrderDiscountPercent);
+      setSupportPhone(settings.supportPhone);
+      setSupportWhatsApp(settings.supportWhatsApp);
+      setSupportEmail(settings.supportEmail);
+      setFssaiNumber(settings.fssaiNumber);
+      if (settings.razorpayMode) setRazorpayMode(settings.razorpayMode);
+      if (settings.razorpayKeyId) setRazorpayKeyId(settings.razorpayKeyId);
+    }
+  }, [settings]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,14 +216,19 @@ export const AdminSettings: React.FC = () => {
       checkoutMode,
       primaryCheckoutMode: checkoutMode === 'WHATSAPP' ? 'WHATSAPP' : effectiveDefault,
       defaultCustomerPaymentMethod: effectiveDefault,
-      isCodGloballyEnabled: checkoutMode === 'WHATSAPP' ? false : isCodGloballyEnabled,
-      isCodAdvanceEnabled: checkoutMode === 'WHATSAPP' ? false : isCodAdvanceEnabled,
+      isCodGloballyEnabled,
+      isCodAdvanceEnabled,
       codAdvanceType,
       codAdvanceValue: numericAdvanceVal,
       codAdvanceMinOrderValue: numericMinOrderVal,
       codAdvanceMinAmount: numericMinAdvance,
       codAdvanceMaxAmount: numericMaxAdvance,
-      isRazorpayEnabled: checkoutMode === 'WHATSAPP' ? false : isRazorpayEnabled,
+      // Cash on Delivery Extra Handling Fee (Phase 32)
+      codFeeType,
+      codFeeValue: Math.max(0, Number(codFeeValue) || 0),
+      codMinOrderValue: Math.max(0, Number(codMinOrderValue) || 0),
+      codMaxOrderValue: Math.max(0, Number(codMaxOrderValue) || 50000),
+      isRazorpayEnabled,
       isWhatsAppAssistedCodEnabled,
       whatsAppDestinationNumber: cleanDestNumber,
       isWhatsAppCheckoutEnabled: checkoutMode === 'WHATSAPP',
@@ -707,6 +762,83 @@ export const AdminSettings: React.FC = () => {
                   Cash on Delivery is currently disabled across the storefront. Enable COD above to configure advance options.
                 </div>
               )}
+            </section>
+
+            {/* Cash on Delivery (COD) Extra Charge & Limits Configuration */}
+            <section className="bg-white rounded-card p-5 border border-border-subtle shadow-subtle space-y-4">
+              <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF6EE] text-[#A67732] flex items-center justify-center font-bold text-sm">
+                    ₹
+                  </div>
+                  <div>
+                    <h2 className="font-serif text-sm font-bold text-content-primary">
+                      Cash on Delivery (COD) Handling Surcharge & Limits
+                    </h2>
+                    <p className="text-[11px] text-content-muted">
+                      Configure additional fee for cash collection and minimum/maximum order limits for COD eligibility.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-content-primary block">COD Fee Calculation Type</label>
+                  <select
+                    value={codFeeType}
+                    onChange={(e) => setCodFeeType(e.target.value as any)}
+                    className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-white font-bold"
+                  >
+                    <option value="FIXED">Fixed Amount (₹)</option>
+                    <option value="PERCENTAGE">Percentage of Subtotal (%)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-content-primary block">
+                    {codFeeType === 'PERCENTAGE' ? 'COD Fee Percentage (%)' : 'COD Fee Amount (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={codFeeValue}
+                    onChange={(e) => setCodFeeValue(e.target.value)}
+                    placeholder="e.g. 30"
+                    className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-white font-mono font-bold"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-content-primary block">Min Order Value for COD (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={codMinOrderValue}
+                    onChange={(e) => setCodMinOrderValue(e.target.value)}
+                    placeholder="0 (No minimum)"
+                    className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-white font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-content-primary block">Max Order Value for COD (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={codMaxOrderValue}
+                    onChange={(e) => setCodMaxOrderValue(e.target.value)}
+                    placeholder="50000"
+                    className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#EAE5DC] text-[11px] text-[#71717A] flex items-center justify-between">
+                <span>
+                  <strong>Active Surcharge:</strong> {Number(codFeeValue) > 0 ? (codFeeType === 'PERCENTAGE' ? `${codFeeValue}% on cart subtotal` : `+₹${codFeeValue} flat handling fee`) : '₹0 (Free COD)'} • Applies strictly to COD orders. Online payment fee is always ₹0.
+                </span>
+              </div>
             </section>
 
             {/* 3. Internal Order Routing & Confirmation: WhatsApp-Assisted COD */}

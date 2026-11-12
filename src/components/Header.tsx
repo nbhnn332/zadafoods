@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, ArrowLeft, Search, Heart, ShieldAlert, Store, X } from 'lucide-react';
+import { ShoppingCart, Menu, ArrowLeft, Search, Heart, ShieldAlert, Store, X, User } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useFestival } from '../context/FestivalContext';
@@ -186,9 +186,11 @@ export const Header: React.FC<HeaderProps> = ({
                   aria-label="View Shopping Cart"
                 >
                   <ShoppingCart className="w-6 h-6 stroke-[2]" />
-                  <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-                    {totalUniqueItems > 0 ? totalUniqueItems : 3}
-                  </span>
+                  {totalUniqueItems > 0 && (
+                    <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                      {totalUniqueItems}
+                    </span>
+                  )}
                 </Link>
               )}
             </div>
@@ -341,9 +343,11 @@ export const Header: React.FC<HeaderProps> = ({
                   aria-label="View Shopping Cart"
                 >
                   <ShoppingCart className="w-6 h-6 stroke-[2]" />
-                  <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-                    {totalUniqueItems > 0 ? totalUniqueItems : 3}
-                  </span>
+                  {totalUniqueItems > 0 && (
+                    <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                      {totalUniqueItems}
+                    </span>
+                  )}
                 </Link>
               )}
 
@@ -353,7 +357,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="hidden sm:flex items-center gap-2 pl-2 border-l border-border-subtle text-xs font-semibold text-content-primary hover:text-brand-primary transition-colors"
               >
                 <div className="w-7 h-7 rounded-full bg-brand-secondary text-white flex items-center justify-center font-bold text-xs">
-                  {user ? user.fullName[0].toUpperCase() : 'N'}
+                  {user ? user.fullName[0].toUpperCase() : <User className="w-3.5 h-3.5 text-white" />}
                 </div>
                 <span className="hidden xl:inline">{user ? user.fullName.split(' ')[0] : 'Sign In'}</span>
               </Link>
@@ -468,7 +472,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-3 text-sm font-semibold text-content-primary hover:text-[#A67732] transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-brand-secondary text-white flex items-center justify-center font-bold text-sm">
-                  {user ? user.fullName[0].toUpperCase() : 'N'}
+                  {user ? user.fullName[0].toUpperCase() : <User className="w-4 h-4 text-white" />}
                 </div>
                 <span>{user ? user.fullName.split(' ')[0] : 'Sign In'}</span>
               </Link>

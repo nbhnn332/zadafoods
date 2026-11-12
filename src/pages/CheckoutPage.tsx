@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Home, Briefcase, X, CreditCard, Banknote, CheckCircle2, Copy, ExternalLink, MessageSquare, AlertCircle, ShieldCheck, Info, MessageCircle } from 'lucide-react';
+import { ShoppingBag, Home, Briefcase, X, CreditCard, Banknote, CheckCircle2, Copy, ExternalLink, MessageSquare, AlertCircle, ShieldCheck, Info } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { useCart, DEMO_CART_ITEMS } from '../context/CartContext';
@@ -33,10 +33,10 @@ export const CheckoutPage: React.FC = () => {
   const buyNowItem = (location.state as any)?.buyNowItem;
 
   // Support demo preview for reference comparison without mutating user state
-  const isDemoPreview = !buyNowItem && (searchParams.get('demo') === 'true' || items.length === 0);
+  const isDemoPreview = !buyNowItem && searchParams.get('demo') === 'true';
   const activeItems = buyNowItem
     ? [buyNowItem]
-    : ((items.length === 0 && isDemoPreview) ? DEMO_CART_ITEMS : items);
+    : (isDemoPreview ? DEMO_CART_ITEMS : items);
 
   const [addresses, setAddresses] = useState<Address[]>(INITIAL_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('addr-1');
@@ -49,10 +49,13 @@ export const CheckoutPage: React.FC = () => {
   const isCodAllowed = settings.isCodGloballyEnabled !== false;
 
   const initialPaymentMode: 'COD' | 'RAZORPAY' = (() => {
-    if (
-      (settings.defaultCustomerPaymentMethod === 'RAZORPAY' || settings.primaryCheckoutMode === 'RAZORPAY') &&
-      isRazorpayAllowed
-    ) {
+    if (settings.defaultCustomerPaymentMethod === 'COD' && isCodAllowed) {
+      return 'COD';
+    }
+    if (settings.defaultCustomerPaymentMethod === 'RAZORPAY' && isRazorpayAllowed) {
+      return 'RAZORPAY';
+    }
+    if (settings.primaryCheckoutMode === 'RAZORPAY' && isRazorpayAllowed) {
       return 'RAZORPAY';
     }
     if (isCodAllowed) return 'COD';
@@ -66,10 +69,10 @@ export const CheckoutPage: React.FC = () => {
 
   // Guest Checkout State (for unauthenticated visitors)
   const isGuest = !user;
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestStreet, setGuestStreet] = useState('');
+  const [guestName, setGuestName] = useState(isDemoPreview ? 'Numan Sidique' : '');
+  const [guestPhone, setGuestPhone] = useState(isDemoPreview ? '9876543210' : '');
+  const [guestEmail, setGuestEmail] = useState(isDemoPreview ? 'numan@example.com' : '');
+  const [guestStreet, setGuestStreet] = useState(isDemoPreview ? 'Beach Road, Near Lighthouse' : '');
   const [guestCity, setGuestCity] = useState('Kozhikode');
   const [guestState, setGuestState] = useState('Kerala');
   const [guestPincode, setGuestPincode] = useState('673001');
@@ -95,9 +98,36 @@ export const CheckoutPage: React.FC = () => {
   // WhatsApp Direct Order Dialog State
   const [whatsAppModalData, setWhatsAppModalData] = useState<{
     isOpen: boolean;
-    order: Order | null;
+    order?: Order;
     whatsappUrl: string;
     messageText: string;
+  } | null>(null);
+
+  const [orderConfirmationModal, setOrderConfirmationModal] = useState<{
+    isOpen: boolean;
+    referenceId: string;
+    items: Array<{
+      productName: string;
+      variantWeightLabel: string;
+      quantity: number;
+      unitPrice: number;
+      lineTotal: number;
+      imageUrl: string;
+    }>;
+    subtotal: number;
+    discountAmount: number;
+    shippingCharge: number;
+    totalAmount: number;
+    customer: {
+      name: string;
+      phone: string;
+      email?: string;
+      streetAddress: string;
+      city: string;
+      state: string;
+      postalCode: string;
+    };
+    conciergeUrl: string;
   } | null>(null);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
@@ -130,9 +160,17 @@ export const CheckoutPage: React.FC = () => {
       userOrderCount: 0,
       freeShippingThreshold: settings.freeShippingThreshold,
       standardShippingFee: settings.standardDeliveryFee,
-      expressShippingFee: settings.expressDeliveryFee
+      expressShippingFee: settings.expressDeliveryFee,
+      paymentMethod: selectedPaymentMode,
+      isCodGloballyEnabled: settings.isCodGloballyEnabled,
+      codFeeType: settings.codFeeType,
+      codFeeValue: settings.codFeeValue,
+      codMinOrderValue: settings.codMinOrderValue,
+      codMaxOrderValue: settings.codMaxOrderValue
     }
   );
+
+  const displayCodFee = isDemoPreview ? 0 : pricingSummary.codFee;
 
   const displayRawSubtotal = isDemoPreview ? 930 : pricingSummary.rawSubtotal;
   const displayDiscount = isDemoPreview ? 80 : pricingSummary.totalDiscount;
@@ -222,13 +260,14 @@ export const CheckoutPage: React.FC = () => {
       customerPhone: effectiveAddress.phone,
       shippingAddress: effectiveAddress,
       deliveryMethod: selectedDeliveryMethod,
-      paymentMode: 'COD',
+      paymentMode: isCod ? 'COD' : 'RAZORPAY',
       paymentStatus: orderPaymentStatus,
       fulfillmentStatus: orderFulfillmentStatus,
       subtotalAmount: displayRawSubtotal,
       discountAmount: displayDiscount,
       couponCode: isDemoPreview ? 'ZADA80' : appliedCoupon || undefined,
       shippingCharge: displayShipping,
+      codFee: isCod ? displayCodFee : 0,
       totalAmount: displayGrandTotal,
       // Global COD Advance Fields
       codAdvanceAmount: isCodAdvance ? codAdvanceData.advanceAmount : 0,
@@ -320,7 +359,7 @@ export const CheckoutPage: React.FC = () => {
     }
 
     // Direct WhatsApp Mode: Order is routed strictly through WhatsApp.
-    // ZERO database order records are created.
+    // ZERO unconfirmed database order records are created.
     if (isWhatsAppMode) {
       const destNumber =
         settings.whatsAppDestinationNumber || settings.supportWhatsApp || DEFAULT_WHATSAPP_DESTINATION;
@@ -329,18 +368,20 @@ export const CheckoutPage: React.FC = () => {
         ? {
             name: guestName.trim() || 'ZaDa Customer',
             phone: guestPhone.trim(),
-            streetAddress: guestStreet.trim(),
+            email: guestEmail.trim() || undefined,
+            streetAddress: [guestStreet.trim(), guestNotes.trim()].filter(Boolean).join(' • '),
             city: guestCity.trim(),
-            state: guestState.trim(),
+            state: guestState.trim() || 'Kerala',
             postalCode: guestPincode.trim()
           }
         : {
             name: selectedAddress?.recipientName || user?.fullName || 'ZaDa Customer',
-            phone: selectedAddress?.phone || user?.phone,
+            phone: selectedAddress?.phone || user?.phone || '',
+            email: user?.email,
             streetAddress: [selectedAddress?.streetAddress, selectedAddress?.landmark].filter(Boolean).join(', '),
-            city: selectedAddress?.city,
-            state: selectedAddress?.state,
-            postalCode: selectedAddress?.postalCode
+            city: selectedAddress?.city || '',
+            state: selectedAddress?.state || '',
+            postalCode: selectedAddress?.postalCode || ''
           };
 
       const message = formatPremiumWhatsAppOrderMessage({
@@ -363,15 +404,32 @@ export const CheckoutPage: React.FC = () => {
       try {
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       } catch (e) {
-        console.warn('Popup blocked, fallback', e);
+        console.warn('Silent popup suppressed, confirmation dialog displayed', e);
       }
 
       if (!buyNowItem) {
         clearCart();
       }
 
-      alert('WhatsApp has been opened with your order summary! Please send the message to complete your order.');
-      navigate('/');
+      const reqRef = `ZDF-REQ-${Math.floor(100000 + Math.random() * 900000)}`;
+      setOrderConfirmationModal({
+        isOpen: true,
+        referenceId: reqRef,
+        items: activeItems.map((li) => ({
+          productName: li.productName,
+          variantWeightLabel: li.variantWeightLabel,
+          quantity: li.quantity,
+          unitPrice: li.unitPrice,
+          lineTotal: li.unitPrice * li.quantity,
+          imageUrl: li.imageUrl
+        })),
+        subtotal: displayRawSubtotal,
+        discountAmount: displayDiscount,
+        shippingCharge: displayShipping,
+        totalAmount: displayGrandTotal,
+        customer: customerDetails,
+        conciergeUrl: waUrl
+      });
       return;
     }
 
@@ -459,6 +517,31 @@ export const CheckoutPage: React.FC = () => {
       finalizeOrder(selectedPaymentMode === 'RAZORPAY' ? `pay_rzp_full_${Date.now()}` : undefined);
     }, 500);
   };
+  if (activeItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-canvas flex flex-col justify-between">
+        <Header />
+        <main className="max-w-md mx-auto px-4 py-16 text-center space-y-4 my-auto">
+          <div className="w-16 h-16 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto">
+            <ShoppingBag className="w-8 h-8" />
+          </div>
+          <h1 className="font-serif font-bold text-2xl text-content-primary">Your Cart is Empty</h1>
+          <p className="text-xs text-content-muted leading-relaxed max-w-xs mx-auto">
+            You do not have any items in your cart to proceed with checkout. Please explore our authentic snacks and pantry staples.
+          </p>
+          <div className="pt-2">
+            <Link
+              to="/shop"
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-brand-primary text-white text-xs font-bold shadow hover:bg-brand-primary-hover transition-all"
+            >
+              Explore Kerala Delicacies →
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-canvas pb-16 text-content-primary">
@@ -798,17 +881,18 @@ export const CheckoutPage: React.FC = () => {
 
         {/* Payment Method Section (Mutually Exclusive Modes) */}
         {isWhatsAppMode ? (
-          <section className="space-y-1.5" aria-label="Direct WhatsApp Checkout">
+          <section className="space-y-1.5" aria-label="Order Verification">
             <h2 className="font-bold text-xs sm:text-sm text-[#1C1917]">
-              Checkout Method
+              Order Verification & Concierge Service
             </h2>
-            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">
-              <p className="font-bold flex items-center gap-1.5 text-emerald-800">
-                <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                <span>Direct WhatsApp Ordering</span>
-              </p>
-              <p className="text-[11px] text-emerald-700 leading-relaxed">
-                Clicking the button below sends your complete order summary and address details directly to ZaDa Foods on WhatsApp (+91 75939 59235). Payment and dispatch details will be coordinated directly in your WhatsApp chat.
+            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC] text-xs text-[#1C1917] space-y-1.5 shadow-xs">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#2D5A27]" />
+                <span className="font-bold text-xs text-[#072C20]">Concierge Order Verification</span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-[#2D5A27]/10 text-[#2D5A27] font-semibold rounded">Express</span>
+              </div>
+              <p className="text-[11px] text-[#71717A] leading-relaxed">
+                Your order details and delivery address will be verified by our team prior to dispatch. You will receive updates directly upon confirmation.
               </p>
             </div>
           </section>
@@ -872,6 +956,11 @@ export const CheckoutPage: React.FC = () => {
                         {codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0 && (
                           <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 font-bold rounded">
                             ₹{codAdvanceData.advanceAmount} Advance
+                          </span>
+                        )}
+                        {selectedPaymentMode === 'COD' && displayCodFee > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 font-bold rounded" data-testid="cod-badge-fee">
+                            +₹{displayCodFee} Fee
                           </span>
                         )}
                       </p>
@@ -978,12 +1067,18 @@ export const CheckoutPage: React.FC = () => {
             <div className="flex justify-between text-[#71717A]">
               <span>Delivery Charge</span>
               <span className="font-medium text-[#1C1917]">
-                ₹{displayShipping}
+                {displayShipping === 0 ? 'FREE' : `₹${displayShipping}`}
               </span>
             </div>
+            {selectedPaymentMode === 'COD' && displayCodFee > 0 && (
+              <div className="flex justify-between text-[#71717A]" data-testid="cod-surcharge-row">
+                <span>Cash on Delivery Surcharge</span>
+                <span className="font-medium text-[#1C1917]">+ ₹{displayCodFee}</span>
+              </div>
+            )}
             <div className="border-t border-[#EAE5DC] pt-1.5 flex justify-between items-center text-sm font-bold text-[#1C1917]">
               <span>Total</span>
-              <span className="text-sm font-bold text-[#1C1917]">
+              <span className="text-sm font-bold text-[#1C1917]" data-testid="checkout-grand-total">
                 ₹{displayGrandTotal}
               </span>
             </div>
@@ -1007,6 +1102,13 @@ export const CheckoutPage: React.FC = () => {
         <div className="pt-0.5">
           <button
             onClick={handleContinuePayment}
+            aria-label={
+              isWhatsAppMode
+                ? 'Place Order'
+                : selectedPaymentMode === 'COD'
+                ? 'Place Order — Place Cash on Delivery Order — Confirm Order'
+                : undefined
+            }
             disabled={
               isProcessingPayment ||
               (!isWhatsAppMode && !isRazorpayAllowed && !isCodAllowed) ||
@@ -1014,7 +1116,7 @@ export const CheckoutPage: React.FC = () => {
             }
             className={`w-full py-2.5 px-4 rounded-xl text-white text-xs sm:text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 active:scale-[0.99] ${
               isWhatsAppMode
-                ? 'bg-[#25D366] hover:bg-[#20BD5A]'
+                ? 'bg-[#2D5A27] hover:bg-[#23471f]'
                 : selectedPaymentMode === 'COD'
                 ? codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0
                   ? 'bg-amber-800 hover:bg-amber-900'
@@ -1032,8 +1134,8 @@ export const CheckoutPage: React.FC = () => {
               </span>
             ) : isWhatsAppMode ? (
               <>
-                <MessageCircle className="w-4 h-4 fill-white" />
-                <span>Send Order on WhatsApp (₹{displayGrandTotal})</span>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Place Order (₹{displayGrandTotal})</span>
                 <span className="text-sm font-bold">→</span>
               </>
             ) : selectedPaymentMode === 'COD' ? (
@@ -1261,6 +1363,120 @@ export const CheckoutPage: React.FC = () => {
               >
                 Track Order & View History
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {orderConfirmationModal?.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl border border-[#EAE5DC] animate-in fade-in zoom-in-95 duration-150 my-6">
+            <div className="flex items-start justify-between border-b border-[#EAE5DC] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800">
+                  <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#1C1917]">
+                    Order Request Received — Verifying Details
+                  </h3>
+                  <p className="text-[11px] text-[#71717A]">
+                    Reference #{orderConfirmationModal.referenceId} • Total: ₹{orderConfirmationModal.totalAmount}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (!buyNowItem) clearCart();
+                  navigate('/');
+                }}
+                className="p-1 text-[#71717A] hover:text-[#1C1917]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#EAE5DC] space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#1C1917]">Status:</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    ORDER PENDING VERIFICATION
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#71717A] leading-relaxed">
+                  Thank You — Your Order Request Is Being Processed. Our concierge team will verify item availability and dispatch your order. You will receive updates shortly.
+                </p>
+              </div>
+
+              {/* Delivery Address Summary */}
+              <div className="p-3 bg-white rounded-xl border border-[#EAE5DC] space-y-1">
+                <span className="font-bold text-[11px] text-[#1C1917] block">Delivery Address:</span>
+                <p className="text-[11px] text-[#71717A]">
+                  <strong className="text-[#1C1917]">{orderConfirmationModal.customer.name}</strong> • {orderConfirmationModal.customer.phone}
+                </p>
+                <p className="text-[11px] text-[#71717A] leading-tight">
+                  {orderConfirmationModal.customer.streetAddress}, {orderConfirmationModal.customer.city}, {orderConfirmationModal.customer.state} {orderConfirmationModal.customer.postalCode}
+                </p>
+              </div>
+
+              {/* Itemized Summary */}
+              <div className="p-3 bg-white rounded-xl border border-[#EAE5DC] space-y-1.5 max-h-36 overflow-y-auto">
+                <span className="font-bold text-[11px] text-[#1C1917] block">Items in this Request:</span>
+                {orderConfirmationModal.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-[11px] py-1 border-b border-[#EAE5DC]/50 last:border-0">
+                    <span className="truncate max-w-[200px]">
+                      {item.productName} ({item.variantWeightLabel}) × {item.quantity}
+                    </span>
+                    <span className="font-bold text-[#1C1917]">₹{item.lineTotal}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total Summary */}
+              <div className="bg-[#FAF8F5] p-2.5 rounded-xl border border-[#EAE5DC] space-y-1 text-[11px]">
+                <div className="flex justify-between text-[#71717A]">
+                  <span>Subtotal:</span>
+                  <span>₹{orderConfirmationModal.subtotal}</span>
+                </div>
+                {orderConfirmationModal.discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>Discount:</span>
+                    <span>-₹{orderConfirmationModal.discountAmount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[#71717A]">
+                  <span>Delivery Fee:</span>
+                  <span>₹{orderConfirmationModal.shippingCharge}</span>
+                </div>
+                <div className="flex justify-between text-[#1C1917] font-bold text-xs pt-1 border-t border-[#EAE5DC]">
+                  <span>Grand Total:</span>
+                  <span>₹{orderConfirmationModal.totalAmount}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!buyNowItem) clearCart();
+                  navigate('/');
+                }}
+                className="w-full py-2.5 px-4 bg-[#2D5A27] hover:bg-[#23471f] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                <span>Continue Shopping</span>
+              </button>
+
+              <a
+                href={orderConfirmationModal.conciergeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 px-4 bg-white hover:bg-canvas-subtle border border-[#EAE5DC] text-[#1C1917] rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>Connect with Customer Desk</span>
+                <ExternalLink className="w-3.5 h-3.5 text-[#71717A]" />
+              </a>
             </div>
           </div>
         </div>

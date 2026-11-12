@@ -1,13 +1,65 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, X, Package, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Package, Sparkles, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { ImageUploadPreview } from '../../components/ImageUploadPreview';
 import { useAdminData } from '../../context/AdminDataContext';
 import { ComboBundle, ComboBundleItem } from '../../types';
 
 export const AdminCombos: React.FC = () => {
-  const { combos, products, addCombo, updateCombo, deleteCombo, toggleComboActive } = useAdminData();
+  const {
+    combos,
+    products,
+    addCombo,
+    updateCombo,
+    deleteCombo,
+    toggleComboActive,
+    featuredCombosSection,
+    updateFeaturedCombosSection
+  } = useAdminData();
+
+  const [merchVisible, setMerchVisible] = useState(featuredCombosSection?.isVisible === true);
+  const [merchTitle, setMerchTitle] = useState(featuredCombosSection?.title || 'Signature Kerala Combos');
+  const [merchSubtitle, setMerchSubtitle] = useState(
+    featuredCombosSection?.subtitle || 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence'
+  );
+  const [merchEyebrow, setMerchEyebrow] = useState(
+    featuredCombosSection?.eyebrow || 'Curated Gift Bundles & Value Packs'
+  );
+  const [merchSelectedIds, setMerchSelectedIds] = useState<string[]>(featuredCombosSection?.comboIds || []);
+  const [isSavingMerch, setIsSavingMerch] = useState(false);
+  const [showMerchPanel, setShowMerchPanel] = useState(false);
+
+  React.useEffect(() => {
+    if (featuredCombosSection) {
+      setMerchVisible(featuredCombosSection.isVisible === true);
+      setMerchTitle(featuredCombosSection.title || 'Signature Kerala Combos');
+      setMerchSubtitle(
+        featuredCombosSection.subtitle || 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence'
+      );
+      setMerchEyebrow(featuredCombosSection.eyebrow || 'Curated Gift Bundles & Value Packs');
+      setMerchSelectedIds(featuredCombosSection.comboIds || []);
+    }
+  }, [featuredCombosSection]);
+
+  const handleSaveMerchandising = async () => {
+    setIsSavingMerch(true);
+    try {
+      await updateFeaturedCombosSection({
+        id: 'h0000000-0000-0000-0000-000000000005',
+        isVisible: merchVisible,
+        title: merchTitle.trim(),
+        subtitle: merchSubtitle.trim(),
+        eyebrow: merchEyebrow.trim(),
+        comboIds: merchSelectedIds,
+        maxCombos: 6
+      });
+    } finally {
+      setIsSavingMerch(false);
+    }
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCombo, setEditingCombo] = useState<ComboBundle | null>(null);
+  const [showHelpGuide, setShowHelpGuide] = useState(true);
 
   // Form State
   const [name, setName] = useState('');
@@ -39,7 +91,7 @@ export const AdminCombos: React.FC = () => {
     setName('');
     setSlug('');
     setDescription('');
-    setImageUrl('https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=600&q=80');
+    setImageUrl('');
     setComboPrice(450);
     setSelectedItems([]);
     setIsModalOpen(true);
@@ -141,6 +193,321 @@ export const AdminCombos: React.FC = () => {
       </div>
 
       {/* Combos Grid */}
+      {/* How Combo Builder Works Help Section */}
+      <div className="bg-white rounded-card border border-[#EAE5DC] overflow-hidden shadow-xs">
+        <button
+          type="button"
+          onClick={() => setShowHelpGuide((prev) => !prev)}
+          className="w-full px-4 py-3 bg-[#FAF6EE] hover:bg-[#F5EEDD] flex items-center justify-between text-left transition-colors border-b border-[#EAE5DC]"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#072C20] text-amber-300 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-[#1C1917] flex items-center gap-1.5">
+                <span>How Combo Builder Works</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
+                  Store Administrator Guide
+                </span>
+              </h2>
+              <p className="text-[11px] text-[#71717A]">
+                Understand combo creation, automated savings math, variant selection, and checkout validation.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#072C20]">
+            <span>{showHelpGuide ? 'Hide Guide' : 'Read Guide'}</span>
+            {showHelpGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+        </button>
+
+        {showHelpGuide && (
+          <div className="p-5 space-y-5 text-xs text-[#2D2D2D] bg-white leading-relaxed">
+            {/* Practical Example Box */}
+            <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-amber-800 shrink-0" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-950">
+                  Practical Pricing &amp; Savings Example
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 text-center pt-1 font-mono text-xs">
+                <div className="p-2.5 bg-white rounded-lg border border-amber-200 shadow-2xs">
+                  <span className="text-[10px] text-content-muted block font-sans">Product A</span>
+                  <span className="font-bold text-content-primary">₹200</span>
+                </div>
+                <div className="p-2.5 bg-white rounded-lg border border-amber-200 shadow-2xs">
+                  <span className="text-[10px] text-content-muted block font-sans">Product B</span>
+                  <span className="font-bold text-content-primary">₹150</span>
+                </div>
+                <div className="p-2.5 bg-white rounded-lg border border-amber-200 shadow-2xs">
+                  <span className="text-[10px] text-content-muted block font-sans">Product C</span>
+                  <span className="font-bold text-content-primary">₹100</span>
+                </div>
+                <div className="p-2.5 bg-[#FAF6EE] rounded-lg border border-amber-300 shadow-2xs">
+                  <span className="text-[10px] text-amber-800 block font-sans">Normal Combined</span>
+                  <span className="font-bold text-[#072C20]">₹450</span>
+                </div>
+                <div className="p-2.5 bg-[#072C20] text-white rounded-lg border border-[#072C20] shadow-2xs">
+                  <span className="text-[10px] text-amber-300 block font-sans">Admin Combo Price</span>
+                  <span className="font-bold text-amber-300">₹399 (Save ₹51)</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-amber-900">
+                Formula: Savings = Component Total (₹450) − Combo Price (₹399) = <strong>₹51 (11% OFF)</strong>.
+                The system automatically displays this gold savings badge on both storefront cards and checkout.
+              </p>
+            </div>
+
+            {/* Step-by-Step Workflow A through K */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">A</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Creating a Combo</h4>
+                    <p className="text-[11px] text-content-secondary">Click "+ Build New Combo" to open the combo configuration modal.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">B</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Selecting Products</h4>
+                    <p className="text-[11px] text-content-secondary">Pick any snacks or spices from your catalog (e.g. Banana Chips, Tapioca Wafers, Halwa).</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">C</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Selecting Variants &amp; Pack Sizes</h4>
+                    <p className="text-[11px] text-content-secondary">Choose the exact weight/pack (e.g. 250g, 500g, or 1kg pouch) for each item in the bundle.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">D</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Setting Quantities</h4>
+                    <p className="text-[11px] text-content-secondary">Configure how many units of each product are included in a single combo box.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">E</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Setting Combo Price</h4>
+                    <p className="text-[11px] text-content-secondary">Enter your special bundle price (e.g. ₹399) lower than the normal combined component sum.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">F</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Automatic Savings Calculation</h4>
+                    <p className="text-[11px] text-content-secondary">The system automatically calculates the discount percentage and currency savings in real-time.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">G</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Setting Stock &amp; Availability Rules</h4>
+                    <p className="text-[11px] text-content-secondary">Combo availability dynamically respects the underlying inventory of every individual component variant.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">H</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Publishing &amp; Unpublishing</h4>
+                    <p className="text-[11px] text-content-secondary">Toggle active status at any time to instantly feature or remove the bundle from the storefront.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">I</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">How Customers See the Combo</h4>
+                    <p className="text-[11px] text-content-secondary">Customers view the combo card with included items, strike-through original price, and savings badge.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">J</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">How Customers Add to Cart</h4>
+                    <p className="text-[11px] text-content-secondary">1-click Add to Cart bundles all components under the promotional combo price.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#072C20] text-white font-bold flex items-center justify-center text-[10px] shrink-0 mt-0.5">K</span>
+                  <div>
+                    <h4 className="font-bold text-content-primary text-xs">Checkout Validation</h4>
+                    <p className="text-[11px] text-content-secondary">Authoritative server-side pricing engine verifies prices and deducts component inventory accurately.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Homepage Merchandising & Visibility Controls (Default strictly OFF) */}
+      <div className="bg-white rounded-xl border border-border shadow-xs overflow-hidden">
+        <div
+          onClick={() => setShowMerchPanel(!showMerchPanel)}
+          className="p-4 flex items-center justify-between cursor-pointer hover:bg-canvas-subtle transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className={`w-3 h-3 rounded-full ${merchVisible ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif font-bold text-sm text-content-primary">
+                  Homepage Combos Merchandising
+                </h3>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  merchVisible ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  {merchVisible ? 'LIVE ON HOMEPAGE' : 'HOMEPAGE VISIBILITY OFF'}
+                </span>
+              </div>
+              <p className="text-xs text-content-secondary mt-0.5">
+                {merchVisible
+                  ? `Featured on homepage (${merchSelectedIds.length} combos selected). Accessible at /combos and on homepage.`
+                  : 'Section is hidden from homepage. Accessible exclusively via the dedicated /combos catalogue route.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-brand-primary">
+              {showMerchPanel ? 'Hide Controls' : 'Configure Merchandising'}
+            </span>
+            {showMerchPanel ? <ChevronUp className="w-4 h-4 text-brand-primary" /> : <ChevronDown className="w-4 h-4 text-brand-primary" />}
+          </div>
+        </div>
+
+        {showMerchPanel && (
+          <div className="p-4 border-t border-border bg-[#FAF9F6]/50 space-y-4">
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-border">
+              <div>
+                <label className="text-xs font-bold text-content-primary block cursor-pointer">
+                  Feature Combos Section on Homepage
+                </label>
+                <span className="text-[11px] text-content-secondary block">
+                  When toggled OFF (default), the combos section is completely omitted from the landing page.
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={merchVisible}
+                onChange={(e) => setMerchVisible(e.target.checked)}
+                className="rounded text-brand-primary focus:ring-brand-primary w-5 h-5 cursor-pointer"
+              />
+            </div>
+
+            {merchVisible && (
+              <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-content-primary mb-1">
+                      Section Eyebrow
+                    </label>
+                    <input
+                      type="text"
+                      value={merchEyebrow}
+                      onChange={(e) => setMerchEyebrow(e.target.value)}
+                      placeholder="e.g. Curated Gift Bundles & Value Packs"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-white focus:outline-none focus:border-brand-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-content-primary mb-1">
+                      Section Heading
+                    </label>
+                    <input
+                      type="text"
+                      value={merchTitle}
+                      onChange={(e) => setMerchTitle(e.target.value)}
+                      placeholder="e.g. Signature Kerala Combos"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-white focus:outline-none focus:border-brand-primary font-serif font-bold text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-content-primary mb-1">
+                    Section Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    value={merchSubtitle}
+                    onChange={(e) => setMerchSubtitle(e.target.value)}
+                    placeholder="e.g. Authentic Kerala pairings crafted together for festive gifting..."
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-white focus:outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-content-primary mb-1.5 uppercase tracking-wider">
+                    Select Combos to Feature on Homepage (Max 6)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {combos.map((cb) => {
+                      const isSelected = merchSelectedIds.includes(cb.id);
+                      return (
+                        <label
+                          key={cb.id}
+                          className={`p-2.5 rounded-lg border flex items-center gap-2 cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-amber-50 border-[#A67732] text-content-primary font-semibold'
+                              : 'bg-white border-border text-content-secondary hover:bg-canvas'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setMerchSelectedIds([...merchSelectedIds, cb.id]);
+                              } else {
+                                setMerchSelectedIds(merchSelectedIds.filter((id) => id !== cb.id));
+                              }
+                            }}
+                            className="rounded text-brand-primary focus:ring-brand-primary w-4 h-4"
+                          />
+                          <div className="truncate flex-1">
+                            <span className="text-xs block truncate">{cb.name}</span>
+                            <span className="text-[10px] text-content-muted">₹{cb.comboPrice}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2 border-t border-border">
+              <button
+                type="button"
+                onClick={handleSaveMerchandising}
+                disabled={isSavingMerch}
+                className="px-4 py-2 rounded-lg bg-brand-primary hover:bg-brand-primary-hover active:scale-[0.98] text-white text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+              >
+                {isSavingMerch ? 'Saving...' : 'Save Merchandising Settings'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {combos.map((cb) => (
           <div
@@ -278,16 +645,14 @@ export const AdminCombos: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-content-primary block mb-1">Image URL</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs"
-                />
-              </div>
+              <ImageUploadPreview
+                label="Combo Hamper Image"
+                value={imageUrl}
+                onChange={(url) => setImageUrl(url)}
+                aspectRatio="16:9"
+                placeholder="https://... or upload local image file"
+                helpText="Widescreen or card banner showcasing the bundled snack pack."
+              />
 
               {/* Component Variant Selector */}
               <div className="pt-2 border-t border-border-subtle space-y-2">

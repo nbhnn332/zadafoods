@@ -30,8 +30,10 @@ export interface OrderPricingSummary {
   totalDiscount: number;
   discountedSubtotal: number;
   shippingFee: number;
+  codFee: number;
   grandTotal: number;
   isCodEligible: boolean;
+  codIneligibleReason?: string;
   freeShippingApplied: boolean;
 }
 
@@ -43,6 +45,13 @@ export interface PricingEngineContext {
   freeShippingThreshold?: number;
   standardShippingFee?: number;
   expressShippingFee?: number;
+  // COD Surcharge & Eligibility Settings (Phase 32)
+  paymentMethod?: 'COD' | 'RAZORPAY';
+  isCodGloballyEnabled?: boolean;
+  codFeeType?: 'FIXED' | 'PERCENTAGE';
+  codFeeValue?: number;
+  codMinOrderValue?: number;
+  codMaxOrderValue?: number;
 }
 
 /**
@@ -62,7 +71,13 @@ export function calculateAuthoritativeCart(
     userOrderCount = 0,
     freeShippingThreshold = 499,
     standardShippingFee = 40,
-    expressShippingFee = 80
+    expressShippingFee = 80,
+    paymentMethod,
+    isCodGloballyEnabled = true,
+    codFeeType = 'FIXED',
+    codFeeValue = 0,
+    codMinOrderValue = 0,
+    codMaxOrderValue = 50000
   } = context;
 
   const lineItems: PricingLineItemResult[] = [];
@@ -206,7 +221,34 @@ export function calculateAuthoritativeCart(
 
   const totalDiscount = promotionalDiscount + couponDiscount + firstOrderDiscount;
   const discountedSubtotal = Math.max(0, rawSubtotal - totalDiscount);
-  const grandTotal = Math.max(0, discountedSubtotal + shippingFee);
+
+  // 5. Cash on Delivery (COD) Surcharge & Eligibility Evaluation (Phase 32)
+  let codFee = 0;
+  let codIneligibleReason: string | undefined = undefined;
+
+  if (isCodGloballyEnabled === false) {
+    allCodEligible = false;
+    codIneligibleReason = 'Cash on Delivery is currently disabled by store administration.';
+  } else if (!allCodEligible) {
+    codIneligibleReason = 'One or more items in your cart are not eligible for Cash on Delivery.';
+  } else if (codMinOrderValue !== undefined && codMinOrderValue > 0 && discountedSubtotal < codMinOrderValue) {
+    allCodEligible = false;
+    codIneligibleReason = `Cash on Delivery requires a minimum order value of ₹${codMinOrderValue}.`;
+  } else if (codMaxOrderValue !== undefined && codMaxOrderValue > 0 && discountedSubtotal > codMaxOrderValue) {
+    allCodEligible = false;
+    codIneligibleReason = `Cash on Delivery is only available for orders up to ₹${codMaxOrderValue}.`;
+  }
+
+  // Surcharge applies ONLY when paymentMethod is explicitly 'COD' and COD is eligible
+  if (paymentMethod === 'COD' && allCodEligible && lineItems.length > 0) {
+    if (codFeeType === 'PERCENTAGE' && codFeeValue && codFeeValue > 0) {
+      codFee = Math.round((discountedSubtotal * codFeeValue) / 100);
+    } else if (codFeeValue && codFeeValue > 0) {
+      codFee = Math.max(0, Number(codFeeValue));
+    }
+  }
+
+  const grandTotal = Math.max(0, discountedSubtotal + shippingFee + codFee);
 
   return {
     lineItems,
@@ -217,8 +259,10 @@ export function calculateAuthoritativeCart(
     totalDiscount,
     discountedSubtotal,
     shippingFee,
+    codFee,
     grandTotal,
     isCodEligible: allCodEligible,
+    codIneligibleReason,
     freeShippingApplied: shippingFee === 0 && lineItems.length > 0 && deliveryMethod === 'STANDARD'
   };
 }

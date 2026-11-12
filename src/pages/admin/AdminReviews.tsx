@@ -17,6 +17,7 @@ export const AdminReviews: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterRating, setFilterRating] = useState<string>('all');
+  const [filterProduct, setFilterProduct] = useState<string>('all');
 
   // Add Review Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -54,7 +55,9 @@ export const AdminReviews: React.FC = () => {
 
     const matchesRating = filterRating === 'all' || rev.rating === Number(filterRating);
 
-    return matchesSearch && matchesStatus && matchesRating;
+    const matchesProduct = filterProduct === 'all' || rev.productId === filterProduct;
+
+    return matchesSearch && matchesStatus && matchesRating && matchesProduct;
   });
 
   const handleOpenAdd = () => {
@@ -185,6 +188,20 @@ export const AdminReviews: React.FC = () => {
             <option value="3">3 Stars</option>
             <option value="2">2 Stars</option>
             <option value="1">1 Star</option>
+          </select>
+
+          <select
+            data-testid="filter-reviews-product-select"
+            value={filterProduct}
+            onChange={(e) => setFilterProduct(e.target.value)}
+            className="px-2.5 py-1.5 text-xs rounded-input border border-border-subtle text-content-primary bg-white focus:outline-none max-w-[180px] truncate"
+          >
+            <option value="all">All Products</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
           </select>
         </div>
       </div>

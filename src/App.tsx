@@ -28,6 +28,9 @@ const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers').then(m 
 const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons').then(m => ({ default: m.AdminCoupons })));
 const AdminCombos = lazy(() => import('./pages/admin/AdminCombos').then(m => ({ default: m.AdminCombos })));
 const AdminCMS = lazy(() => import('./pages/admin/AdminCMS').then(m => ({ default: m.AdminCMS })));
+const AdminHandpicked = lazy(() => import('./pages/admin/AdminHandpicked').then(m => ({ default: m.AdminHandpicked })));
+const AdminBestsellers = lazy(() => import('./pages/admin/AdminBestsellers').then(m => ({ default: m.AdminBestsellers })));
+const AdminDataManagement = lazy(() => import('./pages/admin/AdminDataManagement').then(m => ({ default: m.AdminDataManagement })));
 const AdminFestivals = lazy(() => import('./pages/admin/AdminFestivals').then(m => ({ default: m.AdminFestivals })));
 const AdminReviews = lazy(() => import('./pages/admin/AdminReviews').then(m => ({ default: m.AdminReviews })));
 const AdminEnquiries = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
@@ -54,6 +57,7 @@ export const App: React.FC = () => {
           {/* Customer Storefront Routes (Grounded in the 7 UI References) */}
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<CategoryPage />} />
+          <Route path="/combos" element={<CategoryPage isCombosPage={true} />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/product/:slug" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
@@ -80,7 +84,14 @@ export const App: React.FC = () => {
           {/* Admin Operations Console Routes (All 14 Modules) */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route
+              path="dashboard"
+              element={
+                <AdminPermissionGuard permission="dashboard.view" featureName="Operations Dashboard">
+                  <AdminDashboard />
+                </AdminPermissionGuard>
+              }
+            />
             <Route
               path="products"
               element={
@@ -145,6 +156,39 @@ export const App: React.FC = () => {
                   featureName="Homepage CMS"
                 >
                   <AdminCMS />
+                </AdminPermissionGuard>
+              }
+            />
+            <Route
+              path="handpicked"
+              element={
+                <AdminPermissionGuard
+                  permission={['cms.homepage', 'cms.sections']}
+                  featureName="Handpicked For You"
+                >
+                  <AdminHandpicked />
+                </AdminPermissionGuard>
+              }
+            />
+            <Route
+              path="bestsellers"
+              element={
+                <AdminPermissionGuard
+                  permission={['cms.homepage', 'cms.sections']}
+                  featureName="Bestseller Management"
+                >
+                  <AdminBestsellers />
+                </AdminPermissionGuard>
+              }
+            />
+            <Route
+              path="data-management"
+              element={
+                <AdminPermissionGuard
+                  permission="admins.manage"
+                  featureName="Secure Bulk Data Management"
+                >
+                  <AdminDataManagement />
                 </AdminPermissionGuard>
               }
             />

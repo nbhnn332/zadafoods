@@ -20,10 +20,13 @@ export interface Address {
   recipientName: string;
   phone: string;
   streetAddress: string;
+  houseBuilding?: string;
   landmark?: string;
   city: string;
+  district?: string;
   state: string;
   postalCode: string;
+  deliveryInstructions?: string;
   isDefault: boolean;
 }
 
@@ -120,6 +123,15 @@ export interface CartItem {
   quantity: number;
   isCodEligible: boolean;
   availableStock: number;
+  isCombo?: boolean;
+  comboId?: string;
+  comboItems?: {
+    productId?: string;
+    variantId: string;
+    quantity: number;
+    productName: string;
+    variantLabel: string;
+  }[];
 }
 
 export type OrderStatus = 'PENDING' | 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
@@ -164,6 +176,7 @@ export interface Order {
   discountAmount: number;
   couponCode?: string;
   shippingCharge: number;
+  codFee?: number;
   totalAmount: number;
   // Global Cash on Delivery (COD) Advance tracking
   codAdvanceAmount?: number;
@@ -185,6 +198,7 @@ export interface Order {
 export interface Coupon {
   id: string;
   code: string;
+  description?: string;
   discountType: 'PERCENTAGE' | 'FLAT' | 'FREE_SHIPPING';
   discountValue: number;
   maxDiscountAmount?: number;
@@ -193,7 +207,11 @@ export interface Coupon {
   usageLimit?: number;
   timesUsed: number;
   isActive: boolean;
+  validFrom?: string;
   validUntil?: string;
+  assignedCustomerEmail?: string;
+  assignedUserId?: string;
+  isSingleUsePerCustomer?: boolean;
 }
 
 export interface Review {
@@ -237,6 +255,10 @@ export interface StoreSettings {
   expressDeliveryFee: number;
   // Customer-facing payment options
   isCodGloballyEnabled: boolean;
+  codFeeType?: 'FIXED' | 'PERCENTAGE';
+  codFeeValue?: number;
+  codMinOrderValue?: number;
+  codMaxOrderValue?: number;
   // Global COD Advance Payment Configuration
   isCodAdvanceEnabled?: boolean;
   codAdvanceType?: 'FIXED' | 'PERCENTAGE';
@@ -353,6 +375,73 @@ export interface HomepageBanner {
   startDate?: string;
   endDate?: string;
   createdAt?: string;
+  deviceTarget?: 'all' | 'desktop' | 'mobile';
+  badgeText?: string;
+}
+
+export interface HandpickedSectionConfig {
+  id?: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  isVisible: boolean;
+  productIds: string[];
+}
+
+export interface BestsellerSectionConfig {
+  id?: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  isVisible: boolean;
+  maxProducts: number;
+  productIds: string[];
+}
+
+export interface CorporateGiftingSectionConfig {
+  id?: string;
+  eyebrow: string;
+  heading: string;
+  description: string;
+  bulletPoints: string[];
+  primaryCtaLabel: string;
+  primaryCtaDestination: string;
+  secondaryCtaLabel: string;
+  secondaryCtaDestination: string;
+  bgPreset: string;
+  textColor: string;
+  isActive: boolean;
+  displayOrder: number;
+  desktopVisible: boolean;
+  mobileVisible: boolean;
+}
+
+export interface HeritageStorySectionConfig {
+  id?: string;
+  eyebrow: string;
+  heading: string;
+  subtitle: string;
+  description: string;
+  imageUrl?: string;
+  ctaLabel: string;
+  ctaDestination: string;
+  bgPreset: string;
+  textColor: string;
+  isActive: boolean;
+  displayOrder: number;
+  desktopVisible: boolean;
+  mobileVisible: boolean;
+}
+
+export interface FeaturedCombosSectionConfig {
+  id?: string;
+  title: string;
+  subtitle: string;
+  eyebrow?: string;
+  isVisible: boolean;
+  comboIds: string[];
+  maxCombos?: number;
+  displayOrder?: number;
 }
 
 export interface CategoryBanner {
