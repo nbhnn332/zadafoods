@@ -45,6 +45,7 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
                 alt={category.name}
                 className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
+                referrerPolicy="no-referrer"
                 onError={() => setImgError(true)}
               />
             )}
@@ -78,6 +79,7 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
               alt={category.name}
               className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
+              referrerPolicy="no-referrer"
               onError={() => setImgError(true)}
             />
           )}
@@ -366,6 +368,7 @@ export const HomePage: React.FC = () => {
                       src={slide.imageUrl}
                       alt={slide.title}
                       className="absolute inset-0 w-full h-full object-cover object-right sm:object-[80%_center]"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
@@ -665,6 +668,7 @@ export const HomePage: React.FC = () => {
                               src={combo.imageUrl}
                               alt={combo.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              referrerPolicy="no-referrer"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = 'none';
                               }}
@@ -832,6 +836,7 @@ export const HomePage: React.FC = () => {
                         alt={heritageStorySection.heading}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        referrerPolicy="no-referrer"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = 'none';
                         }}

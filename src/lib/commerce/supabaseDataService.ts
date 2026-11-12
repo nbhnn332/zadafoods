@@ -1754,10 +1754,11 @@ export class SupabaseDataService {
       try {
         await ensureAuthenticatedAdminSession();
         const targetDevice = banner.deviceTarget === 'mobile' ? 'mobile' : 'desktop';
+        const cleanImgUrl = banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim().replace(/^["']|["']$/g, '') : '';
         const payload: any = {
           title: banner.title.trim(),
           subtitle: banner.subtitle ? banner.subtitle.trim() : null,
-          image_url: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : '',
+          image_url: cleanImgUrl,
           background_color: banner.backgroundColor || '#072C20',
           text_color: banner.textColor || '#FFFFFF',
           eyebrow: banner.eyebrow ? banner.eyebrow.trim() : null,
@@ -1803,7 +1804,7 @@ export class SupabaseDataService {
           const corePayload: any = {
             title: banner.title.trim(),
             subtitle: banner.subtitle ? banner.subtitle.trim() : null,
-            image_url: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : '',
+            image_url: cleanImgUrl,
             cta_text: banner.ctaText ? banner.ctaText.trim() : 'Shop Now',
             cta_link: banner.linkUrl ? banner.linkUrl.trim() : '/category/chips',
             display_order: banner.displayOrder ?? 1,
@@ -1857,7 +1858,9 @@ export class SupabaseDataService {
                 id: fallbackId,
                 title: banner.title.trim(),
                 subtitle: banner.subtitle ? banner.subtitle.trim() : '',
-                imageUrl: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : '',
+                imageUrl: cleanImgUrl,
+                deviceTarget: targetDevice,
+                badgeText: targetDevice,
                 backgroundColor: banner.backgroundColor || '#072C20',
                 textColor: banner.textColor || '#FFFFFF',
                 eyebrow: banner.eyebrow ? banner.eyebrow.trim() : undefined,
@@ -1905,6 +1908,8 @@ export class SupabaseDataService {
         // Merge client-specified styling fields if remote schema only returned core columns
         const finalBanner: HomepageBanner = {
           ...verifyRes.data,
+          deviceTarget: banner.deviceTarget || verifyRes.data.deviceTarget || targetDevice,
+          badgeText: banner.badgeText || verifyRes.data.badgeText || targetDevice,
           backgroundColor: banner.backgroundColor || verifyRes.data.backgroundColor || '#072C20',
           textColor: banner.textColor || verifyRes.data.textColor || '#FFFFFF',
           eyebrow: banner.eyebrow || verifyRes.data.eyebrow
@@ -2870,6 +2875,7 @@ export class SupabaseDataService {
     if (isSupabaseConfigured()) {
       try {
         await ensureAuthenticatedAdminSession();
+        const cleanCatImgUrl = banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim().replace(/^["']|["']$/g, '') : '';
         const payload: any = {
           category_id: banner.categoryId || null,
           category_slug: banner.categorySlug,
@@ -2878,7 +2884,7 @@ export class SupabaseDataService {
           eyebrow: banner.eyebrow || null,
           background_color: banner.backgroundColor || '#072C20',
           text_color: banner.textColor || '#FFFFFF',
-          image_url: banner.imageUrl || '',
+          image_url: cleanCatImgUrl,
           is_active: banner.isActive,
           display_order: banner.displayOrder,
           updated_at: new Date().toISOString()
@@ -2932,7 +2938,7 @@ export class SupabaseDataService {
                 categorySlug: banner.categorySlug || 'chips',
                 title: banner.title.trim(),
                 subtitle: banner.subtitle ? banner.subtitle.trim() : undefined,
-                imageUrl: banner.imageUrl && banner.imageUrl.trim() ? banner.imageUrl.trim() : '',
+                imageUrl: cleanCatImgUrl,
                 backgroundColor: banner.backgroundColor || '#072C20',
                 textColor: banner.textColor || '#FFFFFF',
                 eyebrow: banner.eyebrow ? banner.eyebrow.trim() : undefined,

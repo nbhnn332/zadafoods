@@ -18,6 +18,8 @@ import {
   Eye,
   Bookmark,
   RotateCcw,
+  RotateCw,
+  Loader2,
   Sparkles,
   Gift
 } from 'lucide-react';
@@ -80,42 +82,55 @@ export const AdminCMS: React.FC = () => {
   const [deviceTarget, setDeviceTarget] = useState<'all' | 'desktop' | 'mobile'>('all');
   const [bannerDeviceFilter, setBannerDeviceFilter] = useState<'desktop' | 'mobile' | 'all'>('desktop');
   const [imageStatus, setImageStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const [imageErrorMsg, setImageErrorMsg] = useState('');
+  const [imageRetryKey, setImageRetryKey] = useState(0);
 
   // Real-time image validation for direct URL input
   React.useEffect(() => {
-    const trimmed = imageUrl.trim();
+    const trimmed = (imageUrl || '').trim().replace(/^["']|["']$/g, '');
     if (!trimmed) {
       setImageStatus('idle');
+      setImageDimensions(null);
       setImageErrorMsg('');
       return;
     }
     const isValidProtocol = trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed);
     if (!isValidProtocol) {
       setImageStatus('invalid');
-      setImageErrorMsg('URL must start with /assets/ or http:// or https://');
+      setImageDimensions(null);
+      setImageErrorMsg('URL must begin with https://, http://, or /assets/');
       return;
     }
     setImageStatus('validating');
+    setImageErrorMsg('');
     const img = new Image();
+    img.referrerPolicy = 'no-referrer';
     let isCancelled = false;
     img.onload = () => {
       if (!isCancelled) {
         setImageStatus('valid');
+        setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
         setImageErrorMsg('');
       }
     };
     img.onerror = () => {
       if (!isCancelled) {
         setImageStatus('invalid');
-        setImageErrorMsg('Unable to load image from URL. The image link is unreachable or invalid.');
+        setImageDimensions(null);
+        setImageErrorMsg('Unable to load image from direct URL. The image link is unreachable, restricted by external host, or not a valid image file.');
       }
     };
-    img.src = trimmed;
+    if (imageRetryKey > 0 && /^https?:\/\//i.test(trimmed)) {
+      const sep = trimmed.includes('?') ? '&' : '?';
+      img.src = `${trimmed}${sep}_retry=${Date.now()}`;
+    } else {
+      img.src = trimmed;
+    }
     return () => {
       isCancelled = true;
     };
-  }, [imageUrl]);
+  }, [imageUrl, imageRetryKey]);
 
   // Category Banner Modal & Form State
   const [isCatBannerModalOpen, setIsCatBannerModalOpen] = useState(false);
@@ -127,9 +142,59 @@ export const AdminCMS: React.FC = () => {
   const [catBgColor, setCatBgColor] = useState('#072C20');
   const [catTextColor, setCatTextColor] = useState('#FFFFFF');
   const [catImageUrl, setCatImageUrl] = useState('');
+  const [catImageStatus, setCatImageStatus] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
+  const [catImageDimensions, setCatImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [catImageErrorMsg, setCatImageErrorMsg] = useState('');
+  const [catImageRetryKey, setCatImageRetryKey] = useState(0);
   const [catDisplayOrder, setCatDisplayOrder] = useState(1);
   const [catIsActive, setCatIsActive] = useState(true);
   const [deleteCatConfirmId, setDeleteCatConfirmId] = useState<string | null>(null);
+
+  // Real-time category banner image validation
+  React.useEffect(() => {
+    const trimmed = (catImageUrl || '').trim().replace(/^["']|["']$/g, '');
+    if (!trimmed) {
+      setCatImageStatus('idle');
+      setCatImageDimensions(null);
+      setCatImageErrorMsg('');
+      return;
+    }
+    const isValidProtocol = trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed);
+    if (!isValidProtocol) {
+      setCatImageStatus('invalid');
+      setCatImageDimensions(null);
+      setCatImageErrorMsg('URL must begin with https://, http://, or /assets/');
+      return;
+    }
+    setCatImageStatus('validating');
+    setCatImageErrorMsg('');
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    let isCancelled = false;
+    img.onload = () => {
+      if (!isCancelled) {
+        setCatImageStatus('valid');
+        setCatImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+        setCatImageErrorMsg('');
+      }
+    };
+    img.onerror = () => {
+      if (!isCancelled) {
+        setCatImageStatus('invalid');
+        setCatImageDimensions(null);
+        setCatImageErrorMsg('Unable to load image from direct URL. The image link is unreachable, restricted by external host, or not a valid image file.');
+      }
+    };
+    if (catImageRetryKey > 0 && /^https?:\/\//i.test(trimmed)) {
+      const sep = trimmed.includes('?') ? '&' : '?';
+      img.src = `${trimmed}${sep}_retry=${Date.now()}`;
+    } else {
+      img.src = trimmed;
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [catImageUrl, catImageRetryKey]);
 
   // Theme Presets for Banners (Zero Images Required)
   const THEME_PRESETS = [
@@ -149,7 +214,9 @@ export const AdminCMS: React.FC = () => {
     setSubtitle('');
     setImageUrl('');
     setImageStatus('idle');
+    setImageDimensions(null);
     setImageErrorMsg('');
+    setImageRetryKey(0);
     setBgColor('#072C20');
     setTextColor('#FFFFFF');
     setEyebrow('Fresh From Kerala');
@@ -162,13 +229,15 @@ export const AdminCMS: React.FC = () => {
     setIsBannerModalOpen(true);
   };
 
-  
-
   const openEditBanner = (b: HomepageBanner) => {
     setEditingBanner(b);
     setTitle(b.title);
     setSubtitle(b.subtitle || '');
     setImageUrl(b.imageUrl || '');
+    setImageStatus(b.imageUrl ? 'validating' : 'idle');
+    setImageDimensions(null);
+    setImageErrorMsg('');
+    setImageRetryKey(0);
     setBgColor(b.backgroundColor || '#072C20');
     setTextColor(b.textColor || '#FFFFFF');
     setEyebrow(b.eyebrow || 'Fresh From Kerala');
@@ -191,15 +260,15 @@ export const AdminCMS: React.FC = () => {
       return;
     }
 
-    const trimmedImg = imageUrl.trim();
+    const trimmedImg = (imageUrl || '').trim().replace(/^["']|["']$/g, '');
     if (trimmedImg) {
       const isValid = trimmedImg.startsWith('/') || /^https?:\/\//i.test(trimmedImg);
       if (!isValid) {
-        showToast('Validation Error', 'Image URL must be a valid relative path (e.g. /assets/...) or HTTPS URL.', 'error');
+        showToast('Validation Error', 'Image URL must be a valid relative path (e.g. /assets/...) or HTTP/HTTPS URL.', 'error');
         return;
       }
       if (imageStatus === 'invalid') {
-        showToast('Image Validation Failed', 'The image URL cannot be loaded. Please enter a valid URL or leave empty for Pure CSS.', 'error');
+        showToast('Image Validation Failed', 'The image URL cannot be loaded. Please click Retry, enter a valid URL, or leave empty for Pure CSS.', 'error');
         return;
       }
     }
@@ -322,6 +391,10 @@ export const AdminCMS: React.FC = () => {
     setCatBgColor('#072C20');
     setCatTextColor('#FFFFFF');
     setCatImageUrl('');
+    setCatImageStatus('idle');
+    setCatImageDimensions(null);
+    setCatImageErrorMsg('');
+    setCatImageRetryKey(0);
     setCatDisplayOrder(categoryBanners.length + 1);
     setCatIsActive(true);
     setIsCatBannerModalOpen(true);
@@ -336,6 +409,10 @@ export const AdminCMS: React.FC = () => {
     setCatBgColor(cb.backgroundColor || '#072C20');
     setCatTextColor(cb.textColor || '#FFFFFF');
     setCatImageUrl(cb.imageUrl || '');
+    setCatImageStatus(cb.imageUrl ? 'validating' : 'idle');
+    setCatImageDimensions(null);
+    setCatImageErrorMsg('');
+    setCatImageRetryKey(0);
     setCatDisplayOrder(cb.displayOrder);
     setCatIsActive(cb.isActive);
     setIsCatBannerModalOpen(true);
@@ -352,6 +429,19 @@ export const AdminCMS: React.FC = () => {
       return;
     }
 
+    const trimmedCatImg = (catImageUrl || '').trim().replace(/^["']|["']$/g, '');
+    if (trimmedCatImg) {
+      const isValid = trimmedCatImg.startsWith('/') || /^https?:\/\//i.test(trimmedCatImg);
+      if (!isValid) {
+        showToast('Validation Error', 'Category image URL must begin with https://, http://, or /assets/', 'error');
+        return;
+      }
+      if (catImageStatus === 'invalid') {
+        showToast('Image Validation Failed', 'The category image URL cannot be loaded. Please click Retry, provide a valid URL, or leave empty for Pure CSS.', 'error');
+        return;
+      }
+    }
+
     const matchedCat = categories.find((c) => c.slug === catCategorySlug);
 
     if (editingCatBanner) {
@@ -363,7 +453,7 @@ export const AdminCMS: React.FC = () => {
         eyebrow: catEyebrow.trim(),
         backgroundColor: catBgColor,
         textColor: catTextColor,
-        imageUrl: catImageUrl.trim(),
+        imageUrl: trimmedCatImg,
         displayOrder: Number(catDisplayOrder),
         isActive: catIsActive
       });
@@ -377,7 +467,7 @@ export const AdminCMS: React.FC = () => {
         eyebrow: catEyebrow.trim(),
         backgroundColor: catBgColor,
         textColor: catTextColor,
-        imageUrl: catImageUrl.trim(),
+        imageUrl: trimmedCatImg,
         displayOrder: Number(catDisplayOrder),
         isActive: catIsActive
       });
@@ -663,6 +753,7 @@ export const AdminCMS: React.FC = () => {
                               <img
                                 src={ban.imageUrl}
                                 alt={ban.title}
+                                referrerPolicy="no-referrer"
                                 className="absolute inset-0 w-full h-full object-cover"
                                 onError={(e) => {
                                   (e.target as HTMLElement).style.display = 'none';
@@ -847,6 +938,7 @@ export const AdminCMS: React.FC = () => {
                               <img
                                 src={ban.imageUrl}
                                 alt={ban.title}
+                                referrerPolicy="no-referrer"
                                 className="absolute inset-0 w-full h-full object-cover"
                                 onError={(e) => {
                                   (e.target as HTMLElement).style.display = 'none';
@@ -1266,14 +1358,56 @@ export const AdminCMS: React.FC = () => {
                 }`}
               >
                 {imageUrl && imageUrl.trim() ? (
-                  <img
-                    src={imageUrl.trim()}
-                    alt="Banner Preview"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
+                  imageStatus === 'invalid' ? (
+                    <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center p-4 text-center z-20">
+                      <AlertTriangle className="w-6 h-6 text-rose-400 mb-1" />
+                      <p className="text-xs font-bold text-rose-200">Image Failed to Load</p>
+                      <p className="text-[10px] text-rose-300 font-mono line-clamp-1 max-w-xs">{imageUrl.trim()}</p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setImageRetryKey((k) => k + 1)}
+                          className="px-2.5 py-1 rounded bg-white text-rose-800 text-xs font-bold shadow hover:bg-rose-50 flex items-center gap-1"
+                        >
+                          <RotateCw className="w-3 h-3" /> Retry Load
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageUrl('');
+                            setImageStatus('idle');
+                          }}
+                          className="px-2.5 py-1 rounded bg-black/40 text-white text-xs font-medium border border-white/20"
+                        >
+                          Clear URL
+                        </button>
+                      </div>
+                    </div>
+                  ) : imageStatus === 'validating' ? (
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-4 text-center z-20">
+                      <Loader2 className="w-6 h-6 text-white animate-spin mb-1" />
+                      <p className="text-xs text-white/90 font-medium">Loading and verifying direct image URL...</p>
+                    </div>
+                  ) : (
+                    <img
+                      key={`${imageUrl.trim()}-${imageRetryKey}`}
+                      src={imageUrl.trim()}
+                      referrerPolicy="no-referrer"
+                      alt="Banner Preview"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                        setImageStatus('valid');
+                        setImageErrorMsg('');
+                      }}
+                      onError={() => {
+                        setImageStatus('invalid');
+                        setImageDimensions(null);
+                        setImageErrorMsg('Unable to load image from direct URL.');
+                      }}
+                    />
+                  )
                 ) : null}
 
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent pointer-events-none" />
@@ -1377,7 +1511,7 @@ export const AdminCMS: React.FC = () => {
                 {/* Status indicators */}
                 {imageStatus === 'validating' && (
                   <div className="flex items-center gap-1.5 text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
-                    <span className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 shrink-0" />
                     <span>Verifying image URL reachability...</span>
                   </div>
                 )}
@@ -1385,16 +1519,40 @@ export const AdminCMS: React.FC = () => {
                 {imageStatus === 'valid' && (
                   <div className="flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Image link verified and ready to save.</span>
+                    <span>
+                      {imageDimensions ? `${imageDimensions.width} × ${imageDimensions.height} px verified — ` : ''}
+                      Image link verified and ready to save.
+                    </span>
                   </div>
                 )}
 
                 {imageStatus === 'invalid' && (
                   <div className="flex items-start gap-1.5 text-[11px] text-rose-800 bg-rose-50 p-2 rounded-lg border border-rose-200">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
+                    <div className="flex-1 space-y-1">
                       <strong className="block font-semibold">Unable to load image from URL</strong>
-                      <span>{imageErrorMsg || 'Please provide a valid, reachable image URL or clear the field for Pure CSS.'}</span>
+                      <p className="text-[10px] text-content-muted font-mono break-all">{imageUrl.trim()}</p>
+                      <p className="text-[10px] text-rose-700">{imageErrorMsg || 'Please provide a valid, reachable image URL or clear the field for Pure CSS.'}</p>
+                      <div className="pt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setImageRetryKey((k) => k + 1)}
+                          className="px-2.5 py-1 text-xs font-bold rounded bg-rose-100 text-rose-800 hover:bg-rose-200 flex items-center gap-1 transition-colors"
+                        >
+                          <RotateCw className="w-3 h-3" />
+                          <span>Retry Load</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageUrl('');
+                            setImageStatus('idle');
+                          }}
+                          className="px-2.5 py-1 text-xs font-semibold rounded bg-canvas border border-border-subtle hover:bg-canvas-subtle transition-colors"
+                        >
+                          Clear URL
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1594,16 +1752,45 @@ export const AdminCMS: React.FC = () => {
                 className="relative rounded-2xl overflow-hidden p-6 min-h-[140px] flex items-center border border-black/10 shadow-inner"
               >
                 {/* Optional background image if provided */}
-                {catImageUrl && (
-                  <img
-                    src={catImageUrl}
-                    alt="Category background preview"
-                    className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                )}
+                {catImageUrl && catImageUrl.trim() ? (
+                  catImageStatus === 'invalid' ? (
+                    <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center p-3 text-center z-20">
+                      <AlertTriangle className="w-5 h-5 text-rose-400 mb-1" />
+                      <p className="text-xs font-bold text-rose-200">Category Image Failed to Load</p>
+                      <button
+                        type="button"
+                        onClick={() => setCatImageRetryKey((k) => k + 1)}
+                        className="mt-1.5 px-2.5 py-1 rounded bg-white text-rose-800 text-[11px] font-bold shadow hover:bg-rose-50 flex items-center gap-1"
+                      >
+                        <RotateCw className="w-3 h-3" /> Retry Load
+                      </button>
+                    </div>
+                  ) : catImageStatus === 'validating' ? (
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-3 text-center z-20">
+                      <Loader2 className="w-5 h-5 text-white animate-spin mb-1" />
+                      <p className="text-[11px] text-white font-medium">Verifying category image URL...</p>
+                    </div>
+                  ) : (
+                    <img
+                      key={`${catImageUrl.trim()}-${catImageRetryKey}`}
+                      src={catImageUrl.trim()}
+                      referrerPolicy="no-referrer"
+                      alt="Category background preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-35 pointer-events-none"
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        setCatImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+                        setCatImageStatus('valid');
+                        setCatImageErrorMsg('');
+                      }}
+                      onError={() => {
+                        setCatImageStatus('invalid');
+                        setCatImageDimensions(null);
+                        setCatImageErrorMsg('Unable to load image from direct URL.');
+                      }}
+                    />
+                  )
+                ) : null}
 
                 {/* Controlled gradient overlay for 100% legibility */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent pointer-events-none" />
@@ -1763,19 +1950,94 @@ export const AdminCMS: React.FC = () => {
 
               {/* Optional Image URL */}
               <div>
-                <label className="font-bold text-content-primary block mb-0.5">
-                  Optional Background Image URL (Empty by default)
-                </label>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className="font-bold text-content-primary block text-xs">
+                    Optional Background Image URL (Empty by default)
+                  </label>
+                  <span className="text-[10px] text-content-muted font-medium">
+                    Direct Image Link Only
+                  </span>
+                </div>
                 <p className="text-[10px] text-content-muted mb-1">
-                  Default is pure CSS background. Only provide a genuine asset path if available.
+                  Default is pure CSS background. Only provide a genuine image URL if available.
                 </p>
-                <input
-                  type="text"
-                  placeholder="Leave empty for image-free CSS banner"
-                  value={catImageUrl}
-                  onChange={(e) => setCatImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-border-subtle rounded-input text-xs font-mono"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Leave empty for image-free CSS banner, or enter direct URL (https://... or /assets/...)"
+                    value={catImageUrl}
+                    onChange={(e) => setCatImageUrl(e.target.value)}
+                    className={`w-full px-3 py-2 pr-16 border rounded-input text-xs font-mono transition-colors ${
+                      catImageStatus === 'invalid'
+                        ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:border-rose-500'
+                        : catImageStatus === 'valid'
+                        ? 'border-emerald-400 bg-emerald-50/20 text-emerald-900 focus:border-emerald-500'
+                        : 'border-border-subtle focus:border-brand-primary'
+                    }`}
+                  />
+                  {catImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCatImageUrl('');
+                        setCatImageStatus('idle');
+                        setCatImageDimensions(null);
+                        setCatImageErrorMsg('');
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold text-content-muted hover:text-rose-600 bg-canvas-subtle rounded border border-border-subtle"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Status indicators */}
+                {catImageStatus === 'validating' && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600 shrink-0" />
+                    <span>Verifying category image URL reachability...</span>
+                  </div>
+                )}
+
+                {catImageStatus === 'valid' && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>
+                      {catImageDimensions ? `${catImageDimensions.width} × ${catImageDimensions.height} px verified — ` : ''}
+                      Category banner image verified and ready to save.
+                    </span>
+                  </div>
+                )}
+
+                {catImageStatus === 'invalid' && (
+                  <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-rose-800 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <strong className="block font-semibold">Unable to load image from URL</strong>
+                      <p className="text-[10px] text-content-muted font-mono break-all">{catImageUrl.trim()}</p>
+                      <p className="text-[10px] text-rose-700">{catImageErrorMsg || 'Please provide an accessible image URL or clear the field for Pure CSS.'}</p>
+                      <div className="pt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCatImageRetryKey((k) => k + 1)}
+                          className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[11px] font-bold hover:bg-rose-200 flex items-center gap-1"
+                        >
+                          <RotateCw className="w-3 h-3" /> Retry Load
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCatImageUrl('');
+                            setCatImageStatus('idle');
+                          }}
+                          className="px-2 py-0.5 rounded bg-white text-content-secondary border border-border-subtle text-[11px] hover:bg-canvas-subtle"
+                        >
+                          Clear URL
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Display Order & Active */}

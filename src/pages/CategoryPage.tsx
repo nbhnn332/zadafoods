@@ -234,6 +234,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
               alt={`${bannerTitle} - Authentic Kerala Delicacies`}
               className="absolute inset-0 w-full h-full object-cover object-right sm:object-center opacity-65 transition-opacity"
               loading="eager"
+              referrerPolicy="no-referrer"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
@@ -288,6 +289,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
                               src={combo.imageUrl}
                               alt={combo.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              referrerPolicy="no-referrer"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = 'none';
                               }}
