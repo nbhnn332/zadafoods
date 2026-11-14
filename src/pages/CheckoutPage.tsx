@@ -6,6 +6,8 @@ import { Footer } from '../components/Footer';
 import { useCart, DEMO_CART_ITEMS } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useAdminData } from '../context/AdminDataContext';
+import { useFestival } from '../context/FestivalContext';
+import { GiftBoxMotif } from '../components/festival/FestivalMotifs';
 import { INITIAL_ADDRESSES } from '../data/mockData';
 import { Address, Order } from '../types';
 import { calculateAuthoritativeCart } from '../lib/commerce/pricingEngine';
@@ -28,6 +30,7 @@ export const CheckoutPage: React.FC = () => {
   const { user } = useAuth();
   const { items, appliedCoupon, clearCart } = useCart();
   const { products, coupons, settings, createOrder } = useAdminData();
+  const { effectiveTheme, isFestivalActive } = useFestival();
 
   // Buy Now item support
   const buyNowItem = (location.state as any)?.buyNowItem;
@@ -549,6 +552,26 @@ export const CheckoutPage: React.FC = () => {
       <Header title="Checkout" showBack={true} showSearch={false} hideCartIcon={true} />
 
       <main className="max-w-md mx-auto px-3.5 pt-1 space-y-2">
+        {/* Festive Guarantee Banner */}
+        {isFestivalActive && effectiveTheme && effectiveTheme.preset !== 'default' && (
+          <div
+            className="p-2.5 rounded-xl border flex items-center justify-between text-xs transition-colors shadow-2xs mb-1"
+            style={{
+              backgroundColor: 'var(--color-surface-subtle, #F7F3EB)',
+              borderColor: `${effectiveTheme.accentColor}50`
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <GiftBoxMotif size={18} color={effectiveTheme.accentColor} />
+              <span className="font-bold text-[11px]" style={{ color: effectiveTheme.accentColor }}>
+                {effectiveTheme.name} Guaranteed Festive Dispatch
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+              FREE GIFT WRAP
+            </span>
+          </div>
+        )}
         {/* 3-Step Stepper Progress Bar matching Screen 5 */}
         <div className="py-1 px-4">
           <div className="flex items-center justify-between relative max-w-xs mx-auto">

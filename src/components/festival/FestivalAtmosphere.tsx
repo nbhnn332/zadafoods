@@ -1,19 +1,45 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useFestival } from '../../context/FestivalContext';
-import { FestivalMotif } from './FestivalMotifs';
+import { FestivalMotif, DiyaMotif, NilavilakkuMotif } from './FestivalMotifs';
 
 export const FestivalAtmosphere: React.FC = () => {
   const { effectiveTheme, isFestivalActive } = useFestival();
+  const location = useLocation();
 
-  if (!effectiveTheme || !isFestivalActive || effectiveTheme.preset === 'default') {
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isThemeActive = Boolean(effectiveTheme && isFestivalActive && effectiveTheme.preset !== 'default');
+  const intensity = effectiveTheme?.intensity || 'balanced';
+
+  // Generate deterministic particle descriptors for performance
+  const particleCount =
+    intensity === 'subtle' ? 10 :
+    intensity === 'balanced' || intensity === 'moderate' ? 18 :
+    intensity === 'rich' ? 28 : 40;
+
+  const particles = useMemo(() => {
+    return Array.from({ length: particleCount }).map((_, i) => {
+      // Deterministic pseudo-randomness based on index
+      const left = `${((i * 37) % 96) + 2}%`;
+      const duration = 6 + ((i * 3) % 8); // 6s - 14s
+      const delay = -((i * 1.5) % 10); // staggered starting offsets
+      const size = 6 + ((i * 2) % 10); // 6px - 16px
+      const opacityVal = 0.4 + ((i * 7) % 50) / 100;
+      return { id: i, left, duration, delay, size, opacityVal };
+    });
+  }, [particleCount]);
+
+  if (isAdminRoute || !isThemeActive || !effectiveTheme) {
     return null;
   }
 
-  const { preset, intensity, accentColor, atmosphere, placements } = effectiveTheme;
+  const { preset, accentColor, atmosphere, placements } = effectiveTheme;
 
   if (placements?.ambientBackground === false) {
     return null;
   }
+
+  const showParticles = placements?.fallingParticles !== false && atmosphere?.enableFloatingParticles !== false;
 
   const opacity =
     intensity === 'subtle'
@@ -51,7 +77,7 @@ export const FestivalAtmosphere: React.FC = () => {
         }}
       />
 
-      {/* 2. Delicate Atmospheric Corner Glows (Balanced, Rich & Grand) */}
+      {/* 2. Atmospheric Ambient Corner Glows (Balanced, Rich & Grand) */}
       {intensity !== 'subtle' && (
         <>
           <div
@@ -71,7 +97,117 @@ export const FestivalAtmosphere: React.FC = () => {
         </>
       )}
 
-      {/* 3. Side Gutter Festive Embellishments (Rich & Grand on large screens) */}
+      {/* 3. Floating / Falling Festival Particles */}
+      {showParticles && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {preset === 'christmas' && (
+            // Gentle Snowfall across storefront
+            particles.map((p) => (
+              <div
+                key={p.id}
+                className="particle-snow absolute -top-4 rounded-full bg-white blur-[0.4px]"
+                style={{
+                  left: p.left,
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  opacity: p.opacityVal,
+                  boxShadow: '0 0 6px rgba(255, 255, 255, 0.8)',
+                  ['--fall-duration' as any]: `${p.duration}s`,
+                  ['--fall-delay' as any]: `${p.delay}s`
+                }}
+              />
+            ))
+          )}
+
+          {preset === 'onam' && (
+            // Falling Kerala Marigold & Kasavu Petals
+            particles.map((p) => {
+              const isOrange = p.id % 2 === 0;
+              return (
+                <div
+                  key={p.id}
+                  className="particle-petal absolute -top-4"
+                  style={{
+                    left: p.left,
+                    width: `${p.size * 1.2}px`,
+                    height: `${p.size * 0.8}px`,
+                    backgroundColor: isOrange ? '#EA580C' : '#EAB308',
+                    borderRadius: '50% 0 50% 50%',
+                    opacity: p.opacityVal * 0.85,
+                    ['--fall-duration' as any]: `${p.duration * 1.1}s`,
+                    ['--fall-delay' as any]: `${p.delay}s`
+                  }}
+                />
+              );
+            })
+          )}
+
+          {preset === 'diwali' && (
+            // Golden Sparks & Glowing Embers rising upwards
+            particles.map((p) => (
+              <div
+                key={p.id}
+                className="particle-ember absolute -bottom-4 rounded-full"
+                style={{
+                  left: p.left,
+                  width: `${p.size * 0.7}px`,
+                  height: `${p.size * 0.7}px`,
+                  backgroundColor: p.id % 3 === 0 ? '#F59E0B' : '#FCD34D',
+                  boxShadow: '0 0 8px #F59E0B',
+                  opacity: p.opacityVal * 0.8,
+                  ['--fall-duration' as any]: `${p.duration * 0.9}s`,
+                  ['--fall-delay' as any]: `${p.delay}s`
+                }}
+              />
+            ))
+          )}
+
+          {preset === 'eid' && (
+            // Twinkling Golden Stars & Subtle Night Sky Glimmer
+            particles.map((p) => (
+              <div
+                key={p.id}
+                className="particle-star absolute"
+                style={{
+                  left: p.left,
+                  top: `${(p.id * 19) % 90}%`,
+                  width: `${p.size * 0.8}px`,
+                  height: `${p.size * 0.8}px`,
+                  backgroundColor: '#FDE047',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 6px #FDE047',
+                  opacity: p.opacityVal * 0.75,
+                  ['--fall-duration' as any]: `${2 + (p.id % 4)}s`,
+                  ['--fall-delay' as any]: `${p.delay}s`
+                }}
+              />
+            ))
+          )}
+
+          {preset === 'new_year' && (
+            // Champagne Confetti & Golden Sparkles
+            particles.map((p) => (
+              <div
+                key={p.id}
+                className="particle-snow absolute -top-4"
+                style={{
+                  left: p.left,
+                  width: `${p.size * 0.9}px`,
+                  height: `${p.size * 0.9}px`,
+                  backgroundColor: p.id % 2 === 0 ? '#D4AF37' : '#E2E8F0',
+                  transform: `rotate(${p.id * 45}deg)`,
+                  opacity: p.opacityVal,
+                  boxShadow: '0 0 4px #D4AF37',
+                  ['--fall-duration' as any]: `${p.duration}s`,
+                  ['--fall-delay' as any]: `${p.delay}s`
+                }}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* 4. Side Gutter Festive Embellishments (Rich & Grand on large screens) */}
       {(intensity === 'rich' || intensity === 'grand' || intensity === 'festive') && (
         <div className="hidden xl:flex flex-col justify-between absolute inset-y-12 left-4 right-4 pointer-events-none opacity-40">
           <div className="flex justify-between">
@@ -133,37 +269,39 @@ export const FestivalDivider: React.FC<FestivalDividerProps> = ({ className = 'm
   }
 
   const { preset, accentColor, intensity } = effectiveTheme;
+  const isGrand = intensity === 'grand' || intensity === 'festive';
 
   return (
     <div className={`relative flex items-center justify-center ${className}`} aria-hidden="true">
       {/* Left Ornamental Line */}
       <div
-        className="flex-1 h-px transition-all"
+        className="flex-1 h-px max-w-xs transition-colors"
         style={{
-          background: `linear-gradient(to right, transparent, ${accentColor}80, ${accentColor})`
+          background: `linear-gradient(to left, ${accentColor}, transparent)`
         }}
       />
 
-      {/* Center Motif with Flourish */}
-      <div
-        className="mx-3 sm:mx-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border shadow-2xs backdrop-blur-xs transition-transform hover:scale-105"
-        style={{ borderColor: `${accentColor}40` }}
-      >
-        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
-        <FestivalMotif preset={preset} size={18} color={accentColor} />
-        {intensity !== 'subtle' && (
-          <span className="text-[10px] font-serif font-semibold tracking-wider uppercase text-stone-700 hidden sm:inline">
+      {/* Center Festive Icon */}
+      <div className="mx-4 flex items-center gap-2">
+        {preset === 'onam' ? (
+          <NilavilakkuMotif size={22} color={accentColor} />
+        ) : preset === 'diwali' ? (
+          <DiyaMotif size={20} color={accentColor} />
+        ) : (
+          <FestivalMotif preset={preset} size={20} color={accentColor} />
+        )}
+        {isGrand && (
+          <span className="text-[10px] font-serif font-bold uppercase tracking-widest" style={{ color: accentColor }}>
             {effectiveTheme.name}
           </span>
         )}
-        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accentColor }} />
       </div>
 
       {/* Right Ornamental Line */}
       <div
-        className="flex-1 h-px transition-all"
+        className="flex-1 h-px max-w-xs transition-colors"
         style={{
-          background: `linear-gradient(to left, transparent, ${accentColor}80, ${accentColor})`
+          background: `linear-gradient(to right, ${accentColor}, transparent)`
         }}
       />
     </div>

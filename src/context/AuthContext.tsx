@@ -236,9 +236,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Supabase Auth Session listener
   useEffect(() => {
+    let isMounted = true;
     if (isSupabaseConfigured() && supabase.auth) {
       supabase.auth.getSession().then(async ({ data: { session } = { data: { session: null } } }) => {
         try {
+          if (!isMounted || typeof window === 'undefined') return;
           if (session?.user) {
             const userMeta = session.user.user_metadata || {};
             const info = await resolveUserRoleAndPermissions(
@@ -247,22 +249,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               userMeta
             );
 
+            if (!isMounted || typeof window === 'undefined') return;
+
             // If suspended, reject session immediately and sign out
             if (info.status === 'suspended') {
               await supabase.auth.signOut();
-              setUser(null);
+              if (isMounted) setUser(null);
               try {
-                localStorage.removeItem('zada_auth_user');
-                localStorage.removeItem('zada_admin_display_email');
+                if (typeof localStorage !== 'undefined') {
+                  localStorage.removeItem('zada_auth_user');
+                  localStorage.removeItem('zada_admin_display_email');
+                }
               } catch {}
               return;
             }
 
             // Restore display email if operator signed in with an alias
-            const displayEmail =
-              localStorage.getItem('zada_admin_display_email') ||
-              session.user.email ||
-              '';
+            let displayEmail = session.user.email || '';
+            try {
+              if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+                displayEmail = localStorage.getItem('zada_admin_display_email') || displayEmail;
+              }
+            } catch {}
+
+            if (!isMounted || typeof window === 'undefined') return;
 
             setUser({
               id: session.user.id,
@@ -311,7 +321,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             } catch {}
           }
         } finally {
-          setAuthLoading(false);
+          if (typeof window !== 'undefined') {
+            setAuthLoading(false);
+          }
         }
       });
 
@@ -335,10 +347,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return;
           }
 
-          const displayEmail =
-            localStorage.getItem('zada_admin_display_email') ||
-            session.user.email ||
-            '';
+          let displayEmail = session.user.email || '';
+          try {
+            if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+              displayEmail = localStorage.getItem('zada_admin_display_email') || displayEmail;
+            }
+          } catch {}
 
           setUser({
             id: session.user.id,
@@ -357,6 +371,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       return () => {
+        isMounted = false;
         authSub?.data?.subscription?.unsubscribe();
       };
     } else {

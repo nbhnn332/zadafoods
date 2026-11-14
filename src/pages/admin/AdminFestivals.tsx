@@ -825,9 +825,14 @@ export const AdminFestivals: React.FC = () => {
                     { key: 'headerMotif', label: 'Header Logo Festive Motif' },
                     { key: 'heroBanners', label: 'Hero Banners & Countdown' },
                     { key: 'productCards', label: 'Product Card Badges' },
+                    { key: 'cardRibbons', label: 'Festive Product Corner Ribbons' },
                     { key: 'sectionDividers', label: 'Section Ornamental Dividers' },
                     { key: 'promoBanners', label: 'Promotional Split Banners' },
                     { key: 'ambientBackground', label: 'Atmospheric Background & SVG Pattern' },
+                    { key: 'fallingParticles', label: 'Ambient Particles (Snow / Petals / Sparks)' },
+                    { key: 'headerMotion', label: 'Header Motion (Santa Sleigh / Swinging Lanterns / Diyas)' },
+                    { key: 'stringLights', label: 'Twinkling Fairy Lights Garland' },
+                    { key: 'interactiveSparkles', label: 'Interactive Cart & Checkout Sparkles' },
                     { key: 'footerMotif', label: 'Footer Celebration Accent' }
                   ].map((item) => {
                     const isChecked = Boolean(

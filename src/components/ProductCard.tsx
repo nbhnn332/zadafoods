@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Heart, ShoppingCart, Check } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Sparkles } from 'lucide-react';
 import { Product, ProductVariant } from '../types';
 import { useCart } from '../context/CartContext';
+import { useFestival } from '../context/FestivalContext';
 import { FestivalCardBadge } from './festival/FestivalCardBadge';
+import { FestivalMotif } from './festival/FestivalMotifs';
 
 interface ProductCardProps {
   product: Product;
@@ -15,23 +17,77 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   compactButton = false,
 }) => {
   const { addToCart } = useCart();
-  const defaultVar = product.variants.find((v) => v.isDefault) || product.variants[0];
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(defaultVar);
+  const { effectiveTheme, isFestivalActive } = useFestival();
+
+  const fallbackVar: ProductVariant = useMemo(() => {
+    const rawPrice = (product as any).price || 199;
+    const rawStock = (product as any).stockQuantity ?? 50;
+    return {
+      id: `${product.id || 'prod'}-default`,
+      productId: product.id || 'prod',
+      sku: `ZADA-${(product.slug || 'item').toUpperCase()}-STD`,
+      weightValue: 250,
+      weightUnit: 'g',
+      weightLabel: 'Standard Pack',
+      sellingPrice: rawPrice,
+      mrp: Math.round(rawPrice * 1.25),
+      discountPercentage: 0,
+      stockQuantity: rawStock,
+      lowStockThreshold: 10,
+      isDefault: true
+    };
+  }, [product.id, product.slug, (product as any).price, (product as any).stockQuantity]);
+
+  const defaultVar = (product.variants && product.variants.length > 0)
+    ? (product.variants.find((v) => v.isDefault) || product.variants[0])
+    : fallbackVar;
+
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(defaultVar || fallbackVar);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [cartState, setCartState] = useState<'idle' | 'adding' | 'added'>('idle');
 
+  useEffect(() => {
+    const nextVar = (product.variants && product.variants.length > 0)
+      ? (product.variants.find((v) => v.isDefault) || product.variants[0])
+      : fallbackVar;
+    setSelectedVariant(nextVar);
+  }, [product.id, product.variants, fallbackVar]);
+
+  const activeVariant = selectedVariant || defaultVar || fallbackVar;
+
+  const isFestiveActive = Boolean(isFestivalActive && effectiveTheme && effectiveTheme.preset !== 'default');
+  const showRibbon = Boolean(
+    isFestiveActive &&
+    effectiveTheme?.placements?.cardRibbons !== false &&
+    (product.isBestseller || product.isOnOffer || effectiveTheme?.featuredProductIds?.includes(product.id) || effectiveTheme?.productBadges?.[product.id])
+  );
+
+  const ribbonLabel =
+    effectiveTheme?.preset === 'christmas' ? 'HOLIDAY PICK' :
+    effectiveTheme?.preset === 'onam' ? 'ONASADHYA' :
+    effectiveTheme?.preset === 'diwali' ? 'FESTIVE PICK' :
+    effectiveTheme?.preset === 'eid' ? 'EID BARAKAH' :
+    effectiveTheme?.preset === 'new_year' ? '2027 PICK' : 'FESTIVE';
+
+  const ribbonBg =
+    effectiveTheme?.preset === 'christmas' ? '#801826' :
+    effectiveTheme?.preset === 'onam' ? '#C88A10' :
+    effectiveTheme?.preset === 'diwali' ? '#D97706' :
+    effectiveTheme?.preset === 'eid' ? '#055C41' :
+    effectiveTheme?.preset === 'new_year' ? '#B45309' : (effectiveTheme?.accentColor || '#A67732');
+
   const handleVariantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const found = product.variants.find((v) => v.id === e.target.value);
+    const found = (product.variants || []).find((v) => v.id === e.target.value);
     if (found) setSelectedVariant(found);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (cartState !== 'idle' || selectedVariant.stockQuantity <= 0) return;
+    if (cartState !== 'idle' || activeVariant.stockQuantity <= 0) return;
 
     setCartState('added');
-    addToCart(product, selectedVariant, 1);
+    addToCart(product, activeVariant, 1);
 
     setTimeout(() => {
       setCartState('idle');
@@ -65,22 +121,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     setImgError(!valid);
   }, [product.id, product.images]);
 
-  const isOutOfStock = selectedVariant.stockQuantity <= 0;
+  const isOutOfStock = activeVariant.stockQuantity <= 0;
 
   // Refined brand initials for missing or image-free products
   const nameInitial = product.name ? product.name.charAt(0).toUpperCase() : 'Z';
 
-  const hasMultipleVariants = product.variants.length > 1;
+  const hasMultipleVariants = (product.variants || []).length > 1;
 
   const handleImageError = () => {
     setImgError(true);
   };
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-[#EAE3D6]/80 hover:border-[#A67732]/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col h-full">
+    <div className="group bg-[var(--color-surface,#FFFFFF)] rounded-2xl overflow-hidden border border-[var(--color-border,#EAE3D6)]/80 hover:border-[var(--color-primary,#A67732)]/40 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col h-full">
 
       {/* ── Image Container ── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#F7F4EE]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--color-surface-subtle,#F7F4EE)]">
         <Link
           to={`/product/${product.slug}`}
           className="block w-full h-full"
@@ -145,21 +201,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             }`}
           />
         </button>
+
+        {/* Festive Corner Ribbon (Top Right below wishlist) */}
+        {showRibbon && (
+          <div className="absolute top-10 right-2 z-10 pointer-events-none">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-extrabold uppercase tracking-wider text-white shadow-xs border border-white/20"
+              style={{ backgroundColor: ribbonBg }}
+            >
+              <FestivalMotif preset={effectiveTheme!.preset} size={10} color="#FFFFFF" />
+              <span>{ribbonLabel}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Product Info ── */}
       <div className="p-3 pt-2.5 flex flex-col flex-1">
         <Link to={`/product/${product.slug}`} className="block">
-          <h3 className="font-semibold text-[13px] text-[#1C1917] leading-tight line-clamp-2 hover:text-[#072C20] transition-colors">
+          <h3 className="font-semibold text-[13px] text-[var(--color-heading,#1C1917)] leading-tight line-clamp-2 hover:text-[var(--color-primary,#072C20)] transition-colors">
             {product.name}
           </h3>
         </Link>
 
         {/* Rating row — only when reviewCount > 0 */}
         {product.reviewCount > 0 && (
-          <div className="flex items-center gap-1 mt-1 text-xs text-[#71717A]">
+          <div className="flex items-center gap-1 mt-1 text-xs text-[var(--color-text-muted,#71717A)]">
             <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]" />
-            <span className="font-bold text-[#1C1917]">{product.averageRating}</span>
+            <span className="font-bold text-[var(--color-text,#1C1917)]">{product.averageRating}</span>
             <span>
               (
               {product.reviewCount > 999
@@ -172,17 +241,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Price row matching 1 home ui.png */}
         <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="font-bold text-sm sm:text-base text-[#1C1917]">
-            ₹{selectedVariant.sellingPrice}
+          <span className="font-bold text-sm sm:text-base text-[var(--color-price,#1C1917)]">
+            ₹{activeVariant.sellingPrice}
           </span>
-          {selectedVariant.mrp > selectedVariant.sellingPrice && (
-            <span className="text-xs text-[#9CA3AF] line-through">
-              ₹{selectedVariant.mrp}
+          {activeVariant.mrp > activeVariant.sellingPrice && (
+            <span className="text-xs text-[var(--color-price-mrp,#9CA3AF)] line-through">
+              ₹{activeVariant.mrp}
             </span>
           )}
-          {selectedVariant.discountPercentage > 0 && (
+          {activeVariant.discountPercentage > 0 && (
             <span className="ml-auto text-[9px] font-bold text-[#E11D48] bg-[#FFE4E6] px-1.5 py-0.5 rounded">
-              {selectedVariant.discountPercentage}% OFF
+              {activeVariant.discountPercentage}% OFF
             </span>
           )}
         </div>
@@ -195,12 +264,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {hasMultipleVariants ? (
           <div className="relative flex-1 min-w-0">
             <select
-              value={selectedVariant.id}
+              value={activeVariant.id}
               onChange={handleVariantChange}
               aria-label={`Select pack size for ${product.name}`}
-              className="w-full appearance-none bg-white border border-[#EAE5DC] text-[#1C1917] text-[11px] sm:text-xs font-semibold py-1.5 pl-2 pr-5 rounded-xl focus:outline-none focus:border-[#A67732] cursor-pointer truncate shadow-2xs"
+              className="w-full appearance-none bg-[var(--color-surface,#FFFFFF)] border border-[var(--color-border,#EAE5DC)] text-[var(--color-text,#1C1917)] text-[11px] sm:text-xs font-semibold py-1.5 pl-2 pr-5 rounded-xl focus:outline-none focus:border-[var(--color-primary,#A67732)] cursor-pointer truncate shadow-2xs"
             >
-              {product.variants.map((v) => (
+              {(product.variants || []).map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.weightLabel}
                 </option>
@@ -213,8 +282,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </div>
         ) : (
           /* Single variant */
-          <span className="bg-white text-[#1C1917] text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-[#EAE5DC] whitespace-nowrap shrink-0 shadow-2xs">
-            {selectedVariant.weightLabel}
+          <span className="bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text,#1C1917)] text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-[var(--color-border,#EAE5DC)] whitespace-nowrap shrink-0 shadow-2xs">
+            {activeVariant.weightLabel}
           </span>
         )}
 
@@ -230,7 +299,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ? 'bg-stone-300 cursor-not-allowed text-stone-500'
                 : cartState === 'added'
                 ? 'bg-emerald-700'
-                : 'bg-[#A67732] hover:bg-[#8F6428]'
+                : 'bg-[var(--color-button-bg,#A67732)] hover:opacity-90 text-[var(--color-button-text,#FFFFFF)]'
             }`}
             title={
               isOutOfStock
@@ -248,7 +317,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             }
           >
             {cartState === 'added' ? (
-              <Check className="w-4 h-4 stroke-[2.5]" />
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse stroke-[2.5]" />
             ) : (
               <ShoppingCart className="w-4 h-4 stroke-[2]" />
             )}
@@ -264,7 +333,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ? 'bg-stone-300 cursor-not-allowed text-stone-500'
                 : cartState === 'added'
                 ? 'bg-emerald-700'
-                : 'bg-[#A67732] hover:bg-[#8F6428]'
+                : 'bg-[var(--color-button-bg,#A67732)] hover:opacity-90 text-[var(--color-button-text,#FFFFFF)]'
             }`}
             aria-label={
               isOutOfStock
@@ -276,7 +345,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           >
             {cartState === 'added' ? (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse stroke-[2.5]" />
                 <span>Added</span>
               </>
             ) : isOutOfStock ? (

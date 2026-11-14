@@ -40,6 +40,8 @@ const AdminReports = lazy(() => import('./pages/admin/AdminReports').then(m => (
 const AdminAuditLogs = lazy(() => import('./pages/admin/AdminAuditLogs').then(m => ({ default: m.AdminAuditLogs })));
 const AdminManagement = lazy(() => import('./pages/admin/AdminManagement').then(m => ({ default: m.AdminManagement })));
 import { AdminPermissionGuard } from './components/AdminPermissionGuard';
+import { FestivalAtmosphere } from './components/festival/FestivalAtmosphere';
+import { SplashScreen } from './components/splash/SplashScreen';
 
 import { ToastContainer } from './components/ToastContainer';
 
@@ -52,6 +54,8 @@ const PageLoadingFallback: React.FC = () => (
 export const App: React.FC = () => {
   return (
     <>
+      <SplashScreen />
+      <FestivalAtmosphere />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           {/* Customer Storefront Routes (Grounded in the 7 UI References) */}

@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header
-        className="sticky top-0 z-40 bg-[#FBF8F4]/96 backdrop-blur-md border-b border-[#EAE3D6]/60 transition-all"
+        className="sticky top-0 z-40 bg-[var(--color-header-bg,#FBF8F4)]/96 backdrop-blur-md border-b border-[var(--color-border,#EAE3D6)]/60 text-[var(--color-header-text,#1C1917)] transition-all"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         {/* Festival Announcement Bar on Customer Storefront */}
@@ -187,7 +187,7 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <ShoppingCart className="w-6 h-6 stroke-[2]" />
                   {totalUniqueItems > 0 && (
-                    <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                    <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-primary,#A67732)] text-[var(--color-button-text,#FFFFFF)] text-[10px] font-bold flex items-center justify-center shadow-sm">
                       {totalUniqueItems}
                     </span>
                   )}
@@ -200,13 +200,13 @@ export const Header: React.FC<HeaderProps> = ({
           {showSearch && !title && (
             <form onSubmit={handleSearchSubmit} className="px-3.5 pb-2">
               <div className="relative flex items-center">
-                <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3.5 pointer-events-none stroke-[2]" />
+                <Search className="w-4 h-4 text-content-muted absolute left-3.5 pointer-events-none stroke-[2]" />
                 <input
                   type="text"
                   placeholder="Search snacks, sweets, combos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-[#E7E2D8] bg-[#F7F5EE]/80 text-content-primary placeholder-[#9CA3AF] focus:outline-none focus:bg-white focus:border-brand-primary transition-all shadow-2xs"
+                  className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-[var(--color-border,#E7E2D8)] bg-[var(--color-surface,#F7F5EE)] text-[var(--color-text,#1C1917)] placeholder:text-[#9CA3AF] focus:outline-none focus:bg-[var(--color-surface,#FFFFFF)] focus:border-[var(--color-primary,#A67732)] transition-all shadow-2xs"
                 />
               </div>
             </form>
@@ -314,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({
                   placeholder="Search snacks, sweets, combos..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-border-subtle bg-white focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all placeholder:text-[#9CA3AF]"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-[var(--color-border,#E7E2D8)] bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text,#1C1917)] focus:outline-none focus:border-[var(--color-primary,#A67732)] focus:ring-1 focus:ring-[var(--color-primary,#A67732)] transition-all placeholder:text-[#9CA3AF]"
                 />
               </form>
 
@@ -344,7 +344,7 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <ShoppingCart className="w-6 h-6 stroke-[2]" />
                   {totalUniqueItems > 0 && (
-                    <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[#A67732] text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                    <span className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-primary,#A67732)] text-[var(--color-button-text,#FFFFFF)] text-[10px] font-bold flex items-center justify-center shadow-sm">
                       {totalUniqueItems}
                     </span>
                   )}

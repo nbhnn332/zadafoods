@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { Copy, Check, X, Eye } from 'lucide-react';
 import { useFestival } from '../../context/FestivalContext';
-import { FestivalMotif } from './FestivalMotifs';
+import {
+  FestivalMotif,
+  SantaSleighMotif,
+  ChristmasLightsString,
+  FanousLanternMotif,
+  NilavilakkuMotif,
+  DiyaMotif
+} from './FestivalMotifs';
 
 export const FestivalAnnouncementBar: React.FC = () => {
   const { effectiveTheme, isFestivalActive, previewTheme, setPreviewTheme } = useFestival();
@@ -26,19 +33,44 @@ export const FestivalAnnouncementBar: React.FC = () => {
 
   const badgeText = effectiveTheme.announcementBadge || `${effectiveTheme.name}`;
   const accent = effectiveTheme.accentColor || '#A67732';
+  const preset = effectiveTheme.preset;
+  const showHeaderMotion = effectiveTheme.placements?.headerMotion !== false;
+  const showStringLights = effectiveTheme.placements?.stringLights !== false;
 
   return (
     <div
       role="banner"
       aria-label="Festival Announcement"
-      className="relative z-50 text-white text-xs py-2 px-3 sm:px-6 shadow-xs transition-colors duration-300"
+      className="relative z-50 text-white text-xs py-2 px-3 sm:px-6 shadow-xs transition-colors duration-300 overflow-hidden"
       style={{
-        backgroundColor: '#072C20',
+        backgroundColor: 'var(--color-header-bg, #072C20)',
         borderBottom: `2px solid ${accent}`
       }}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-        {/* Left / Center: Festive Greeting */}
+      {/* 1. Christmas Moving Santa Sleigh across top banner */}
+      {preset === 'christmas' && showHeaderMotion && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-80" aria-hidden="true">
+          <div className="animate-santa-sleigh absolute top-1 flex items-center">
+            <SantaSleighMotif width={95} height={22} />
+          </div>
+        </div>
+      )}
+
+      {/* 2. Eid Swinging Fanous Lanterns in corners */}
+      {preset === 'eid' && showHeaderMotion && (
+        <>
+          <div className="absolute left-2 -top-1 pointer-events-none z-10 hidden sm:block" aria-hidden="true">
+            <FanousLanternMotif size={20} color={accent} swing={true} />
+          </div>
+          <div className="absolute right-12 -top-1 pointer-events-none z-10 hidden md:block" aria-hidden="true">
+            <FanousLanternMotif size={18} color={accent} swing={true} />
+          </div>
+        </>
+      )}
+
+      {/* 3. Main Content Container */}
+      <div className="relative z-10 max-w-6xl mx-auto flex items-center justify-between gap-3">
+        {/* Left / Center: Festive Greeting & Motifs */}
         <div className="flex items-center gap-2 sm:gap-3 flex-1 overflow-hidden">
           {previewTheme && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-stone-900 shrink-0">
@@ -47,15 +79,24 @@ export const FestivalAnnouncementBar: React.FC = () => {
             </span>
           )}
 
-          {/* Festival Motif */}
+          {/* Festival Specific Icon Accent */}
           <div className="shrink-0 flex items-center justify-center">
-            <FestivalMotif preset={effectiveTheme.preset} size={18} color={accent} />
+            {preset === 'onam' ? (
+              <NilavilakkuMotif size={20} color={accent} animated={true} />
+            ) : preset === 'diwali' ? (
+              <div className="flex items-center gap-1">
+                <DiyaMotif size={18} color={accent} />
+                <span className="animate-diya-flame inline-block w-1.5 h-2 bg-amber-400 rounded-full blur-[1px]" />
+              </div>
+            ) : (
+              <FestivalMotif preset={preset} size={18} color={accent} />
+            )}
           </div>
 
           {/* Festival Badge */}
           {badgeText && (
             <span
-              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-stone-900 shrink-0"
+              className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider text-stone-900 shrink-0 shadow-xs"
               style={{ backgroundColor: effectiveTheme.badgeColor || '#FAD982' }}
             >
               {badgeText}
@@ -63,7 +104,7 @@ export const FestivalAnnouncementBar: React.FC = () => {
           )}
 
           {/* Greeting text */}
-          <span className="text-[11px] sm:text-xs font-medium text-stone-100 truncate">
+          <span className="text-[11px] sm:text-xs font-medium text-stone-100 truncate tracking-wide">
             {effectiveTheme.greeting}
           </span>
         </div>
@@ -73,9 +114,9 @@ export const FestivalAnnouncementBar: React.FC = () => {
           {effectiveTheme.couponCode && (
             <button
               onClick={handleCopyCoupon}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all border border-white/20 hover:border-white/50 active:scale-95"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all border border-white/20 hover:border-white/50 active:scale-95 shadow-2xs"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                backgroundColor: 'rgba(255, 255, 255, 0.14)',
                 color: '#FFFFFF'
               }}
               title="Click to copy coupon code"
@@ -111,6 +152,13 @@ export const FestivalAnnouncementBar: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* 4. Christmas Twinkling Fairy Lights String along bottom border */}
+      {preset === 'christmas' && showStringLights && (
+        <div className="relative -mb-1 mt-1">
+          <ChristmasLightsString />
+        </div>
+      )}
     </div>
   );
 };

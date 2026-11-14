@@ -35,6 +35,11 @@ export interface DecorationPlacements {
   ambientBackground?: boolean;
   promotionalPopup?: boolean;
   countdownTimer?: boolean;
+  fallingParticles?: boolean;
+  headerMotion?: boolean;
+  stringLights?: boolean;
+  cardRibbons?: boolean;
+  interactiveSparkles?: boolean;
 }
 
 export interface FestivalPromotion {
@@ -118,7 +123,12 @@ export const DEFAULT_FESTIVAL_PLACEMENTS: DecorationPlacements = {
   sectionDividers: true,
   ambientBackground: true,
   promotionalPopup: true,
-  countdownTimer: true
+  countdownTimer: true,
+  fallingParticles: true,
+  headerMotion: true,
+  stringLights: true,
+  cardRibbons: true,
+  interactiveSparkles: true
 };
 
 export const INITIAL_FESTIVAL_PRESETS: FestivalTheme[] = [

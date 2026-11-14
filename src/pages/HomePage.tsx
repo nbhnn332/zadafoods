@@ -7,14 +7,14 @@ import { Footer } from '../components/Footer';
 import { ProductCard } from '../components/ProductCard';
 import { useAdminData } from '../context/AdminDataContext';
 import { useCart } from '../context/CartContext';
+import { useFestival } from '../context/FestivalContext';
 import { normalizeWhatsAppNumber } from '../lib/commerce/whatsappRouting';
 import { Category } from '../types';
 import { FestivalHeroOverlay } from '../components/festival/FestivalHeroOverlay';
 import { FestivalSectionHeader } from '../components/festival/FestivalSectionHeader';
-import { FestivalAtmosphere, FestivalDivider } from '../components/festival/FestivalAtmosphere';
+import { FestivalDivider } from '../components/festival/FestivalAtmosphere';
 import { FestivalPromotionSection } from '../components/festival/FestivalPromotionSection';
 import { FestivalPopup } from '../components/festival/FestivalPopup';
-import { FestivalFooterDecoration } from '../components/festival/FestivalFooterDecoration';
 
 interface CategoryRailItemProps {
   category: Category;
@@ -23,18 +23,30 @@ interface CategoryRailItemProps {
 
 const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile }) => {
   const [imgError, setImgError] = useState(false);
+  const { effectiveTheme, isFestivalActive } = useFestival();
+  const isChristmas = isFestivalActive && effectiveTheme?.preset === 'christmas';
 
   if (isMobile) {
     return (
       <Link
         to={`/category/${category.slug}`}
-        className="group flex flex-col items-center shrink-0 w-[110px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A67732] rounded-2xl p-1 transition-all"
+        className="group flex flex-col items-center shrink-0 w-[110px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#A67732)] rounded-2xl p-1 transition-all"
       >
         {/* Soft Circular Image Container (88–100px range, exactly 92px) */}
-        <div className="w-[92px] h-[92px] rounded-full p-1 bg-white border border-[#EAE3D6] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all duration-300 group-hover:border-[#A67732] group-hover:scale-105 group-active:scale-95">
-          <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+        <div className="relative w-[92px] h-[92px] rounded-full p-1 bg-[var(--color-surface,#FFFFFF)] border border-[var(--color-border,#EAE3D6)] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all duration-300 group-hover:border-[var(--color-primary,#A67732)] group-hover:scale-105 group-active:scale-95">
+          {isChristmas && (
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-10 h-3 z-10 pointer-events-none">
+              <svg viewBox="0 0 40 12" fill="none" className="w-full h-full drop-shadow-xs">
+                <path d="M0 4C4 1 8 5 12 5C16 5 20 2 24 2C28 2 32 6 36 6C38 6 39 5 40 4V0H0V4Z" fill="#FFFFFF" fillOpacity="0.95" />
+                <circle cx="6" cy="7" r="1.5" fill="#FFFFFF" />
+                <circle cx="22" cy="8" r="1.8" fill="#FFFFFF" />
+                <circle cx="34" cy="7.5" r="1.3" fill="#FFFFFF" />
+              </svg>
+            </div>
+          )}
+          <div className="w-full h-full rounded-full overflow-hidden bg-[var(--color-surface-subtle,#FAF6EE)] flex items-center justify-center">
             {imgError || !category.imageUrl ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF6EE] text-[#A67732]">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--color-surface-subtle,#FAF6EE)] text-[var(--color-primary,#A67732)]">
                 <span className="font-serif text-2xl font-bold select-none">
                   {category.name.charAt(0).toUpperCase()}
                 </span>
@@ -53,7 +65,7 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
         </div>
 
         {/* Category Label: 2-line natural wrap, no ellipsis truncation */}
-        <span className="mt-2 text-xs font-semibold text-[#1C1917] group-hover:text-[#A67732] text-center leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center transition-colors px-1 w-full break-words">
+        <span className="mt-2 text-xs font-semibold text-[var(--color-heading,#1C1917)] group-hover:text-[var(--color-primary,#A67732)] text-center leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center transition-colors px-1 w-full break-words">
           {category.name}
         </span>
       </Link>
@@ -63,12 +75,22 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
   return (
     <Link
       to={`/category/${category.slug}`}
-      className="group flex flex-col items-center text-center p-2 rounded-2xl hover:bg-white/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#A67732]"
+      className="group flex flex-col items-center text-center p-2 rounded-2xl hover:bg-white/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary,#A67732)]"
     >
-      <div className="w-20 h-20 rounded-full p-1 bg-white border border-[#EAE3D6] shadow-xs flex items-center justify-center group-hover:border-[#A67732] group-hover:scale-105 transition-all">
-        <div className="w-full h-full rounded-full overflow-hidden bg-[#FAF6EE] flex items-center justify-center">
+      <div className="relative w-20 h-20 rounded-full p-1 bg-[var(--color-surface,#FFFFFF)] border border-[var(--color-border,#EAE3D6)] shadow-xs flex items-center justify-center group-hover:border-[var(--color-primary,#A67732)] group-hover:scale-105 transition-all">
+        {isChristmas && (
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-9 h-3 z-10 pointer-events-none">
+            <svg viewBox="0 0 40 12" fill="none" className="w-full h-full drop-shadow-xs">
+              <path d="M0 4C4 1 8 5 12 5C16 5 20 2 24 2C28 2 32 6 36 6C38 6 39 5 40 4V0H0V4Z" fill="#FFFFFF" fillOpacity="0.95" />
+              <circle cx="6" cy="7" r="1.5" fill="#FFFFFF" />
+              <circle cx="22" cy="8" r="1.8" fill="#FFFFFF" />
+              <circle cx="34" cy="7.5" r="1.3" fill="#FFFFFF" />
+            </svg>
+          </div>
+        )}
+        <div className="w-full h-full rounded-full overflow-hidden bg-[var(--color-surface-subtle,#FAF6EE)] flex items-center justify-center">
           {imgError || !category.imageUrl ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF6EE] text-[#A67732]">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--color-surface-subtle,#FAF6EE)] text-[var(--color-primary,#A67732)]">
               <span className="font-serif text-2xl font-bold select-none">
                 {category.name.charAt(0).toUpperCase()}
               </span>
@@ -85,7 +107,7 @@ const CategoryRailItem: React.FC<CategoryRailItemProps> = ({ category, isMobile 
           )}
         </div>
       </div>
-      <span className="text-xs font-semibold text-[#1C1917] mt-2 group-hover:text-[#A67732] transition-colors leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center px-1 w-full break-words">
+      <span className="text-xs font-semibold text-[var(--color-heading,#1C1917)] mt-2 group-hover:text-[var(--color-primary,#A67732)] transition-colors leading-snug line-clamp-2 h-[2.5rem] flex items-center justify-center px-1 w-full break-words">
         {category.name}
       </span>
     </Link>
@@ -262,9 +284,6 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-canvas pb-20 md:pb-0 text-content-primary relative">
-      {/* Immersive Festival Atmosphere (Subtle background patterns & ambient glow) */}
-      <FestivalAtmosphere />
-
       {/* Festival Welcome & Exclusive Discount Modal */}
       <FestivalPopup />
 
@@ -1007,8 +1026,7 @@ export const HomePage: React.FC = () => {
 
       </main>
 
-      {/* Festival Footer Greeting Accent */}
-      <FestivalFooterDecoration />
+
 
       {/* Official ZaDa Foods Footer Component */}
       <Footer />

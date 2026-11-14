@@ -16,7 +16,7 @@ export const BottomNav: React.FC = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EAE5DC] py-2 px-6 shadow-sm md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-surface,#FFFFFF)] border-t border-[var(--color-border,#EAE5DC)] py-2 px-6 shadow-sm md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
     >
       <div className="flex items-center justify-around max-w-md mx-auto">
@@ -27,13 +27,13 @@ export const BottomNav: React.FC = () => {
           end
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
-              isActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+              isActive ? 'text-[var(--color-primary,#A67732)]' : 'text-[var(--color-text-muted,#71717A)] hover:text-[var(--color-text,#1C1917)]'
             }`
           }
         >
           {({ isActive }) => (
             <>
-              <Home className={`w-5 h-5 stroke-[2] ${isActive ? 'fill-[#A67732]' : ''}`} />
+              <Home className={`w-5 h-5 stroke-[2] ${isActive ? 'fill-[var(--color-primary,#A67732)]' : ''}`} />
               <span>Home</span>
             </>
           )}
@@ -44,7 +44,7 @@ export const BottomNav: React.FC = () => {
           to="/shop"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
-              isActive || isShopActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+              isActive || isShopActive ? 'text-[var(--color-primary,#A67732)]' : 'text-[var(--color-text-muted,#71717A)] hover:text-[var(--color-text,#1C1917)]'
             }`
           }
         >
@@ -64,7 +64,7 @@ export const BottomNav: React.FC = () => {
           to="/shop?filter=offers"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
-              isActive || isOffersActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+              isActive || isOffersActive ? 'text-[var(--color-primary,#A67732)]' : 'text-[var(--color-text-muted,#71717A)] hover:text-[var(--color-text,#1C1917)]'
             }`
           }
         >
@@ -72,7 +72,7 @@ export const BottomNav: React.FC = () => {
             const active = isActive || isOffersActive;
             return (
               <>
-                <Tag className={`w-5 h-5 stroke-[2] ${active ? 'fill-[#A67732]' : ''}`} />
+                <Tag className={`w-5 h-5 stroke-[2] ${active ? 'fill-[var(--color-primary,#A67732)]' : ''}`} />
                 <span>Offers</span>
               </>
             );
@@ -84,7 +84,7 @@ export const BottomNav: React.FC = () => {
           to="/account"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 text-[11px] font-semibold transition-colors ${
-              isActive || isAccountActive ? 'text-[#A67732]' : 'text-[#71717A] hover:text-[#1C1917]'
+              isActive || isAccountActive ? 'text-[var(--color-primary,#A67732)]' : 'text-[var(--color-text-muted,#71717A)] hover:text-[var(--color-text,#1C1917)]'
             }`
           }
         >
@@ -92,7 +92,7 @@ export const BottomNav: React.FC = () => {
             const active = isActive || isAccountActive;
             return (
               <>
-                <User className={`w-5 h-5 stroke-[2] ${active ? 'fill-[#A67732]' : ''}`} />
+                <User className={`w-5 h-5 stroke-[2] ${active ? 'fill-[var(--color-primary,#A67732)]' : ''}`} />
                 <span>Account</span>
               </>
             );

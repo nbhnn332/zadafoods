@@ -19,7 +19,7 @@ interface FestivalContextType {
   refreshThemes: () => Promise<void>;
 }
 
-const FestivalContext = createContext<FestivalContextType | undefined>(undefined);
+export const FestivalContext = createContext<FestivalContextType | undefined>(undefined);
 
 export const isThemeWithinSchedule = (theme: FestivalTheme, currentDate = new Date()): boolean => {
   if (!theme.isActive) return false;

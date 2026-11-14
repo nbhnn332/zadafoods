@@ -5,6 +5,8 @@ import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { useCart, DEMO_CART_ITEMS } from '../context/CartContext';
 import { useAdminData } from '../context/AdminDataContext';
+import { useFestival } from '../context/FestivalContext';
+import { GiftBoxMotif } from '../components/festival/FestivalMotifs';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export const CartPage: React.FC = () => {
   } = useCart();
 
   const { settings } = useAdminData();
+  const { effectiveTheme, isFestivalActive } = useFestival();
   const [couponInput, setCouponInput] = useState('');
 
   // Support demo preview for reference comparison without violating Phase 6A empty initial state
@@ -75,6 +78,26 @@ export const CartPage: React.FC = () => {
       <Header title="Your Cart" showBack={true} showSearch={false} hideCartIcon={true} />
 
       <main className="max-w-md mx-auto px-4 pt-4 space-y-3.5">
+        {/* Festive Experience Ribbon in Cart */}
+        {isFestivalActive && effectiveTheme && effectiveTheme.preset !== 'default' && (
+          <div
+            className="p-3 rounded-2xl border flex items-center gap-3 transition-colors shadow-2xs"
+            style={{
+              backgroundColor: 'var(--color-surface-subtle, #F7F3EB)',
+              borderColor: `${effectiveTheme.accentColor}50`
+            }}
+          >
+            <GiftBoxMotif size={22} color={effectiveTheme.accentColor} />
+            <div className="text-xs">
+              <span className="font-bold block" style={{ color: effectiveTheme.accentColor }}>
+                {effectiveTheme.name} Special Packaging
+              </span>
+              <span className="text-content-secondary text-[11px]">
+                Complimentary festive gift sleeve applied. {effectiveTheme.couponCode && <>Coupon <strong className="underline">{effectiveTheme.couponCode}</strong> available.</>}
+              </span>
+            </div>
+          </div>
+        )}
         {/* Cart Item Cards — premium styling */}
         <section className="space-y-2.5">
           {displayedItems.map((item) => (

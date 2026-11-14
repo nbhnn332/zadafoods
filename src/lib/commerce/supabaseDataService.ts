@@ -224,6 +224,24 @@ export function mapDatabaseProduct(dbRow: any): Product {
     isDefault: !!v.is_default
   }));
 
+  if (variants.length === 0) {
+    const basePrice = Number(dbRow.base_price || dbRow.selling_price || dbRow.price) || 199;
+    variants.push({
+      id: `var-${dbRow.id || 'std'}`,
+      productId: dbRow.id,
+      sku: `ZADA-${(dbRow.slug || 'item').toUpperCase()}-STD`,
+      weightValue: 250,
+      weightUnit: 'g',
+      weightLabel: 'Standard Pack',
+      sellingPrice: basePrice,
+      mrp: Number(dbRow.mrp) || Math.round(basePrice * 1.25),
+      discountPercentage: 0,
+      stockQuantity: Number(dbRow.stock_quantity ?? 50),
+      lowStockThreshold: 10,
+      isDefault: true
+    });
+  }
+
   const categorySlug =
     dbRow.categories?.slug ||
     dbRow.category_slug ||

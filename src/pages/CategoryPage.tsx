@@ -17,6 +17,7 @@ interface CategoryPageProps {
 
 export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
   const { slug } = useParams<{ slug: string }>();
+  const isShopAll = !slug || slug === 'shop' || slug === 'all';
   const isCombos = isCombosPage || slug === 'combos';
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -28,25 +29,34 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
   }, [combos]);
 
   const activeCategories = categories && categories.length > 0 ? categories : INITIAL_CATEGORIES;
-  const currentCategory = activeCategories.find((c) => c.slug === (slug || 'chips')) || activeCategories[0];
+  const currentCategory = slug && slug !== 'combos' && slug !== 'shop' && slug !== 'all'
+    ? (activeCategories.find((c) => c.slug === slug) || activeCategories[0])
+    : activeCategories[0];
 
   // Dynamic Category Banner matching current category
   const categoryBanner = useMemo(() => {
+    if (isShopAll) return null;
     return categoryBanners.find(
       (b) =>
-        (b.categorySlug === currentCategory.slug || b.categoryId === currentCategory.id) &&
+        (b.categorySlug === currentCategory?.slug || b.categoryId === currentCategory?.id) &&
         b.isActive
     );
-  }, [categoryBanners, currentCategory]);
+  }, [categoryBanners, currentCategory, isShopAll]);
 
   const bannerTitle = isCombos
     ? 'Signature Kerala Combos'
+    : isShopAll
+    ? 'All Kerala Delicacies'
     : (categoryBanner?.title || currentCategory.name);
   const bannerSubtitle = isCombos
     ? 'Curated gift bundles and handcrafted combinations of Kerala snacks and specialties at special value.'
+    : isShopAll
+    ? 'Explore our complete collection of authentic Malabar chips, traditional sweets, savouries, and spices.'
     : (categoryBanner?.subtitle || currentCategory.description || 'Authentic Kerala delicacies crafted with farm-fresh ingredients.');
   const bannerEyebrow = isCombos
     ? 'KERALA GIFT PACKS & VALUE COMBOS'
+    : isShopAll
+    ? 'Shop by Category'
     : (categoryBanner?.eyebrow || "KERALA'S FAVOURITE SELECTION");
   const bannerBgColor = isCombos ? '#2A1D13' : (categoryBanner?.backgroundColor || '#072C20');
   const bannerTextColor = categoryBanner?.textColor || '#FFFFFF';
@@ -65,9 +75,20 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
 
   const query = searchParams.get('q')?.toLowerCase() || '';
 
-  // Dynamic Subcategory pills fetched from authoritative store state
+  // Dynamic Subcategory or Category filter pills fetched from authoritative store state
   const subcategoryPills = useMemo(() => {
-    const rawSubs = (currentCategory.subcategories || [])
+    if (isShopAll) {
+      return [
+        { id: 'all', label: 'All Items', subcategoryId: 'all' },
+        ...activeCategories.map((c) => ({
+          id: c.slug,
+          label: c.name,
+          subcategoryId: c.id
+        }))
+      ];
+    }
+
+    const rawSubs = ((currentCategory?.subcategories) || [])
       .filter((s) => s.isActive !== false && s.slug !== 'all')
       .sort((a, b) => a.displayOrder - b.displayOrder);
 
@@ -83,42 +104,54 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
         subcategoryId: s.id
       }))
     ];
-  }, [currentCategory]);
+  }, [currentCategory, isShopAll, activeCategories]);
 
   // Filter & sort logic
   const displayedProducts = useMemo(() => {
-    let list = products.filter((p) => {
+    let list = (products || []).filter((p) => {
       if (!p.isPublished) return false;
 
-      // Category matching
-      const matchesCategory = p.categorySlug === currentCategory.slug || p.categoryId === currentCategory.id;
-      if (!matchesCategory && !query) return false;
+      // Category matching: only filter by category if not on Shop All mode
+      if (!isShopAll && currentCategory) {
+        const matchesCategory = p.categorySlug === currentCategory.slug || p.categoryId === currentCategory.id;
+        if (!matchesCategory && !query) return false;
+      }
 
       // Search query filter
       if (query) {
         const matchesQuery =
-          p.name.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query) ||
-          p.categorySlug.toLowerCase().includes(query);
+          (p.name || '').toLowerCase().includes(query) ||
+          (p.description || '').toLowerCase().includes(query) ||
+          (p.categorySlug || '').toLowerCase().includes(query);
         if (!matchesQuery) return false;
       }
 
-      // Dynamic subcategory filter
+      // Dynamic subcategory / category filter
       if (activeSubcategory !== 'all') {
-        const targetSub = subcategoryPills.find((s) => s.id === activeSubcategory);
-        if (targetSub) {
-          const matchesSubId = p.subcategoryId === targetSub.subcategoryId;
-          const matchesSubSlug =
-            p.subcategoryId === targetSub.id ||
-            p.slug.toLowerCase().includes(targetSub.id) ||
-            p.name.toLowerCase().includes(targetSub.label.toLowerCase());
-          if (!matchesSubId && !matchesSubSlug) return false;
+        if (isShopAll) {
+          const targetCat = activeCategories.find((c) => c.slug === activeSubcategory || c.id === activeSubcategory);
+          if (targetCat) {
+            const matchesCat = p.categorySlug === targetCat.slug || p.categoryId === targetCat.id;
+            if (!matchesCat) return false;
+          }
+        } else {
+          const targetSub = subcategoryPills.find((s) => s.id === activeSubcategory);
+          if (targetSub) {
+            const matchesSubId = p.subcategoryId === targetSub.subcategoryId;
+            const matchesSubSlug =
+              p.subcategoryId === targetSub.id ||
+              (p.slug || '').toLowerCase().includes(targetSub.id) ||
+              (p.name || '').toLowerCase().includes(targetSub.label.toLowerCase());
+            if (!matchesSubId && !matchesSubSlug) return false;
+          }
         }
       }
 
       // In Stock filter
       if (inStockOnly) {
-        const hasStock = p.variants.some((v) => v.stockQuantity > 0);
+        const hasStock = p.variants && p.variants.length > 0
+          ? p.variants.some((v) => v.stockQuantity > 0)
+          : ((p as any).stockQuantity ?? 10) > 0;
         if (!hasStock) return false;
       }
 
@@ -131,7 +164,13 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
     });
 
     // Sort order using default variant price shown on the card
-    const getDefaultPrice = (p: typeof list[0]) => (p.variants.find(v => v.isDefault) || p.variants[0]).sellingPrice;
+    const getDefaultPrice = (p: typeof list[0]) => {
+      if (p.variants && p.variants.length > 0) {
+        const found = p.variants.find(v => v.isDefault) || p.variants[0];
+        if (found && typeof found.sellingPrice === 'number') return found.sellingPrice;
+      }
+      return (p as any).price || 0;
+    };
 
     if (sortBy === 'price-low') {
       list.sort((a, b) => getDefaultPrice(a) - getDefaultPrice(b));
@@ -148,7 +187,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
     }
 
     return list;
-  }, [products, currentCategory, query, activeSubcategory, subcategoryPills, inStockOnly, onOfferOnly, sortBy]);
+  }, [products, currentCategory, isShopAll, activeCategories, query, activeSubcategory, subcategoryPills, inStockOnly, onOfferOnly, sortBy]);
 
   // Active filters count
   const hasActiveFilters = activeSubcategory !== 'all' || inStockOnly || onOfferOnly || Boolean(query);
@@ -173,7 +212,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
     <div className="min-h-screen bg-canvas pb-24 md:pb-16 text-content-primary">
       {/* Header with authentic mobile header matching Screen 2 and desktop header */}
       <Header
-        title={isCombos ? 'Combos & Bundles' : currentCategory.name}
+        title={isCombos ? 'Combos & Bundles' : isShopAll ? 'Shop All Products' : currentCategory.name}
         subtitle={isCombos ? `${activeCombos.length} Value Bundles` : `${displayedProducts.length} ${displayedProducts.length === 1 ? 'product' : 'products'}`}
         showBack={true}
         showSearch={true}
@@ -182,8 +221,24 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
       <main className="max-w-6xl mx-auto px-4 pt-3 space-y-4">
         {/* Category Navigation Bar: Obvious active states for cross-category discovery */}
         <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 scroll-smooth" aria-label="Category navigation">
+          {/* All Products Discovery Pill */}
+          <button
+            onClick={() => {
+              setActiveSubcategory('all');
+              navigate('/shop');
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
+              isShopAll && !isCombos
+                ? 'bg-[#07382A] text-white shadow-xs border border-[#07382A]'
+                : 'bg-white text-content-primary border border-[#EAE5DC] hover:bg-[#F9F7F3] hover:border-brand-primary/40'
+            }`}
+            aria-current={isShopAll && !isCombos ? 'page' : undefined}
+          >
+            All Products
+          </button>
+
           {activeCategories.map((cat) => {
-            const isCurrent = !isCombos && cat.slug === currentCategory.slug;
+            const isCurrent = !isCombos && !isShopAll && cat.slug === currentCategory.slug;
             return (
               <button
                 key={cat.id}

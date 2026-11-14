@@ -9,14 +9,16 @@ import {
   ArrowRight,
   Lock
 } from 'lucide-react';
+import { FestivalFooterDecoration } from './festival/FestivalFooterDecoration';
 
 export const Footer: React.FC = () => {
   return (
     <footer
-      className="bg-[#072C20] text-[#FAF7F2] border-t border-[#144234] pt-12 sm:pt-16 pb-28 md:pb-12"
+      className="bg-[#072C20] text-[#FAF7F2] border-t border-[#144234] pb-28 md:pb-12"
       aria-label="Official Footer"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <FestivalFooterDecoration />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
           {/* Column 1 — Brand */}
           <div className="space-y-4">

@@ -19,7 +19,7 @@ export const FestivalFooterDecoration: React.FC = () => {
     <div
       className="w-full py-4 px-4 text-center border-t transition-colors relative overflow-hidden"
       style={{
-        backgroundColor: '#072C20',
+        backgroundColor: 'var(--color-footer-bg, #072C20)',
         borderColor: `${accentColor}60`
       }}
       aria-label={`${name} Footer Celebration`}
