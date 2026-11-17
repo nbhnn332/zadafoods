@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React, { useState } from 'react';
+import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PointListEditor, cleanTextEntities } from '../components/PointListEditor';
 import { CorporateGiftingEditor } from '../components/CorporateGiftingEditor';
