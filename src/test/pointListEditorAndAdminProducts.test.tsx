@@ -354,7 +354,7 @@ describe('Category Deletion & Unlinking Suite', () => {
     fireEvent.click(deleteBtns[0]);
 
     // Modal should appear
-    expect(screen.getByText(/Category Has Linked Products|Delete Category/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /cannot delete category|delete category/i })).toBeInTheDocument();
 
     // Verify either force delete button or normal delete button is present and clickable
     const forceDeleteBtn = screen.queryByTestId('force-unlink-and-delete-category-btn');

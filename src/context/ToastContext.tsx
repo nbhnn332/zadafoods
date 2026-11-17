@@ -18,8 +18,21 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const timersRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  React.useEffect(() => {
+    return () => {
+      timersRef.current.forEach((t) => clearTimeout(t));
+      timersRef.current.clear();
+    };
+  }, []);
 
   const removeToast = (id: string) => {
+    const timer = timersRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timersRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -28,9 +41,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const newToast: ToastMessage = { id, title, message, type, duration };
     setToasts((prev) => [...prev, newToast]);
 
-    setTimeout(() => {
-      removeToast(id);
+    const timer = setTimeout(() => {
+      timersRef.current.delete(id);
+      if (typeof window !== 'undefined') {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }
     }, duration);
+    timersRef.current.set(id, timer);
   };
 
   return (

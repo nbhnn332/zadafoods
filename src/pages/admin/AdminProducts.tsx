@@ -1091,7 +1091,7 @@ export const AdminProducts: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-serif font-bold text-lg text-content-primary">
-                    {hasAssigned ? 'Category Has Linked Products' : 'Delete Category'}
+                    {hasAssigned ? 'Cannot Delete Category' : 'Delete Category'}
                   </h3>
                   <p className="text-xs text-content-muted">
                     Category: <span className="font-semibold text-content-primary">"{categoryToDelete.name}"</span> (/{categoryToDelete.slug})
@@ -1103,7 +1103,7 @@ export const AdminProducts: React.FC = () => {
                 <div className="space-y-3">
                   <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-800 space-y-2">
                     <p className="font-semibold text-amber-900">
-                      {categoryDeleteError ? 'Database Foreign Key Notice' : 'Products currently assigned to this category'}
+                      Cannot delete category with assigned products.
                     </p>
                     <p className="text-[11px] leading-relaxed">
                       {categoryDeleteError ? (
@@ -1180,7 +1180,7 @@ export const AdminProducts: React.FC = () => {
                   disabled={isDeletingCategory}
                   className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-border-subtle text-content-secondary hover:bg-canvas-subtle disabled:opacity-50"
                 >
-                  Cancel
+                  {hasAssigned ? 'Understood / Close' : 'Cancel'}
                 </button>
 
                 {hasAssigned ? (
