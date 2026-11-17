@@ -822,7 +822,11 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
       setDeletedCategoryIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
       setCategories((prev) => prev.filter((c) => c.id !== id));
-      if (reassignToCategoryId) {
+      if (reassignToCategoryId === 'unlink' || reassignToCategoryId === 'none') {
+        setProducts((prev) =>
+          prev.map((p) => (p.categoryId === id ? { ...p, categoryId: '' } : p))
+        );
+      } else if (reassignToCategoryId) {
         setProducts((prev) =>
           prev.map((p) => (p.categoryId === id ? { ...p, categoryId: reassignToCategoryId } : p))
         );

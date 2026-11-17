@@ -14,9 +14,10 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAdminData } from '../../context/AdminDataContext';
-import { Product, ProductVariant, Category } from '../../types';
+import { Product, ProductVariant, Category, ProductImage } from '../../types';
 import { PointListEditor } from '../../components/PointListEditor';
 import { ImageUploadPreview } from '../../components/ImageUploadPreview';
+import { MultipleImageUrlsEditor } from '../../components/MultipleImageUrlsEditor';
 
 export const AdminProducts: React.FC = () => {
   const {
@@ -47,10 +48,12 @@ export const AdminProducts: React.FC = () => {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const [reassignCategoryId, setReassignCategoryId] = useState<string>('');
+  const [categoryDeleteError, setCategoryDeleteError] = useState<string | null>(null);
   const [descriptionMode, setDescriptionMode] = useState<'bullets' | 'text'>('bullets');
   const [ingredientsMode, setIngredientsMode] = useState<'bullets' | 'text'>('bullets');
   const [descriptionPoints, setDescriptionPoints] = useState<string[]>(['']);
   const [ingredientsPoints, setIngredientsPoints] = useState<string[]>(['']);
+  const [productImages, setProductImages] = useState<string[]>(['']);
 
   const handleConfirmDeleteProduct = async () => {
     if (!productToDelete) return;
@@ -63,14 +66,22 @@ export const AdminProducts: React.FC = () => {
     }
   };
 
-  const handleConfirmDeleteCategory = async () => {
+  const handleConfirmDeleteCategory = async (forceUnlink = false) => {
     if (!categoryToDelete) return;
     setIsDeletingCategory(true);
+    setCategoryDeleteError(null);
     try {
-      const res = await deleteCategory(categoryToDelete.id);
+      const targetReassign = forceUnlink ? 'unlink' : (reassignCategoryId || undefined);
+      const res = await deleteCategory(categoryToDelete.id, targetReassign);
       if (res.success) {
         setCategoryToDelete(null);
+        setReassignCategoryId('');
+        setCategoryDeleteError(null);
+      } else {
+        setCategoryDeleteError(res.error || 'Failed to delete category');
       }
+    } catch (err: any) {
+      setCategoryDeleteError(err.message || 'Failed to delete category');
     } finally {
       setIsDeletingCategory(false);
     }
@@ -180,6 +191,9 @@ export const AdminProducts: React.FC = () => {
     ]);
     setDescriptionMode('bullets');
     setIngredientsMode('bullets');
+    setProductImages([
+      'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=600&q=80'
+    ]);
     setIsProductModalOpen(true);
   };
 
@@ -212,6 +226,10 @@ export const AdminProducts: React.FC = () => {
     setIngredientsPoints(initialIngPoints.length === 0 ? [''] : initialIngPoints);
     setDescriptionMode('bullets');
     setIngredientsMode('bullets');
+    const initialImages = p.images && p.images.length > 0
+      ? p.images.map((img) => img.imageUrl)
+      : [p.images?.[0]?.imageUrl || (p as any).imageUrl || ''];
+    setProductImages(initialImages.length > 0 ? initialImages : ['']);
     setIsProductModalOpen(true);
   };
 
@@ -230,16 +248,18 @@ export const AdminProducts: React.FC = () => {
     const matchedCat = categories.find((c) => c.id === formData.categoryId);
     const categorySlug = matchedCat ? matchedCat.slug : formData.categorySlug;
 
-    const images = formData.imageUrl && formData.imageUrl.trim()
-      ? [
-          {
-            id: `img-${Date.now()}`,
-            imageUrl: formData.imageUrl.trim(),
-            altText: formData.name,
-            displayOrder: 1,
-            isPrimary: true
-          }
-        ]
+    const validImageUrls = productImages
+      .map((url) => url.trim().replace(/^[\"']|[\"']$/g, ''))
+      .filter(Boolean);
+
+    const images: ProductImage[] = validImageUrls.length > 0
+      ? validImageUrls.map((url, idx) => ({
+          id: editingProduct?.images?.[idx]?.id || `img-${Date.now()}-${idx}`,
+          imageUrl: url,
+          altText: `${formData.name} - View ${idx + 1}`,
+          displayOrder: idx + 1,
+          isPrimary: idx === 0
+        }))
       : [];
 
     if (editingProduct) {
@@ -705,13 +725,11 @@ export const AdminProducts: React.FC = () => {
                 </div>
               </div>
 
-              <ImageUploadPreview
-                label="Product Showcase Image"
-                value={formData.imageUrl}
-                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
-                aspectRatio="1:1"
-                placeholder="https://... or upload local file"
-                helpText="Square (1:1) PNG or WEBP recommended for authentic product cards."
+              <MultipleImageUrlsEditor
+                label="Product Showcase & Gallery Images"
+                imageUrls={productImages}
+                onChange={setProductImages}
+                helpText="Image #1 is the Primary Cover displayed on product cards, category pages, and search. Additional images appear in the customer gallery on the Product Detail Page."
               />
 
               {/* Checkbox Flags */}
@@ -925,7 +943,7 @@ export const AdminProducts: React.FC = () => {
                     </div>
                     <button
                       data-testid={`delete-category-${c.id}-btn`}
-                      onClick={() => setCategoryToDelete(c)}
+                      onClick={() => { setCategoryToDelete(c); setCategoryDeleteError(null); }}
                       className="p-1 text-content-muted hover:text-rose-600 rounded"
                       title={`Delete category ${c.name}`}
                     >
@@ -1062,7 +1080,7 @@ export const AdminProducts: React.FC = () => {
       {/* Category Delete Confirmation Modal */}
       {categoryToDelete && (() => {
         const assignedProducts = products.filter((p) => p.categoryId === categoryToDelete.id || p.categorySlug === categoryToDelete.slug);
-        const hasAssigned = assignedProducts.length > 0;
+        const hasAssigned = assignedProducts.length > 0 || Boolean(categoryDeleteError);
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1073,7 +1091,7 @@ export const AdminProducts: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-serif font-bold text-lg text-content-primary">
-                    {hasAssigned ? 'Cannot Delete Category' : 'Delete Category'}
+                    {hasAssigned ? 'Category Has Linked Products' : 'Delete Category'}
                   </h3>
                   <p className="text-xs text-content-muted">
                     Category: <span className="font-semibold text-content-primary">"{categoryToDelete.name}"</span> (/{categoryToDelete.slug})
@@ -1085,23 +1103,28 @@ export const AdminProducts: React.FC = () => {
                 <div className="space-y-3">
                   <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-800 space-y-2">
                     <p className="font-semibold text-amber-900">
-                      Cannot delete category with assigned products.
+                      {categoryDeleteError ? 'Database Foreign Key Notice' : 'Products currently assigned to this category'}
                     </p>
                     <p className="text-[11px] leading-relaxed">
-                      There are <span className="font-bold">{assignedProducts.length} product(s)</span> currently assigned to this category. Select a target category below to automatically migrate these products, or cancel to keep the category.
+                      {categoryDeleteError ? (
+                        categoryDeleteError
+                      ) : (
+                        <>There are <span className="font-bold">{assignedProducts.length} product(s)</span> assigned to this category.</>
+                      )}
+                      {' '}You can migrate them to another category, or force unlink all products to delete this category immediately.
                     </p>
                   </div>
 
                   <div className="space-y-1">
                     <label className="font-bold text-xs text-content-primary block">
-                      Target Category for Reassignment *
+                      Target Category for Reassignment (Optional)
                     </label>
                     <select
                       value={reassignCategoryId}
                       onChange={(e) => setReassignCategoryId(e.target.value)}
                       className="w-full px-3 py-2 border border-border-subtle rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
                     >
-                      <option value="">-- Choose destination category --</option>
+                      <option value="">-- Choose destination category (or Force Unlink below) --</option>
                       {categories.filter((c) => c.id !== categoryToDelete.id).map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name} (/{c.slug})
@@ -1110,17 +1133,19 @@ export const AdminProducts: React.FC = () => {
                     </select>
                   </div>
 
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 border border-border-subtle/70 rounded-lg p-2 bg-canvas-subtle/50">
-                    <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wider">
-                      Products to be reassigned ({assignedProducts.length}):
-                    </p>
-                    {assignedProducts.map((p) => (
-                      <div key={p.id} className="flex items-center justify-between py-1 text-xs">
-                        <span className="font-medium text-content-primary truncate">{p.name}</span>
-                        <span className="text-[10px] text-content-muted font-mono">{p.slug}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {assignedProducts.length > 0 && (
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1 border border-border-subtle/70 rounded-lg p-2 bg-canvas-subtle/50">
+                      <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wider">
+                        Assigned products ({assignedProducts.length}):
+                      </p>
+                      {assignedProducts.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between py-1 text-xs">
+                          <span className="font-medium text-content-primary truncate">{p.name}</span>
+                          <span className="text-[10px] text-content-muted font-mono">{p.slug}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1144,79 +1169,80 @@ export const AdminProducts: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-end items-center gap-2 pt-2 border-t border-border-subtle">
+              <div className="flex flex-wrap justify-end items-center gap-2 pt-2 border-t border-border-subtle">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryToDelete(null);
+                    setReassignCategoryId('');
+                    setCategoryDeleteError(null);
+                  }}
+                  disabled={isDeletingCategory}
+                  className="px-3.5 py-2 text-xs font-semibold rounded-lg border border-border-subtle text-content-secondary hover:bg-canvas-subtle disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
                 {hasAssigned ? (
                   <>
                     <button
                       type="button"
-                      onClick={() => {
-                        setCategoryToDelete(null);
-                        setReassignCategoryId('');
-                      }}
+                      data-testid="force-unlink-and-delete-category-btn"
                       disabled={isDeletingCategory}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg border border-border-subtle text-content-secondary hover:bg-canvas-subtle"
+                      onClick={() => handleConfirmDeleteCategory(true)}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                      title="Unlink all products and delete category"
                     >
-                      Understood / Close
+                      {isDeletingCategory ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Unlinking...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Force Delete (Unlink Products)</span>
+                        </>
+                      )}
                     </button>
+
                     <button
                       type="button"
                       data-testid="reassign-and-delete-category-btn"
                       disabled={!reassignCategoryId || isDeletingCategory}
-                      onClick={async () => {
-                        if (!reassignCategoryId) return;
-                        setIsDeletingCategory(true);
-                        try {
-                          const res = await deleteCategory(categoryToDelete.id, reassignCategoryId);
-                          if (res.success) {
-                            setCategoryToDelete(null);
-                            setReassignCategoryId('');
-                          }
-                        } finally {
-                          setIsDeletingCategory(false);
-                        }
-                      }}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                      onClick={() => handleConfirmDeleteCategory(false)}
+                      className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
                     >
                       {isDeletingCategory ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Reassigning &amp; Deleting...</span>
+                          <span>Reassigning...</span>
                         </>
                       ) : (
-                        <span>Reassign Products &amp; Delete Category</span>
+                        <span>Reassign Products &amp; Delete</span>
                       )}
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setCategoryToDelete(null)}
-                      disabled={isDeletingCategory}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg border border-border-subtle text-content-secondary hover:bg-canvas-subtle disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="confirm-delete-category-btn"
-                      onClick={handleConfirmDeleteCategory}
-                      disabled={isDeletingCategory}
-                      className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
-                    >
-                      {isDeletingCategory ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Deleting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete Category</span>
-                        </>
-                      )}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    data-testid="confirm-delete-category-btn"
+                    onClick={() => handleConfirmDeleteCategory(false)}
+                    disabled={isDeletingCategory}
+                    className="px-4 py-2 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isDeletingCategory ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Category</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             </div>

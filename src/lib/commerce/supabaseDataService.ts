@@ -942,6 +942,28 @@ export class SupabaseDataService {
           }
         }
 
+        // If images provided, update product images in Supabase
+        if (updates.images && Array.isArray(updates.images)) {
+          try {
+            await supabase.from('product_images').delete().eq('product_id', id);
+
+            const imagesToInsert = updates.images.map((img, idx) => ({
+              id: isUUID(img.id) ? img.id : crypto.randomUUID(),
+              product_id: id,
+              image_url: img.imageUrl,
+              alt_text: img.altText || updates.name || 'Product Image',
+              display_order: img.displayOrder ?? idx + 1,
+              is_primary: img.isPrimary ?? (idx === 0)
+            }));
+
+            if (imagesToInsert.length > 0) {
+              await supabase.from('product_images').insert(imagesToInsert);
+            }
+          } catch (imgSyncErr: any) {
+            console.warn('[SupabaseDataService] Image sync warning:', imgSyncErr.message);
+          }
+        }
+
         try {
           const saved = localStorage.getItem('zada_admin_products');
           if (saved) {
@@ -1355,8 +1377,31 @@ export class SupabaseDataService {
       }
 
       try {
-        // 1. If reassignment requested, reassign products first
-        if (reassignToCategoryId && isUUID(reassignToCategoryId)) {
+        // 0. Soft-deleted or inactive products should never block category deletion: unlink them automatically
+        try {
+          await supabase
+            .from('products')
+            .update({ category_id: null })
+            .eq('category_id', id)
+            .or('deleted_at.not.is.null,is_active.eq.false');
+        } catch (unlinkSoftErr) {
+          console.warn('[SupabaseDataService] deleteCategory soft-deleted unlinking warning:', unlinkSoftErr);
+        }
+
+        // 1. If explicit unlinking or reassignment is requested:
+        if (reassignToCategoryId === 'unlink' || reassignToCategoryId === 'none') {
+          const { error: unlinkErr } = await supabase
+            .from('products')
+            .update({ category_id: null })
+            .eq('category_id', id);
+          if (unlinkErr) {
+            return {
+              data: false,
+              error: `Failed to unlink products from category: ${unlinkErr.message}`,
+              source: 'SUPABASE'
+            };
+          }
+        } else if (reassignToCategoryId && isUUID(reassignToCategoryId)) {
           const { error: reassignErr } = await supabase
             .from('products')
             .update({ category_id: reassignToCategoryId })
@@ -1370,30 +1415,49 @@ export class SupabaseDataService {
           }
         }
 
-        // 2. Verify if any active products reference this category
+        // 2. Verify if any active products still reference this category
         const { data: prodRef, error: prodErr } = await supabase
           .from('products')
           .select('id, name')
           .eq('category_id', id)
+          .is('deleted_at', null)
+          .neq('is_active', false)
           .limit(5);
 
         if (prodErr) {
           console.warn('[SupabaseDataService] deleteCategory check warning:', prodErr.message);
         }
 
-        if (prodRef && prodRef.length > 0) {
+        if (prodRef && prodRef.length > 0 && reassignToCategoryId !== 'unlink') {
           return {
             data: false,
-            error: `Cannot delete category: ${prodRef.length} product(s) (e.g. "${prodRef[0].name}") are currently assigned to this category. Reassign or delete products first.`,
+            error: `Cannot delete category: ${prodRef.length} active product(s) (e.g. "${prodRef[0].name}") are currently assigned to this category. Please reassign or unlink them first.`,
             source: 'SUPABASE'
           };
         }
 
+        // Clean up dependent category_banners and subcategories
+        try {
+          await supabase.from('category_banners').delete().eq('category_id', id);
+        } catch {}
+        try {
+          await supabase.from('subcategories').delete().eq('category_id', id);
+        } catch {}
+
         // 3. Perform deletion
-        const { error } = await supabase
+        let { error } = await supabase
           .from('categories')
           .delete()
           .eq('id', id);
+
+        if (error && error.code === '23503') {
+          // Attempt automatic unlinking of any remaining products and retry
+          try {
+            await supabase.from('products').update({ category_id: null }).eq('category_id', id);
+            const retryRes = await supabase.from('categories').delete().eq('id', id);
+            error = retryRes.error;
+          } catch {}
+        }
 
         if (error) {
           if (error.code === '23503') {

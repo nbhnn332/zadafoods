@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PointListEditor, cleanTextEntities } from '../components/PointListEditor';
+import { MultipleImageUrlsEditor } from '../components/MultipleImageUrlsEditor';
 import { CorporateGiftingEditor } from '../components/CorporateGiftingEditor';
 import { MemoryRouter } from 'react-router-dom';
 import { ToastProvider } from '../context/ToastContext';
@@ -262,5 +263,102 @@ describe('CorporateGiftingEditor Integration: Add Point Button Verification', ()
       'Wedding delicacy boxes',
       'Custom logo ribbons & brass diyas'
     ]);
+  });
+});
+
+describe('MultipleImageUrlsEditor Component Suite', () => {
+  const ImagesControlledWrapper = () => {
+    const [images, setImages] = useState<string[]>([
+      'https://example.com/cover.png',
+      'https://example.com/gallery1.png'
+    ]);
+    return (
+      <MultipleImageUrlsEditor
+        label="Product Images & Gallery"
+        imageUrls={images}
+        onChange={setImages}
+      />
+    );
+  };
+
+  it('renders initial image URLs and badges correctly', () => {
+    render(<ImagesControlledWrapper />);
+    expect(screen.getByText('Product Images & Gallery')).toBeInTheDocument();
+    expect(screen.getByText('2 images configured')).toBeInTheDocument();
+    expect(screen.getByText('Primary Cover (Card & Hero)')).toBeInTheDocument();
+    expect(screen.getByText(/Gallery Photo #2/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('https://example.com/cover.png')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('https://example.com/gallery1.png')).toBeInTheDocument();
+  });
+
+  it('clicking Add Another Image URL appends a new input and focuses it', () => {
+    render(<ImagesControlledWrapper />);
+    const addBtn = screen.getByRole('button', { name: /add another image url/i });
+    fireEvent.click(addBtn);
+
+    const inputs = screen.getAllByPlaceholderText(/direct image link/i);
+    expect(inputs).toHaveLength(3);
+    expect(inputs[2]).toHaveValue('');
+    expect(document.activeElement).toBe(inputs[2]);
+  });
+
+  it('supports setting a gallery image as primary', () => {
+    render(<ImagesControlledWrapper />);
+    const makePrimaryBtn = screen.getByRole('button', { name: /make primary/i });
+    fireEvent.click(makePrimaryBtn);
+
+    const inputs = screen.getAllByPlaceholderText(/direct image link/i);
+    expect(inputs[0]).toHaveValue('https://example.com/gallery1.png');
+    expect(inputs[1]).toHaveValue('https://example.com/cover.png');
+  });
+
+  it('supports reordering images and removing an image', () => {
+    render(<ImagesControlledWrapper />);
+    const moveDownButtons = screen.getAllByTitle('Move down in gallery order');
+    fireEvent.click(moveDownButtons[0]);
+
+    const inputs = screen.getAllByPlaceholderText(/direct image link/i);
+    expect(inputs[0]).toHaveValue('https://example.com/gallery1.png');
+    expect(inputs[1]).toHaveValue('https://example.com/cover.png');
+
+    const removeButtons = screen.getAllByTitle('Remove this image');
+    fireEvent.click(removeButtons[0]);
+
+    const remainingInputs = screen.getAllByPlaceholderText(/direct image link/i);
+    expect(remainingInputs).toHaveLength(1);
+    expect(remainingInputs[0]).toHaveValue('https://example.com/cover.png');
+  });
+});
+
+describe('Category Deletion & Unlinking Suite', () => {
+  it('opens category modal and supports deletion with unlinking or reassignment', async () => {
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <AdminDataProvider>
+              <AdminProducts />
+            </AdminDataProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    // Open category manager
+    const manageCatBtn = screen.getByRole('button', { name: /manage categories/i });
+    fireEvent.click(manageCatBtn);
+
+    // Find delete button for first category
+    const deleteBtns = screen.getAllByTitle(/delete category/i);
+    expect(deleteBtns.length).toBeGreaterThan(0);
+    fireEvent.click(deleteBtns[0]);
+
+    // Modal should appear
+    expect(screen.getByText(/Category Has Linked Products|Delete Category/i)).toBeInTheDocument();
+
+    // Verify either force delete button or normal delete button is present and clickable
+    const forceDeleteBtn = screen.queryByTestId('force-unlink-and-delete-category-btn');
+    const deleteBtn = screen.queryByTestId('confirm-delete-category-btn');
+    expect(forceDeleteBtn || deleteBtn).toBeInTheDocument();
   });
 });

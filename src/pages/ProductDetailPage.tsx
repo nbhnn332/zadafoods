@@ -73,6 +73,15 @@ export const ProductDetailPage: React.FC = () => {
   const isCashewHalwa = Boolean(product?.slug?.includes('cashew-halwa'));
 
   const galleryImages = useMemo(() => {
+    // If product has custom multiple gallery images configured, prioritize them
+    if (product?.images && product.images.length > 1) {
+      return product.images.map((img, i) => ({
+        id: img.id || `img-${i}`,
+        imageUrl: img.imageUrl,
+        thumbUrl: img.imageUrl,
+        altText: img.altText || product.name
+      }));
+    }
     if (isBananaChips) {
       return [
         { id: 'pdp-1', imageUrl: '/assets/prod-banana-chips-hero.png', thumbUrl: '/assets/pdp-thumb-1.png', altText: 'Crisp Nendran banana chips in a traditional bowl' },
