@@ -49,6 +49,8 @@ export const AdminProducts: React.FC = () => {
   const [reassignCategoryId, setReassignCategoryId] = useState<string>('');
   const [descriptionMode, setDescriptionMode] = useState<'bullets' | 'text'>('bullets');
   const [ingredientsMode, setIngredientsMode] = useState<'bullets' | 'text'>('bullets');
+  const [descriptionPoints, setDescriptionPoints] = useState<string[]>(['']);
+  const [ingredientsPoints, setIngredientsPoints] = useState<string[]>(['']);
 
   const handleConfirmDeleteProduct = async () => {
     if (!productToDelete) return;
@@ -170,6 +172,14 @@ export const AdminProducts: React.FC = () => {
         }
       ]
     });
+    setDescriptionPoints(['']);
+    setIngredientsPoints([
+      'Raw Kerala Nendran Bananas',
+      'Cold-Pressed Coconut Oil',
+      'Pure Rock Salt.'
+    ]);
+    setDescriptionMode('bullets');
+    setIngredientsMode('bullets');
     setIsProductModalOpen(true);
   };
 
@@ -194,12 +204,28 @@ export const AdminProducts: React.FC = () => {
       imageUrl: p.images[0]?.imageUrl || '',
       variants: [...p.variants]
     });
+    const initialDescPoints = p.description ? p.description.split('\n') : [''];
+    setDescriptionPoints(initialDescPoints.length === 0 ? [''] : initialDescPoints);
+    const initialIngPoints = p.ingredients
+      ? p.ingredients.split(/,\s*|\n/).map((s) => s.trim()).filter(Boolean)
+      : [''];
+    setIngredientsPoints(initialIngPoints.length === 0 ? [''] : initialIngPoints);
+    setDescriptionMode('bullets');
+    setIngredientsMode('bullets');
     setIsProductModalOpen(true);
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.slug.trim()) return;
+
+    const finalDescription = descriptionMode === 'bullets'
+      ? descriptionPoints.map((p) => p.trim()).filter(Boolean).join('\n')
+      : formData.description.trim();
+
+    const finalIngredients = ingredientsMode === 'bullets'
+      ? ingredientsPoints.map((p) => p.trim()).filter(Boolean).join(', ')
+      : formData.ingredients.trim();
 
     const matchedCat = categories.find((c) => c.id === formData.categoryId);
     const categorySlug = matchedCat ? matchedCat.slug : formData.categorySlug;
@@ -223,8 +249,8 @@ export const AdminProducts: React.FC = () => {
         tagline: formData.tagline,
         categoryId: formData.categoryId,
         categorySlug,
-        description: formData.description,
-        ingredients: formData.ingredients,
+        description: finalDescription,
+        ingredients: finalIngredients,
         storageInstructions: formData.storageInstructions,
         shelfLifeDays: Number(formData.shelfLifeDays),
         isPreservativeFree: formData.isPreservativeFree,
@@ -243,8 +269,8 @@ export const AdminProducts: React.FC = () => {
         tagline: formData.tagline,
         categoryId: formData.categoryId,
         categorySlug,
-        description: formData.description,
-        ingredients: formData.ingredients,
+        description: finalDescription,
+        ingredients: finalIngredients,
         storageInstructions: formData.storageInstructions,
         shelfLifeDays: Number(formData.shelfLifeDays),
         isPreservativeFree: formData.isPreservativeFree,
@@ -583,8 +609,20 @@ export const AdminProducts: React.FC = () => {
                   <label className="font-bold text-content-primary block">Description &amp; Highlights</label>
                   <button
                     type="button"
-                    onClick={() => setDescriptionMode(m => m === 'bullets' ? 'text' : 'bullets')}
-                    className="text-[11px] text-brand-primary hover:underline font-semibold"
+                    onClick={() => {
+                      if (descriptionMode === 'bullets') {
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: descriptionPoints.map((p) => p.trim()).filter(Boolean).join('\n')
+                        }));
+                        setDescriptionMode('text');
+                      } else {
+                        const pts = formData.description ? formData.description.split('\n') : [''];
+                        setDescriptionPoints(pts.length === 0 ? [''] : pts);
+                        setDescriptionMode('bullets');
+                      }
+                    }}
+                    className="text-[11px] text-brand-primary hover:underline font-semibold cursor-pointer"
                   >
                     {descriptionMode === 'bullets' ? 'Switch to Raw Text' : 'Switch to Bullet Points'}
                   </button>
@@ -593,8 +631,8 @@ export const AdminProducts: React.FC = () => {
                 {descriptionMode === 'bullets' ? (
                   <PointListEditor
                     label=""
-                    points={formData.description ? formData.description.split('\n').filter(Boolean) : ['']}
-                    onChange={(points) => setFormData({ ...formData, description: points.join('\n') })}
+                    points={descriptionPoints}
+                    onChange={setDescriptionPoints}
                     placeholder="Type key product story / feature point..."
                     helperText="Press Enter for next bullet point. Backspace on empty line removes it."
                   />
@@ -616,8 +654,22 @@ export const AdminProducts: React.FC = () => {
                     <label className="font-bold text-content-primary block">Ingredients Declaration</label>
                     <button
                       type="button"
-                      onClick={() => setIngredientsMode(m => m === 'bullets' ? 'text' : 'bullets')}
-                      className="text-[10px] text-brand-primary hover:underline font-semibold"
+                      onClick={() => {
+                        if (ingredientsMode === 'bullets') {
+                          setFormData((prev) => ({
+                            ...prev,
+                            ingredients: ingredientsPoints.map((p) => p.trim()).filter(Boolean).join(', ')
+                          }));
+                          setIngredientsMode('text');
+                        } else {
+                          const pts = formData.ingredients
+                            ? formData.ingredients.split(/,\s*|\n/).map((s) => s.trim()).filter(Boolean)
+                            : [''];
+                          setIngredientsPoints(pts.length === 0 ? [''] : pts);
+                          setIngredientsMode('bullets');
+                        }
+                      }}
+                      className="text-[10px] text-brand-primary hover:underline font-semibold cursor-pointer"
                     >
                       {ingredientsMode === 'bullets' ? 'Plain Text' : 'Item List'}
                     </button>
@@ -626,8 +678,8 @@ export const AdminProducts: React.FC = () => {
                   {ingredientsMode === 'bullets' ? (
                     <PointListEditor
                       label=""
-                      points={formData.ingredients ? formData.ingredients.split(/,\s*|\n/).filter(Boolean) : ['']}
-                      onChange={(points) => setFormData({ ...formData, ingredients: points.join(', ') })}
+                      points={ingredientsPoints}
+                      onChange={setIngredientsPoints}
                       placeholder="e.g. Raw Kerala Bananas"
                       helperText="Enter adds ingredient item."
                     />

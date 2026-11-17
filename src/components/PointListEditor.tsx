@@ -17,9 +17,7 @@ export const cleanTextEntities = (str: string): string => {
     .replace(/&#32;/gi, ' ')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&#160;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/&amp;/gi, '&');
 };
 
 export const PointListEditor: React.FC<PointListEditorProps> = ({
@@ -43,13 +41,24 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
         inputRefs.current[idx]?.focus();
       }
     }
-  }, [safePoints.length]);
+  });
 
   const handleTextChange = (index: number, val: string) => {
     const cleaned = cleanTextEntities(val);
     const updated = [...safePoints];
     updated[index] = cleaned;
     onChange(updated);
+  };
+
+  const handleBlur = (index: number) => {
+    const updated = [...safePoints];
+    if (typeof updated[index] === 'string') {
+      const trimmed = updated[index].trim();
+      if (trimmed !== updated[index]) {
+        updated[index] = trimmed;
+        onChange(updated);
+      }
+    }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -107,12 +116,14 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="font-bold text-xs text-content-primary">{label}</label>
-        <span className="text-[11px] text-content-muted">
-          {safePoints.filter((p) => p.trim().length > 0).length} point(s)
-        </span>
-      </div>
+      {label ? (
+        <div className="flex items-center justify-between">
+          <label className="font-bold text-xs text-content-primary">{label}</label>
+          <span className="text-[11px] text-content-muted">
+            {safePoints.filter((p) => p.trim().length > 0).length} point(s)
+          </span>
+        </div>
+      ) : null}
 
       <div className="space-y-1.5 bg-[#FAF7F2] p-2.5 rounded-xl border border-[#EAE3D6]">
         {safePoints.map((point, index) => (
@@ -125,6 +136,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
               type="text"
               value={point}
               onChange={(e) => handleTextChange(index, e.target.value)}
+              onBlur={() => handleBlur(index)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               placeholder={placeholder}
               className="flex-1 px-2.5 py-1.5 text-xs bg-white border border-[#E0D8CB] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#A67732] focus:border-[#A67732] transition-colors"
@@ -135,7 +147,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
                 type="button"
                 onClick={() => handleMoveUp(index)}
                 disabled={index === 0}
-                className="p-1 text-content-muted hover:text-content-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-1 text-content-muted hover:text-content-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 title="Move up"
                 aria-label="Move point up"
               >
@@ -145,7 +157,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
                 type="button"
                 onClick={() => handleMoveDown(index)}
                 disabled={index === safePoints.length - 1}
-                className="p-1 text-content-muted hover:text-content-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="p-1 text-content-muted hover:text-content-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 title="Move down"
                 aria-label="Move point down"
               >
@@ -154,7 +166,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
               <button
                 type="button"
                 onClick={() => handleRemovePoint(index)}
-                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors"
+                className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                 title="Remove point"
                 aria-label="Remove point"
               >
@@ -168,7 +180,7 @@ export const PointListEditor: React.FC<PointListEditorProps> = ({
           <button
             type="button"
             onClick={handleAddPoint}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#A67732] hover:text-[#8F6428] hover:bg-[#F3ECE1] rounded-lg transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#A67732] hover:text-[#8F6428] hover:bg-[#F3ECE1] rounded-lg transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Point</span>

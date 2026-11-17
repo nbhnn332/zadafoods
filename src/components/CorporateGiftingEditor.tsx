@@ -4,8 +4,6 @@ import {
   Eye,
   Save,
   RotateCcw,
-  Plus,
-  Trash2,
   Check,
   ArrowRight,
   MessageCircle,
@@ -13,6 +11,7 @@ import {
   Monitor
 } from 'lucide-react';
 import { CorporateGiftingSectionConfig } from '../types';
+import { PointListEditor } from './PointListEditor';
 import { useToast } from '../context/ToastContext';
 
 interface CorporateGiftingEditorProps {
@@ -57,7 +56,6 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
   const [bulletPoints, setBulletPoints] = useState<string[]>(
     section?.bulletPoints || DEFAULT_CONFIG.bulletPoints
   );
-  const [newBullet, setNewBullet] = useState('');
   const [primaryCtaLabel, setPrimaryCtaLabel] = useState(
     section?.primaryCtaLabel || DEFAULT_CONFIG.primaryCtaLabel
   );
@@ -98,15 +96,6 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
     }
   }, [section]);
 
-  const handleAddBullet = () => {
-    if (!newBullet.trim()) return;
-    setBulletPoints((prev) => [...prev, newBullet.trim()]);
-    setNewBullet('');
-  };
-
-  const handleRemoveBullet = (index: number) => {
-    setBulletPoints((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const handleRestoreDefault = () => {
     if (confirm('Restore default corporate gifting content? Any custom copy will be replaced with signature ZaDa brand text.')) {
@@ -140,7 +129,7 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
       eyebrow: eyebrow.trim(),
       heading: heading.trim(),
       description: description.trim(),
-      bulletPoints,
+      bulletPoints: bulletPoints.map((b) => b.trim()).filter(Boolean),
       primaryCtaLabel: primaryCtaLabel.trim(),
       primaryCtaDestination: primaryCtaDestination.trim(),
       secondaryCtaLabel: secondaryCtaLabel.trim(),
@@ -274,14 +263,16 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
                   </p>
                 )}
 
-                {bulletPoints.length > 0 && (
+                {bulletPoints.filter((item) => item.trim().length > 0).length > 0 && (
                   <ul className="space-y-1.5 pt-1">
-                    {bulletPoints.map((item, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-xs text-white/90">
-                        <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
+                    {bulletPoints
+                      .filter((item) => item.trim().length > 0)
+                      .map((item, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-xs text-white/90">
+                          <Check className="w-4 h-4 text-amber-400 shrink-0 stroke-[2.5]" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
                   </ul>
                 )}
 
@@ -403,55 +394,13 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
         </div>
 
         {/* Bullet Points List Editor */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-content-primary">
-            Key Highlights / Bullet Points
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newBullet}
-              onChange={(e) => setNewBullet(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddBullet();
-                }
-              }}
-              placeholder="e.g. Customized Kerala delicacy boxes"
-              className="flex-1 px-3 py-2 border border-border-subtle rounded-input text-xs font-medium focus:ring-1 focus:ring-brand-primary"
-            />
-            <button
-              type="button"
-              onClick={handleAddBullet}
-              className="px-3.5 py-2 rounded-btn bg-brand-primary text-white text-xs font-bold hover:bg-brand-primary-hover shadow-2xs flex items-center gap-1 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Point</span>
-            </button>
-          </div>
-
-          <div className="space-y-1.5 pt-1">
-            {bulletPoints.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-2 rounded-lg bg-canvas-subtle border border-border-subtle text-xs"
-              >
-                <div className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-600" />
-                  <span>{item}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveBullet(idx)}
-                  className="text-stone-400 hover:text-rose-600 p-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <PointListEditor
+          label="Key Highlights / Bullet Points"
+          points={bulletPoints.length === 0 ? [''] : bulletPoints}
+          onChange={setBulletPoints}
+          placeholder="e.g. Customized Kerala delicacy boxes"
+          helperText="Press Enter for next bullet point. Reorder or remove anytime."
+        />
 
         {/* CTA Destinations */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border-subtle">
