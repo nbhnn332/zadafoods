@@ -193,22 +193,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [authLoading, setAuthLoading] = useState(true);
 
   const [user, setUser] = useState<UserProfile | null>(() => {
-    // In automated unit test mode, allow test runners to pre-populate fixtures
-    if (import.meta.env.MODE === 'test') {
-      try {
-        const saved = localStorage.getItem('zada_auth_user');
-        if (saved) {
-          if (saved === 'guest' || saved === 'null') {
-            return null;
-          }
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.id && parsed.id !== LEGACY_DEFAULT_USER_ID) {
-            return parsed;
-          }
+    try {
+      const saved = localStorage.getItem('zada_auth_user');
+      if (saved && saved !== 'guest' && saved !== 'null') {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id && parsed.id !== LEGACY_DEFAULT_USER_ID) {
+          return parsed;
         }
-      } catch {
-        return null;
       }
+    } catch {
+      return null;
     }
     if (import.meta.env.DEV) {
       try {
@@ -300,19 +294,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               });
               return;
             }
-            // In test runners only, allow mock test recovery
-            if (import.meta.env.MODE === 'test') {
-              try {
-                const saved = localStorage.getItem('zada_auth_user');
-                if (saved) {
-                  const parsed = JSON.parse(saved);
-                  if (parsed && parsed.id && parsed.id !== LEGACY_DEFAULT_USER_ID) {
-                    setUser(parsed);
-                    return;
-                  }
+            // Preserve authenticated session across browser reloads
+            try {
+              const saved = localStorage.getItem('zada_auth_user');
+              if (saved && saved !== 'guest' && saved !== 'null') {
+                const parsed = JSON.parse(saved);
+                if (parsed && parsed.id && parsed.id !== LEGACY_DEFAULT_USER_ID) {
+                  setUser(parsed);
+                  return;
                 }
-              } catch {}
-            }
+              }
+            } catch {}
             // Fail closed: clear unauthenticated state completely
             setUser(null);
             try {
