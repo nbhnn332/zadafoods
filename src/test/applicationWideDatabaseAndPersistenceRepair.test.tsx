@@ -300,6 +300,30 @@ describe('ZaDa Foods — Application-Wide Database, Permission & Persistence Rep
     expect(result.current.coupons.some((c) => c.code === 'FESTIVE25')).toBe(false);
   });
 
+  it('C2. Combo Management: Deletes combo and prevents resurrection in fresh sessions or mobile without cache', async () => {
+    (SupabaseDataService.deleteCombo as any).mockResolvedValue({
+      data: true,
+      error: null,
+      source: 'SUPABASE'
+    });
+
+    const { result } = renderHook(() => useAdminData(), { wrapper });
+
+    // Act: Delete a combo
+    await act(async () => {
+      await result.current.deleteCombo('combo-kerala-bestseller');
+    });
+
+    // Assert: Removed from combos list and tracked in deletedComboIds
+    expect(result.current.combos.some((c) => c.id === 'combo-kerala-bestseller')).toBe(false);
+    expect(result.current.deletedComboIds).toContain('combo-kerala-bestseller');
+
+    // Assert: Persisted to localStorage
+    const saved = localStorage.getItem('zada_admin_deleted_combo_ids');
+    expect(saved).toBeTruthy();
+    expect(JSON.parse(saved!)).toContain('combo-kerala-bestseller');
+  });
+
   // 4. Fake Super Admin Elimination & Unauthenticated Access
   it('D. Authentication: Never creates fake superadmin on invalid credentials', async () => {
     vi.spyOn(supabase.auth, 'signInWithPassword').mockResolvedValue({

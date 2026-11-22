@@ -270,20 +270,22 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
             );
           })}
 
-          {/* Dedicated Combos & Bundles Discovery Pill */}
-          <button
-            onClick={() => {
-              navigate('/combos');
-            }}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
-              isCombos
-                ? 'bg-[#07382A] text-white shadow-xs border border-[#07382A]'
-                : 'bg-white text-content-primary border border-[#EAE5DC] hover:bg-[#F9F7F3] hover:border-brand-primary/40'
-            }`}
-            aria-current={isCombos ? 'page' : undefined}
-          >
-            🎁 Combos &amp; Bundles
-          </button>
+          {/* Dedicated Combos & Bundles Discovery Pill (hidden if all combos are deleted) */}
+          {(activeCombos.length > 0 || isCombos) && (
+            <button
+              onClick={() => {
+                navigate('/combos');
+              }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
+                isCombos
+                  ? 'bg-[#07382A] text-white shadow-xs border border-[#07382A]'
+                  : 'bg-white text-content-primary border border-[#EAE5DC] hover:bg-[#F9F7F3] hover:border-brand-primary/40'
+              }`}
+              aria-current={isCombos ? 'page' : undefined}
+            >
+              🎁 Combos &amp; Bundles
+            </button>
+          )}
         </section>
 
         {/* Dynamic Category Hero Banner: CSS-first styling, zero-image default, responsive */}

@@ -114,6 +114,7 @@ interface AdminDataContextType {
 
   // Combos
   combos: ComboBundle[];
+  deletedComboIds: string[];
   addCombo: (combo: Omit<ComboBundle, 'id' | 'createdAt'>) => void;
   updateCombo: (id: string, updates: Partial<ComboBundle>) => void;
   deleteCombo: (id: string) => void;
@@ -267,9 +268,32 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     loadInitial('zada_admin_pricing_rules', INITIAL_PRICING_RULES)
   );
 
-  const [combos, setCombos] = useState<ComboBundle[]>(() =>
-    loadInitial('zada_admin_combos', INITIAL_COMBOS)
-  );
+  const [deletedComboIds, setDeletedComboIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('zada_admin_deleted_combo_ids');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [combos, setCombos] = useState<ComboBundle[]>(() => {
+    try {
+      const savedDeleted = localStorage.getItem('zada_admin_deleted_combo_ids');
+      const delIds: string[] = savedDeleted ? JSON.parse(savedDeleted) : [];
+      const saved = localStorage.getItem('zada_admin_combos');
+      if (saved) {
+        const parsed: ComboBundle[] = JSON.parse(saved);
+        return parsed.filter((c) => !delIds.includes(c.id));
+      }
+      if (!isSupabaseConfigured()) {
+        return INITIAL_COMBOS.filter((c) => !delIds.includes(c.id));
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  });
 
   const [deletedBannerIds, setDeletedBannerIds] = useState<string[]>(() => {
     try {
@@ -525,6 +549,10 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [deletedCategoryIds]);
 
   useEffect(() => {
+    localStorage.setItem('zada_admin_deleted_combo_ids', JSON.stringify(deletedComboIds));
+  }, [deletedComboIds]);
+
+  useEffect(() => {
     localStorage.setItem('zada_admin_settings', JSON.stringify(settings));
   }, [settings]);
 
@@ -643,8 +671,12 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
             setCoupons(coupRes.data);
           }
 
-          if (comboRes?.data && comboRes.data.length > 0) {
-            setCombos(comboRes.data);
+          if (comboRes && Array.isArray(comboRes.data)) {
+            const activeCombos = comboRes.data.filter((c) => !deletedComboIds.includes(c.id));
+            setCombos(activeCombos);
+            try {
+              localStorage.setItem('zada_admin_combos', JSON.stringify(activeCombos));
+            } catch {}
           }
 
           if (prRes?.data && prRes.data.length > 0) {
@@ -1645,8 +1677,14 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const deleteCombo = (id: string) => {
+    setDeletedComboIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setCombos((prev) => prev.filter((cb) => cb.id !== id));
+    setFeaturedCombosSection((prev) => ({
+      ...prev,
+      comboIds: (prev.comboIds || []).filter((cid) => cid !== id)
+    }));
+
     if (!isSupabaseConfigured()) {
-      setCombos((prev) => prev.filter((cb) => cb.id !== id));
       logAdminAction('DELETE_COMBO', 'COMBO', `Deleted combo pack ${id}`, id);
       showToast('Combo Removed', 'Combo bundle deleted.', 'info');
       return { success: true };
@@ -2548,6 +2586,7 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         deletePricingRule,
         togglePricingRuleActive,
         combos,
+        deletedComboIds,
         addCombo,
         updateCombo,
         deleteCombo,

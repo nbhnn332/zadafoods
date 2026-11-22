@@ -579,6 +579,7 @@ export const AdminCombos: React.FC = () => {
                   onClick={() => {
                     if (confirm(`Delete combo "${cb.name}"?`)) {
                       deleteCombo(cb.id);
+                      setMerchSelectedIds((prev) => prev.filter((cid) => cid !== cb.id));
                     }
                   }}
                   className="p-1.5 rounded text-content-muted hover:text-rose-600 hover:bg-white border border-border-subtle"
