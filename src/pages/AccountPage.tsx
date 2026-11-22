@@ -373,15 +373,6 @@ export const AccountPage: React.FC = () => {
             </Link>
           )}
         </section>
-
-        {/* Promo Notification Banner matching Screen 7 */}
-        <section className="rounded-xl overflow-hidden shadow-sm">
-          <img
-            src="/assets/account-promo-banner.png"
-            alt="Get Exclusive Offers - Be the first to know about new products, festive offers and more!"
-            className="w-full h-auto object-cover"
-          />
-        </section>
       </main>
 
       {/* MODAL 1: MY ORDERS DRAWER */}
