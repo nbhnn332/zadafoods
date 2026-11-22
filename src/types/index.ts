@@ -248,6 +248,7 @@ export interface StoreSettings {
   tagline: string;
   fssaiNumber: string;
   supportPhone: string;
+  secondaryPhone?: string;
   supportWhatsApp: string;
   supportEmail: string;
   standardDeliveryFee: number;

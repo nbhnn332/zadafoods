@@ -21,7 +21,8 @@ export const INITIAL_STORE_SETTINGS: StoreSettings = {
   storeName: 'ZaDa Foods',
   tagline: 'Authentic Kerala Flavours, Rooted in Tradition',
   fssaiNumber: '21326145000345',
-  supportPhone: '+91 8891537982',
+  supportPhone: '+91 94003 55207',
+  secondaryPhone: '+91 75939 59235',
   supportWhatsApp: '+91 75939 59235',
   supportEmail: 'Zadafoods4@gmail.com',
   standardDeliveryFee: 40,
@@ -1018,7 +1019,7 @@ ZADA FOODS
 Punalur, Kollam (Dist), Kerala – 691305
 
 Customer Support Phone:
-+91 8891537982 / +91 7593959235
++91 94003 55207 / +91 75939 59235
 
 WhatsApp Assistance:
 +91 75939 59235

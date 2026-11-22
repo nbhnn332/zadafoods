@@ -72,8 +72,8 @@ describe('ZaDa Foods — Official Footer Enhancement & Manufacturer Information'
   it('5. Renders clickable contact numbers with strict tel: links in Column 3', () => {
     renderWithProviders(<Footer />);
 
-    const phone1Link = screen.getByRole('link', { name: /Call \+91 8891537982/i });
-    expect(phone1Link).toHaveAttribute('href', 'tel:+918891537982');
+    const phone1Link = screen.getByRole('link', { name: /Call \+91 94003 55207/i });
+    expect(phone1Link).toHaveAttribute('href', 'tel:+919400355207');
 
     const phone2Link = screen.getByRole('link', { name: /Call \+91 75939 59235/i });
     expect(phone2Link).toHaveAttribute('href', 'tel:+917593959235');

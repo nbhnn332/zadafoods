@@ -237,6 +237,16 @@ export const AdminProducts: React.FC = () => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.slug.trim()) return;
 
+    // Validate duplicate weight tiers
+    const tierLabels = formData.variants.map((v) =>
+      (v.weightLabel || `${v.weightValue} ${v.weightUnit}`).trim().toLowerCase()
+    );
+    const hasDuplicateTiers = new Set(tierLabels).size !== tierLabels.length;
+    if (hasDuplicateTiers) {
+      alert('Cannot save product: Duplicate weight tiers detected. Each variant must represent a unique weight tier (e.g. 100g, 250g, 500g, 1kg).');
+      return;
+    }
+
     const finalDescription = descriptionMode === 'bullets'
       ? descriptionPoints.map((p) => p.trim()).filter(Boolean).join('\n')
       : formData.description.trim();
@@ -308,17 +318,24 @@ export const AdminProducts: React.FC = () => {
   };
 
   const addVariantRow = () => {
+    const existingWeights = formData.variants.map((v) => Number(v.weightValue) || 250);
+    const candidateWeights = [100, 250, 500, 1000, 2000];
+    const nextWeight = candidateWeights.find((w) => !existingWeights.includes(w)) || (Math.max(...existingWeights, 0) + 250);
+    const weightUnit = nextWeight >= 1000 ? 'kg' : 'g';
+    const displayWeight = nextWeight >= 1000 ? nextWeight / 1000 : nextWeight;
+    const weightLabel = `${displayWeight} ${weightUnit}`;
+
     const newVariant: ProductVariant = {
       id: `var-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       productId: editingProduct?.id || '',
-      sku: `ZDF-${formData.slug.toUpperCase().slice(0, 4)}-500G`,
-      weightValue: 500,
+      sku: `ZDF-${(formData.slug || 'PROD').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)}-${nextWeight}G-${Date.now().toString().slice(-4)}`,
+      weightValue: nextWeight,
       weightUnit: 'g',
-      weightLabel: '500 g',
-      sellingPrice: 280,
-      mrp: 320,
-      discountPercentage: 12,
-      stockQuantity: 40,
+      weightLabel,
+      sellingPrice: Math.round(nextWeight * 0.5),
+      mrp: Math.round(nextWeight * 0.6),
+      discountPercentage: 16,
+      stockQuantity: 50,
       lowStockThreshold: 10,
       isDefault: false
     };
@@ -1079,7 +1096,21 @@ export const AdminProducts: React.FC = () => {
 
       {/* Category Delete Confirmation Modal */}
       {categoryToDelete && (() => {
-        const assignedProducts = products.filter((p) => p.categoryId === categoryToDelete.id || p.categorySlug === categoryToDelete.slug);
+        const assignedProducts = products.filter((p) => {
+          if (!categoryToDelete) return false;
+          const pCatId = (p.categoryId || '').trim().toLowerCase();
+          const pCatSlug = (p.categorySlug || '').trim().toLowerCase();
+          const cId = (categoryToDelete.id || '').trim().toLowerCase();
+          const cSlug = (categoryToDelete.slug || '').trim().toLowerCase();
+          const cName = (categoryToDelete.name || '').trim().toLowerCase();
+          return Boolean(
+            (cId && pCatId === cId) ||
+            (cSlug && pCatSlug === cSlug) ||
+            (cSlug && pCatId === cSlug) ||
+            (cId && pCatSlug === cId) ||
+            (cName && (pCatId === cName || pCatSlug === cName))
+          );
+        });
         const hasAssigned = assignedProducts.length > 0 || Boolean(categoryDeleteError);
 
         return (
@@ -1163,7 +1194,9 @@ export const AdminProducts: React.FC = () => {
                     </div>
                     <div className="flex justify-between text-content-muted">
                       <span>Assigned Products:</span>
-                      <span className="font-medium text-emerald-600">0 products</span>
+                      <span className="font-medium text-emerald-600">
+                        {assignedProducts.length} {assignedProducts.length === 1 ? 'product' : 'products'}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -811,23 +811,43 @@ export class SupabaseDataService {
           return { data: null, error: prodErr.message, source: 'SUPABASE' };
         }
 
-        // Insert variants
-        const variantsToInsert = (productData.variants || []).map((v, idx) => ({
-          id: isUUID(v.id) ? v.id : crypto.randomUUID(),
-          product_id: prodId,
-          sku: v.sku || `ZDF-${slug.toUpperCase()}-${v.weightValue || 250}G`,
-          weight_value: v.weightValue || 250,
-          weight_unit: v.weightUnit || 'g',
-          selling_price: v.sellingPrice,
-          mrp: v.mrp || v.sellingPrice,
-          stock_quantity: v.stockQuantity ?? 100,
-          is_default: v.isDefault ?? (idx === 0)
-        }));
+        // Insert variants with robust weight_label, unique sku, and mrp enforcement
+        const variantsToInsert = (productData.variants || []).map((v, idx) => {
+          const weightVal = Number(v.weightValue) || 250;
+          const weightUnit = (v.weightUnit as any) || 'g';
+          const weightLabel = v.weightLabel?.trim() ? v.weightLabel.trim() : `${weightVal} ${weightUnit}`;
+          const sellingPrice = Number(v.sellingPrice) || 0;
+          const mrp = Math.max(Number(v.mrp) || 0, sellingPrice);
+          const cleanSku = v.sku?.trim()
+            ? v.sku.trim()
+            : `ZDF-${slug.toUpperCase().replace(/[^A-Z0-9]/g, '')}-${weightVal}${weightUnit.toUpperCase()}-${idx + 1}-${Date.now().toString().slice(-4)}`;
+
+          return {
+            id: isUUID(v.id) ? v.id : crypto.randomUUID(),
+            product_id: prodId,
+            sku: cleanSku,
+            weight_label: weightLabel,
+            weight_value: weightVal,
+            weight_unit: weightUnit,
+            selling_price: sellingPrice,
+            mrp: mrp,
+            stock_quantity: Number(v.stockQuantity) ?? 100,
+            is_default: v.isDefault ?? (idx === 0)
+          };
+        });
 
         if (variantsToInsert.length > 0) {
           const { error: varErr } = await supabase.from('product_variants').insert(variantsToInsert);
           if (varErr) {
-            console.warn('[SupabaseDataService] Variant insertion warning:', varErr.message);
+            console.error('[SupabaseDataService] Variant insertion error:', varErr.message);
+            const retryVariants = variantsToInsert.map((v, i) => ({
+              ...v,
+              sku: `${v.sku}-${Date.now().toString().slice(-3)}${i}`
+            }));
+            const { error: retryErr } = await supabase.from('product_variants').insert(retryVariants);
+            if (retryErr) {
+              console.warn('[SupabaseDataService] Variant insertion retry notice:', retryErr.message);
+            }
           }
         }
 
@@ -848,10 +868,33 @@ export class SupabaseDataService {
           }
         }
 
+        const savedVariants: ProductVariant[] = variantsToInsert.map((v) => ({
+          id: v.id,
+          productId: prodId,
+          sku: v.sku,
+          weightLabel: v.weight_label,
+          weightValue: v.weight_value,
+          weightUnit: v.weight_unit as any,
+          sellingPrice: v.selling_price,
+          mrp: v.mrp,
+          discountPercentage: v.mrp > v.selling_price ? Math.round(((v.mrp - v.selling_price) / v.mrp) * 100) : 0,
+          stockQuantity: v.stock_quantity,
+          lowStockThreshold: 10,
+          isDefault: v.is_default
+        }));
+
         const newProd: Product = {
           ...productData,
           id: prodId,
           slug,
+          variants: savedVariants.length > 0 ? savedVariants : productData.variants,
+          images: imagesToInsert.length > 0 ? imagesToInsert.map(img => ({
+            id: img.id,
+            imageUrl: img.image_url,
+            altText: img.alt_text,
+            displayOrder: img.display_order,
+            isPrimary: img.is_primary
+          })) : productData.images,
           averageRating: 5.0,
           reviewCount: 0,
           createdAt: timestamp,
@@ -926,19 +969,69 @@ export class SupabaseDataService {
           return { data: null, error: error.message, source: 'SUPABASE' };
         }
 
-        // If variants provided, update variant stock
-        if (updates.variants && updates.variants.length > 0) {
-          for (const v of updates.variants) {
-            if (isUUID(v.id)) {
-              await supabase
-                .from('product_variants')
-                .update({
-                  stock_quantity: v.stockQuantity,
-                  selling_price: v.sellingPrice,
-                  mrp: v.mrp
-                })
-                .eq('id', v.id);
+        // If variants provided, synchronize product variants in Supabase
+        if (updates.variants && Array.isArray(updates.variants)) {
+          try {
+            const { data: existingVars } = await supabase
+              .from('product_variants')
+              .select('id')
+              .eq('product_id', id);
+
+            const existingIds = (existingVars || []).map((ev: any) => ev.id);
+            const incomingIds = updates.variants.filter((v) => isUUID(v.id)).map((v) => v.id);
+
+            // Delete variants removed by admin
+            const idsToDelete = existingIds.filter((eid: string) => !incomingIds.includes(eid));
+            if (idsToDelete.length > 0) {
+              await supabase.from('product_variants').delete().in('id', idsToDelete);
             }
+
+            // Update existing or insert new variants
+            const prodSlug = (updates.slug || 'item').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            for (let idx = 0; idx < updates.variants.length; idx++) {
+              const v = updates.variants[idx];
+              const weightVal = Number(v.weightValue) || 250;
+              const weightUnit = (v.weightUnit as any) || 'g';
+              const weightLabel = v.weightLabel?.trim() ? v.weightLabel.trim() : `${weightVal} ${weightUnit}`;
+              const sellingPrice = Number(v.sellingPrice) || 0;
+              const mrp = Math.max(Number(v.mrp) || 0, sellingPrice);
+
+              if (isUUID(v.id) && existingIds.includes(v.id)) {
+                await supabase
+                  .from('product_variants')
+                  .update({
+                    weight_label: weightLabel,
+                    weight_value: weightVal,
+                    weight_unit: weightUnit,
+                    selling_price: sellingPrice,
+                    mrp: mrp,
+                    stock_quantity: Number(v.stockQuantity) ?? 100,
+                    is_default: v.isDefault ?? (idx === 0)
+                  })
+                  .eq('id', v.id);
+              } else {
+                const newVarId = isUUID(v.id) ? v.id : crypto.randomUUID();
+                const cleanSku = v.sku?.trim()
+                  ? v.sku.trim()
+                  : `ZDF-${prodSlug}-${weightVal}${weightUnit.toUpperCase()}-${idx + 1}-${Date.now().toString().slice(-4)}`;
+
+                await supabase.from('product_variants').insert({
+                  id: newVarId,
+                  product_id: id,
+                  sku: cleanSku,
+                  weight_label: weightLabel,
+                  weight_value: weightVal,
+                  weight_unit: weightUnit,
+                  selling_price: sellingPrice,
+                  mrp: mrp,
+                  stock_quantity: Number(v.stockQuantity) ?? 100,
+                  is_default: v.isDefault ?? (idx === 0)
+                });
+                v.id = newVarId;
+              }
+            }
+          } catch (varSyncErr: any) {
+            console.warn('[SupabaseDataService] Variant sync warning:', varSyncErr.message);
           }
         }
 

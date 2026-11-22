@@ -10,8 +10,37 @@ import {
   Lock
 } from 'lucide-react';
 import { FestivalFooterDecoration } from './festival/FestivalFooterDecoration';
+import { useAdminData } from '../context/AdminDataContext';
 
 export const Footer: React.FC = () => {
+  let supportPhone = '+91 94003 55207';
+  let secondaryPhone = '+91 75939 59235';
+  let supportEmail = 'Zadafoods4@gmail.com';
+  let whatsAppNumber = '917593959235';
+  let supportWhatsApp = '+91 75939 59235';
+
+  try {
+    const adminData = useAdminData();
+    if (adminData?.settings) {
+      if (adminData.settings.supportPhone && !adminData.settings.supportPhone.includes('88915')) {
+        supportPhone = adminData.settings.supportPhone;
+      }
+      if (adminData.settings.secondaryPhone) {
+        secondaryPhone = adminData.settings.secondaryPhone;
+      }
+      if (adminData.settings.supportEmail) {
+        supportEmail = adminData.settings.supportEmail;
+      }
+      if (adminData.settings.supportWhatsApp) {
+        supportWhatsApp = adminData.settings.supportWhatsApp;
+        whatsAppNumber = adminData.settings.supportWhatsApp.replace(/\D/g, '');
+      }
+    }
+  } catch {}
+
+  const cleanPhone1 = supportPhone.replace(/\s+/g, '');
+  const cleanPhone2 = secondaryPhone.replace(/\s+/g, '');
+
   return (
     <footer
       className="bg-[#072C20] text-[#FAF7F2] border-t border-[#144234] pb-28 md:pb-12"
@@ -120,20 +149,20 @@ export const Footer: React.FC = () => {
                 </div>
                 <div className="space-y-1.5 pl-0.5">
                   <a
-                    href="tel:+918891537982"
-                    aria-label="Call +91 8891537982"
+                    href={`tel:${cleanPhone1}`}
+                    aria-label={`Call ${supportPhone}`}
                     className="flex items-center gap-2 hover:text-[#A67732] transition-colors font-medium text-[#FAF7F2]"
                   >
                     <Phone className="w-3.5 h-3.5 text-[#A67732] shrink-0" />
-                    <span>+91 8891537982</span>
+                    <span>{supportPhone}</span>
                   </a>
                   <a
-                    href="tel:+917593959235"
-                    aria-label="Call +91 75939 59235"
+                    href={`tel:${cleanPhone2}`}
+                    aria-label={`Call ${secondaryPhone}`}
                     className="flex items-center gap-2 hover:text-[#A67732] transition-colors font-medium text-[#FAF7F2]"
                   >
                     <Phone className="w-3.5 h-3.5 text-[#A67732] shrink-0" />
-                    <span>+91 75939 59235</span>
+                    <span>{secondaryPhone}</span>
                   </a>
                 </div>
               </li>
@@ -143,14 +172,14 @@ export const Footer: React.FC = () => {
                   WhatsApp Support
                 </div>
                 <a
-                  href="https://wa.me/917593959235"
+                  href={`https://wa.me/${whatsAppNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="WhatsApp +91 75939 59235"
+                  aria-label={`WhatsApp ${supportWhatsApp}`}
                   className="flex items-center gap-2 hover:text-[#A67732] transition-colors font-medium text-[#FAF7F2]"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-[#25D366] shrink-0" />
-                  <span>+91 75939 59235</span>
+                  <span>{supportWhatsApp}</span>
                 </a>
               </li>
 
@@ -159,12 +188,12 @@ export const Footer: React.FC = () => {
                   Email Address
                 </div>
                 <a
-                  href="mailto:Zadafoods4@gmail.com"
-                  aria-label="Email Zadafoods4@gmail.com"
+                  href={`mailto:${supportEmail}`}
+                  aria-label={`Email ${supportEmail}`}
                   className="flex items-center gap-2 hover:text-[#A67732] transition-colors font-medium text-[#FAF7F2] break-all"
                 >
                   <Mail className="w-3.5 h-3.5 text-[#A67732] shrink-0" />
-                  <span>Zadafoods4@gmail.com</span>
+                  <span>{supportEmail}</span>
                 </a>
               </li>
 

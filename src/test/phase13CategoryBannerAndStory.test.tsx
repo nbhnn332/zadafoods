@@ -242,35 +242,35 @@ describe('Phase 13: Category Banner CMS, Premium Category UI & Our Story Redesig
     it('renders the editorial hero, brand heritage, and founding narrative', () => {
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
-      expect(screen.getByText(/EST\. KERALA, INDIA • HERITAGE FLAVOURS/i)).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1, name: /Rooted in Kerala/i })).toBeInTheDocument();
-      expect(screen.getByText(/Preserving the Art of Traditional Kerala Delicacies/i)).toBeInTheDocument();
-      expect(screen.getByText(/OUR HERITAGE & ORIGINS/i)).toBeInTheDocument();
+      expect(screen.getByText(/ABOUT ZADA FOODS • ROYAL TASTE, ZADA STYLE/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /ZaDa Foods — Royal Taste, ZaDa Style/i })).toBeInTheDocument();
+      expect(screen.getByText(/Crafted for Taste, Tradition & Togetherness/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/OUR STORY/i).length).toBeGreaterThan(0);
     });
 
-    it('displays the 4 Pillars of Craftsmanship with pure CSS styling', () => {
+    it('displays the 4 Offerings with pure CSS styling', () => {
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
-      expect(screen.getByText(/100% Pure Coconut Oil/i)).toBeInTheDocument();
-      expect(screen.getByText(/Farm-Direct Nendran Bananas/i)).toBeInTheDocument();
-      expect(screen.getByText(/Small-Batch Heritage Cooking/i)).toBeInTheDocument();
-      expect(screen.getByText(/Zero Chemical Preservatives/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Signature Mandhi Kit/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Kerala Traditional Chips Collection/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cakes & Special Orders/i)).toBeInTheDocument();
+      expect(screen.getByText(/Retail & Wholesale Supply/i)).toBeInTheDocument();
     });
 
-    it('displays the 4 Guiding Principles', () => {
+    it('displays the 4 Guiding Mission Principles', () => {
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
-      expect(screen.getByText(/Authenticity Over Speed/i)).toBeInTheDocument();
-      expect(screen.getByText(/Ingredient Integrity/i)).toBeInTheDocument();
-      expect(screen.getByText(/Farmer Partnerships/i)).toBeInTheDocument();
-      expect(screen.getByText(/Rigorous Food Safety/i)).toBeInTheDocument();
+      expect(screen.getByText(/Authentic Taste First/i)).toBeInTheDocument();
+      expect(screen.getByText(/Convenience Without Compromise/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Made for Sharing/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Quality You Can Trust/i)).toBeInTheDocument();
     });
 
     it('displays verified FSSAI registration and customer care helpline', () => {
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
       expect(screen.getAllByText(/21326145000345|11322999000123/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/\+91 75939 59235/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/\+91 94003 55207|\+91 75939 59235/i).length).toBeGreaterThan(0);
     });
 
     it('renders dual conversion action CTAs to Shop All Delicacies and Corporate Bulk Orders', () => {

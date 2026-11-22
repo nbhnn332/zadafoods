@@ -802,8 +802,24 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const deleteCategory = async (id: string, reassignToCategoryId?: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      const targetCat = categories.find((c) => c.id === id);
+      const isAssigned = (p: Product) => {
+        const pCatId = (p.categoryId || '').trim().toLowerCase();
+        const pCatSlug = (p.categorySlug || '').trim().toLowerCase();
+        const cId = (id || '').trim().toLowerCase();
+        const cSlug = (targetCat?.slug || '').trim().toLowerCase();
+        const cName = (targetCat?.name || '').trim().toLowerCase();
+        return Boolean(
+          (cId && pCatId === cId) ||
+          (cSlug && pCatSlug === cSlug) ||
+          (cSlug && pCatId === cSlug) ||
+          (cId && pCatSlug === cId) ||
+          (cName && (pCatId === cName || pCatSlug === cName))
+        );
+      };
+
       // Check if products are currently assigned to this category
-      const assignedProducts = products.filter((p) => p.categoryId === id);
+      const assignedProducts = products.filter(isAssigned);
       if (assignedProducts.length > 0 && !reassignToCategoryId) {
         const errorMsg = `Cannot delete category: ${assignedProducts.length} product(s) (e.g. "${assignedProducts[0].name}") are currently assigned to this category. Reassign or delete products first.`;
         showToast('Delete Failed', errorMsg, 'error');
@@ -824,11 +840,11 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
       setCategories((prev) => prev.filter((c) => c.id !== id));
       if (reassignToCategoryId === 'unlink' || reassignToCategoryId === 'none') {
         setProducts((prev) =>
-          prev.map((p) => (p.categoryId === id ? { ...p, categoryId: '' } : p))
+          prev.map((p) => (isAssigned(p) ? { ...p, categoryId: '', categorySlug: '' } : p))
         );
       } else if (reassignToCategoryId) {
         setProducts((prev) =>
-          prev.map((p) => (p.categoryId === id ? { ...p, categoryId: reassignToCategoryId } : p))
+          prev.map((p) => (isAssigned(p) ? { ...p, categoryId: reassignToCategoryId } : p))
         );
       }
       logAdminAction('DELETE_CATEGORY', 'CATEGORY', `Deleted category ${id}`, id);

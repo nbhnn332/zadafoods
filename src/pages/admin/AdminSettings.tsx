@@ -76,8 +76,9 @@ export const AdminSettings: React.FC = () => {
   const [expressDeliveryFee, setExpressDeliveryFee] = useState(settings.expressDeliveryFee);
   const [firstOrderDiscountEnabled, setFirstOrderDiscountEnabled] = useState(settings.firstOrderDiscountEnabled);
   const [firstOrderDiscountPercent, setFirstOrderDiscountPercent] = useState(settings.firstOrderDiscountPercent);
-  const [supportPhone, setSupportPhone] = useState(settings.supportPhone);
-  const [supportWhatsApp, setSupportWhatsApp] = useState(settings.supportWhatsApp);
+  const [supportPhone, setSupportPhone] = useState(settings.supportPhone || '+91 94003 55207');
+  const [secondaryPhone, setSecondaryPhone] = useState(settings.secondaryPhone || '+91 75939 59235');
+  const [supportWhatsApp, setSupportWhatsApp] = useState(settings.supportWhatsApp || '+91 75939 59235');
   const [supportEmail, setSupportEmail] = useState(settings.supportEmail);
   const [fssaiNumber, setFssaiNumber] = useState(settings.fssaiNumber);
 
@@ -134,8 +135,9 @@ export const AdminSettings: React.FC = () => {
       setExpressDeliveryFee(settings.expressDeliveryFee);
       setFirstOrderDiscountEnabled(settings.firstOrderDiscountEnabled);
       setFirstOrderDiscountPercent(settings.firstOrderDiscountPercent);
-      setSupportPhone(settings.supportPhone);
-      setSupportWhatsApp(settings.supportWhatsApp);
+      setSupportPhone(settings.supportPhone || '+91 94003 55207');
+      setSecondaryPhone(settings.secondaryPhone || '+91 75939 59235');
+      setSupportWhatsApp(settings.supportWhatsApp || '+91 75939 59235');
       setSupportEmail(settings.supportEmail);
       setFssaiNumber(settings.fssaiNumber);
       if (settings.razorpayMode) setRazorpayMode(settings.razorpayMode);
@@ -238,6 +240,7 @@ export const AdminSettings: React.FC = () => {
       firstOrderDiscountEnabled,
       firstOrderDiscountPercent: Number(firstOrderDiscountPercent),
       supportPhone,
+      secondaryPhone,
       supportWhatsApp: cleanDestNumber,
       supportEmail,
       fssaiNumber,
@@ -1039,12 +1042,24 @@ export const AdminSettings: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-content-primary block">
-                    Customer Support Phone
+                    Customer Support Phone (Primary)
                   </label>
                   <input
                     type="text"
                     value={supportPhone}
                     onChange={(e) => setSupportPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-canvas-subtle"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-content-primary block">
+                    Secondary Support Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={secondaryPhone}
+                    onChange={(e) => setSecondaryPhone(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-btn border border-border-subtle bg-canvas-subtle"
                   />
                 </div>

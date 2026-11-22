@@ -58,13 +58,13 @@ describe('ZaDa Foods — Phase 23: Brand Repositioning & Guest Shopping QA', () 
       expect(screen.getAllByText(/Spices & Blends/i).length).toBeGreaterThan(0);
     });
 
-    it('renders Our Story page with heritage narrative and 4 craftsmanship pillars', () => {
+    it('renders Our Story page with approved brand narrative and signature offerings', () => {
       renderApp('/our-story');
-      expect(screen.getAllByText(/Authentic Kerala Flavours, Rooted in Tradition/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/100% Pure Coconut Oil/i)).toBeInTheDocument();
-      expect(screen.getByText(/Farm-Direct Nendran Bananas & Spices/i)).toBeInTheDocument();
-      expect(screen.getByText(/Small-Batch Heritage Cooking/i)).toBeInTheDocument();
-      expect(screen.getByText(/Zero Chemical Preservatives/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/ZaDa Foods — Royal Taste, ZaDa Style/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Signature Mandhi Kit/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Kerala Traditional Chips Collection/i)).toBeInTheDocument();
+      expect(screen.getByText(/Cakes & Special Orders/i)).toBeInTheDocument();
+      expect(screen.getByText(/Retail & Wholesale Supply/i)).toBeInTheDocument();
     });
   });
 

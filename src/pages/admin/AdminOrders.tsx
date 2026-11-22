@@ -686,7 +686,7 @@ export const AdminOrders: React.FC = () => {
                       Manufactured by: <strong className="text-stone-900">ZADA FOODS</strong><br />
                       Punalur, Kollam (Dist), Kerala – 691305<br />
                       Central FSSAI Lic. No: <strong className="text-stone-900">{settings.fssaiNumber || '21326145000345'}</strong><br />
-                      Help: {settings.supportPhone || '+91 8891537982'} / +91 75939 59235 | {settings.supportEmail || 'Zadafoods4@gmail.com'}
+                      Help: {settings.supportPhone || '+91 94003 55207'} / +91 75939 59235 | {settings.supportEmail || 'Zadafoods4@gmail.com'}
                     </p>
                   </div>
                 </div>

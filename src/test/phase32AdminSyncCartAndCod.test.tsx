@@ -449,9 +449,9 @@ Our snacks are fried strictly in pure coconut oil.
       // Markdown blockquote appears
       expect(screen.getByText(/Traditional food requires patient cooking/i)).toBeInTheDocument();
 
-      // Craftsmanship pillars remain visible
-      expect(screen.getByText(/100% Pure Coconut Oil/i)).toBeInTheDocument();
-      expect(screen.getByText(/Farm-Direct Nendran Bananas/i)).toBeInTheDocument();
+      // Brand offerings / mission remain visible
+      expect(screen.getByText(/Authentic Taste First/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Signature Mandhi Kit/i).length).toBeGreaterThan(0);
     });
   });
 
