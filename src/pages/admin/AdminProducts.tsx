@@ -1096,21 +1096,23 @@ export const AdminProducts: React.FC = () => {
 
       {/* Category Delete Confirmation Modal */}
       {categoryToDelete && (() => {
-        const assignedProducts = products.filter((p) => {
+        const isAssigned = (p: Product) => {
           if (!categoryToDelete) return false;
-          const pCatId = (p.categoryId || '').trim().toLowerCase();
-          const pCatSlug = (p.categorySlug || '').trim().toLowerCase();
+          const pCatId = ((p as any).categoryId || (p as any).category_id || (p as any).category?.id || '').trim().toLowerCase();
+          const pCatSlug = ((p as any).categorySlug || (p as any).category_slug || (p as any).category?.slug || '').trim().toLowerCase();
+          const pCatName = ((p as any).categoryName || (p as any).category_name || (p as any).category?.name || (typeof (p as any).category === 'string' ? (p as any).category : '') || '').trim().toLowerCase();
+
           const cId = (categoryToDelete.id || '').trim().toLowerCase();
           const cSlug = (categoryToDelete.slug || '').trim().toLowerCase();
           const cName = (categoryToDelete.name || '').trim().toLowerCase();
+
           return Boolean(
-            (cId && pCatId === cId) ||
-            (cSlug && pCatSlug === cSlug) ||
-            (cSlug && pCatId === cSlug) ||
-            (cId && pCatSlug === cId) ||
-            (cName && (pCatId === cName || pCatSlug === cName))
+            (cId && (pCatId === cId || pCatSlug === cId || pCatName === cId)) ||
+            (cSlug && (pCatSlug === cSlug || pCatId === cSlug || pCatName === cSlug)) ||
+            (cName && (pCatName === cName || pCatId === cName || pCatSlug === cName))
           );
-        });
+        };
+        const assignedProducts = products.filter(isAssigned);
         const hasAssigned = assignedProducts.length > 0 || Boolean(categoryDeleteError);
 
         return (
@@ -1151,6 +1153,7 @@ export const AdminProducts: React.FC = () => {
                       Target Category for Reassignment (Optional)
                     </label>
                     <select
+                      data-testid="reassign-category-select"
                       value={reassignCategoryId}
                       onChange={(e) => setReassignCategoryId(e.target.value)}
                       className="w-full px-3 py-2 border border-border-subtle rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"

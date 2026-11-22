@@ -374,6 +374,76 @@ describe('ZaDa Foods — Product and Category Deletion & Persistence', () => {
       const parsedDeletedCats = JSON.parse(savedDeletedCats || '[]');
       expect(parsedDeletedCats).toContain('cat-empty');
     });
+
+    it('supports Force Delete (Unlink Products) to automatically unlink products and delete category', async () => {
+      vi.mocked(SupabaseDataService.deleteCategory).mockResolvedValueOnce({
+        data: true,
+        error: null,
+        source: 'SUPABASE'
+      });
+
+      renderWithProviders(<AdminProducts />);
+
+      const manageCatBtn = screen.getByRole('button', { name: /manage categories/i });
+      fireEvent.click(manageCatBtn);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /category hierarchy management/i })).toBeInTheDocument();
+      });
+
+      // Click delete category on "Kerala Banana Chips" (which has products assigned)
+      const deleteChipsBtn = screen.getByTestId('delete-category-cat-chips-btn');
+      fireEvent.click(deleteChipsBtn);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /cannot delete category/i })).toBeInTheDocument();
+      });
+
+      // Click Force Delete (Unlink Products)
+      const forceDeleteBtn = screen.getByTestId('force-unlink-and-delete-category-btn');
+      expect(forceDeleteBtn).toBeInTheDocument();
+      fireEvent.click(forceDeleteBtn);
+
+      await waitFor(() => {
+        expect(SupabaseDataService.deleteCategory).toHaveBeenCalledWith('cat-chips', 'unlink');
+      });
+    });
+
+    it('supports Reassign Products & Delete to migrate assigned products and delete category', async () => {
+      vi.mocked(SupabaseDataService.deleteCategory).mockResolvedValueOnce({
+        data: true,
+        error: null,
+        source: 'SUPABASE'
+      });
+
+      renderWithProviders(<AdminProducts />);
+
+      const manageCatBtn = screen.getByRole('button', { name: /manage categories/i });
+      fireEvent.click(manageCatBtn);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /category hierarchy management/i })).toBeInTheDocument();
+      });
+
+      const deleteChipsBtn = screen.getByTestId('delete-category-cat-chips-btn');
+      fireEvent.click(deleteChipsBtn);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /cannot delete category/i })).toBeInTheDocument();
+      });
+
+      // Select target category for reassignment
+      const reassignSelect = screen.getByTestId('reassign-category-select');
+      fireEvent.change(reassignSelect, { target: { value: 'cat-empty' } });
+
+      const reassignBtn = screen.getByTestId('reassign-and-delete-category-btn');
+      expect(reassignBtn).not.toBeDisabled();
+      fireEvent.click(reassignBtn);
+
+      await waitFor(() => {
+        expect(SupabaseDataService.deleteCategory).toHaveBeenCalledWith('cat-chips', 'cat-empty');
+      });
+    });
   });
 
   describe('3. Storefront Product Detail Page Handling', () => {

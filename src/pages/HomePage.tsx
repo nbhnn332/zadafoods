@@ -696,15 +696,15 @@ export const HomePage: React.FC = () => {
                 <div>
                   <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-[#D4B574] mb-1">
                     <Sparkles className="w-3.5 h-3.5 text-[#FAD982]" />
-                    Curated Gift Bundles &amp; Value Packs
+                    {featuredCombosSection?.eyebrow || 'ZADA FOODS GIFTS & COMBO PACKS'}
                   </span>
                   <FestivalSectionHeader>
                     <h2 id="combos-heading" className="font-serif font-bold text-lg sm:text-2xl text-white">
-                      Signature Kerala Combos
+                      {featuredCombosSection?.title || 'Arabian Feast Combo'}
                     </h2>
                   </FestivalSectionHeader>
-                  <p className="text-xs text-white/70 mt-0.5">
-                    Authentic Kerala pairings crafted together for festive gifting and everyday indulgence
+                  <p className="text-xs text-white/70 mt-0.5 max-w-xl">
+                    {featuredCombosSection?.subtitle || "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable."}
                   </p>
                 </div>
                 <Link

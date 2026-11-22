@@ -131,6 +131,7 @@ export const CheckoutPage: React.FC = () => {
       postalCode: string;
     };
     conciergeUrl: string;
+    paymentPreference?: 'ONLINE PAYMENT' | 'CASH ON DELIVERY';
   } | null>(null);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
@@ -387,6 +388,9 @@ export const CheckoutPage: React.FC = () => {
             postalCode: selectedAddress?.postalCode || ''
           };
 
+      const isCod = selectedPaymentMode === 'COD';
+      const paymentPreference: 'ONLINE PAYMENT' | 'CASH ON DELIVERY' = isCod ? 'CASH ON DELIVERY' : 'ONLINE PAYMENT';
+
       const message = formatPremiumWhatsAppOrderMessage({
         items: activeItems.map((li) => ({
           productName: li.productName,
@@ -398,8 +402,11 @@ export const CheckoutPage: React.FC = () => {
         subtotal: displayRawSubtotal,
         discountAmount: displayDiscount,
         couponCode: isDemoPreview ? 'ZADA80' : appliedCoupon || undefined,
+        deliveryMethod: selectedDeliveryMethod,
         shippingCharge: displayShipping,
+        codFee: isCod ? displayCodFee : 0,
         totalAmount: displayGrandTotal,
+        paymentPreference,
         customer: customerDetails
       });
 
@@ -431,7 +438,8 @@ export const CheckoutPage: React.FC = () => {
         shippingCharge: displayShipping,
         totalAmount: displayGrandTotal,
         customer: customerDetails,
-        conciergeUrl: waUrl
+        conciergeUrl: waUrl,
+        paymentPreference
       });
       return;
     }
@@ -902,59 +910,46 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Payment Method Section (Mutually Exclusive Modes) */}
-        {isWhatsAppMode ? (
-          <section className="space-y-1.5" aria-label="Order Verification">
-            <h2 className="font-bold text-xs sm:text-sm text-[#1C1917]">
-              Order Verification & Concierge Service
-            </h2>
-            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC] text-xs text-[#1C1917] space-y-1.5 shadow-xs">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#2D5A27]" />
-                <span className="font-bold text-xs text-[#072C20]">Concierge Order Verification</span>
-                <span className="text-[10px] px-1.5 py-0.2 bg-[#2D5A27]/10 text-[#2D5A27] font-semibold rounded">Express</span>
-              </div>
-              <p className="text-[11px] text-[#71717A] leading-relaxed">
-                Your order details and delivery address will be verified by our team prior to dispatch. You will receive updates directly upon confirmation.
-              </p>
-            </div>
-          </section>
-        ) : (
-          <section className="space-y-1.5" aria-label="Payment Method Selection">
+        {/* Payment Method Selection */}
+        <section className="space-y-1.5" aria-label="Payment Method Selection">
           <h2 className="font-bold text-xs sm:text-sm text-[#1C1917]">
             Payment Method
           </h2>
 
           <div className="space-y-1.5">
-            {isRazorpayAllowed && (
-              <div
-                onClick={() => setSelectedPaymentMode('RAZORPAY')}
-                className={`p-2.5 rounded-xl bg-white border cursor-pointer shadow-sm flex items-center justify-between gap-3 transition-colors ${
-                  selectedPaymentMode === 'RAZORPAY' ? 'border-[#A67732] ring-1 ring-[#A67732]/30' : 'border-[#EAE5DC]'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="shrink-0">
-                    {selectedPaymentMode === 'RAZORPAY' ? (
-                      <div className="w-4 h-4 rounded-full border-2 border-[#A67732] flex items-center justify-center">
-                        <div className="w-2 h-2 rounded-full bg-[#A67732]"></div>
-                      </div>
-                    ) : (
-                      <div className="w-4 h-4 rounded-full border-2 border-[#D4CEB0]/60"></div>
-                    )}
-                  </div>
-                  <div className="space-y-0.5 text-xs">
-                    <p className="font-bold text-xs text-[#1C1917] flex items-center gap-1.5">
-                      <span>Online Payment (Razorpay)</span>
-                      <span className="text-[10px] px-1.5 py-0.2 bg-[#2D5A27]/10 text-[#2D5A27] font-semibold rounded">Instant</span>
-                    </p>
-                    <p className="text-[11px] text-[#71717A]">UPI (GPay / PhonePe), Cards, NetBanking</p>
-                  </div>
+            {/* 1. Online Payment Card */}
+            <div
+              onClick={() => setSelectedPaymentMode('RAZORPAY')}
+              className={`p-2.5 rounded-xl bg-white border cursor-pointer shadow-sm flex items-center justify-between gap-3 transition-colors ${
+                selectedPaymentMode === 'RAZORPAY' ? 'border-[#A67732] ring-1 ring-[#A67732]/30' : 'border-[#EAE5DC]'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="shrink-0">
+                  {selectedPaymentMode === 'RAZORPAY' ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-[#A67732] flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-[#A67732]"></div>
+                    </div>
+                  ) : (
+                    <div className="w-4 h-4 rounded-full border-2 border-[#D4CEB0]/60"></div>
+                  )}
                 </div>
-                <CreditCard className="w-4 h-4 text-[#71717A] shrink-0" />
+                <div className="space-y-0.5 text-xs">
+                  <p className="font-bold text-xs text-[#1C1917] flex items-center gap-1.5">
+                    <span>Online Payment{!isWhatsAppMode ? ' (Razorpay)' : ''}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 bg-[#2D5A27]/10 text-[#2D5A27] font-semibold rounded">Instant</span>
+                  </p>
+                  <p className="text-[11px] text-[#71717A]">
+                    {isWhatsAppMode
+                      ? 'UPI QR / Bank Transfer details shared via WhatsApp'
+                      : 'UPI (GPay / PhonePe), Cards, NetBanking'}
+                  </p>
+                </div>
               </div>
-            )}
+              <CreditCard className="w-4 h-4 text-[#71717A] shrink-0" />
+            </div>
 
+            {/* 2. Cash on Delivery (COD) Card */}
             {isCodAllowed && (
               <div className="space-y-2">
                 <div
@@ -976,19 +971,14 @@ export const CheckoutPage: React.FC = () => {
                     <div className="space-y-0.5 text-xs">
                       <p className="font-bold text-xs text-[#1C1917] flex items-center gap-1.5">
                         <span>Cash on Delivery (COD)</span>
-                        {codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 font-bold rounded">
-                            ₹{codAdvanceData.advanceAmount} Advance
-                          </span>
-                        )}
-                        {selectedPaymentMode === 'COD' && displayCodFee > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 font-bold rounded" data-testid="cod-badge-fee">
-                            +₹{displayCodFee} Fee
+                        {displayCodFee > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-50 text-amber-800 border border-amber-200/60 font-semibold rounded">
+                            +₹{displayCodFee} COD Surcharge
                           </span>
                         )}
                       </p>
                       <p className="text-[11px] text-[#71717A]">
-                        {codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0
+                        {!isWhatsAppMode && codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0
                           ? `Pay ₹${codAdvanceData.advanceAmount} advance online; remaining ₹${codAdvanceData.remainingAmount} at doorstep`
                           : 'Pay cash when package arrives at your door'}
                       </p>
@@ -998,7 +988,7 @@ export const CheckoutPage: React.FC = () => {
                 </div>
 
                 {/* Customer Advance Banner & Breakdown */}
-                {selectedPaymentMode === 'COD' && codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0 && (
+                {!isWhatsAppMode && selectedPaymentMode === 'COD' && codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0 && (
                   <div className="p-3 bg-amber-50/90 border border-amber-200/90 rounded-xl space-y-2 text-xs" data-testid="cod-advance-banner">
                     <div className="flex items-start gap-2">
                       <Info className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
@@ -1032,7 +1022,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {!isRazorpayAllowed && !isCodAllowed && (
+            {!isRazorpayAllowed && !isCodAllowed && !isWhatsAppMode && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>No checkout payment options are currently enabled. Please contact support.</span>
@@ -1040,7 +1030,20 @@ export const CheckoutPage: React.FC = () => {
             )}
           </div>
         </section>
-        )}
+
+        {/* Concierge Order Verification */}
+        <section className="space-y-1.5" aria-label="Order Verification">
+          <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#EAE5DC] text-xs text-[#1C1917] space-y-1.5 shadow-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#2D5A27]" />
+              <span className="font-bold text-xs text-[#072C20]">Order Verification & Concierge Service</span>
+              <span className="text-[10px] px-1.5 py-0.2 bg-[#2D5A27]/10 text-[#2D5A27] font-semibold rounded">Express</span>
+            </div>
+            <p className="text-[11px] text-[#71717A] leading-relaxed">
+              Your order details and destination will be verified by our team prior to dispatch. You will receive updates directly upon confirmation.
+            </p>
+          </div>
+        </section>
 
         {/* Order Summary Section matching Screen 5 */}
         <section className="bg-white rounded-xl p-3 border border-[#EAE5DC] shadow-sm space-y-2">
@@ -1156,11 +1159,19 @@ export const CheckoutPage: React.FC = () => {
                 Processing Order...
               </span>
             ) : isWhatsAppMode ? (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                <span>Place Order (₹{displayGrandTotal})</span>
-                <span className="text-sm font-bold">→</span>
-              </>
+              selectedPaymentMode === 'COD' ? (
+                <>
+                  <Banknote className="w-4 h-4" />
+                  <span>Place Cash on Delivery Order (₹{displayGrandTotal})</span>
+                  <span className="text-sm font-bold">→</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4" />
+                  <span>Place Order — Pay Online (₹{displayGrandTotal})</span>
+                  <span className="text-sm font-bold">→</span>
+                </>
+              )
             ) : selectedPaymentMode === 'COD' ? (
               codAdvanceData.isAdvanceRequired && codAdvanceData.advanceAmount > 0 ? (
                 <>

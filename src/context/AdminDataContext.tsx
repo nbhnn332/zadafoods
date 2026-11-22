@@ -424,9 +424,9 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     } catch {}
     return {
       id: 'h0000000-0000-0000-0000-000000000005',
-      title: 'Signature Kerala Combos',
-      subtitle: 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence',
-      eyebrow: 'Curated Gift Bundles & Value Packs',
+      title: 'Arabian Feast Combo',
+      subtitle: "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable — perfect for family meals, gatherings, and special occasions.",
+      eyebrow: 'ZADA FOODS GIFTS & COMBO PACKS',
       isVisible: false,
       comboIds: [],
       maxCombos: 6,
@@ -802,19 +802,22 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const deleteCategory = async (id: string, reassignToCategoryId?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const targetCat = categories.find((c) => c.id === id);
+      const targetCat = categories.find(
+        (c) => c.id === id || c.slug?.toLowerCase() === id.toLowerCase() || c.name?.toLowerCase() === id.toLowerCase()
+      );
       const isAssigned = (p: Product) => {
-        const pCatId = (p.categoryId || '').trim().toLowerCase();
-        const pCatSlug = (p.categorySlug || '').trim().toLowerCase();
+        const pCatId = ((p as any).categoryId || (p as any).category_id || (p as any).category?.id || '').trim().toLowerCase();
+        const pCatSlug = ((p as any).categorySlug || (p as any).category_slug || (p as any).category?.slug || '').trim().toLowerCase();
+        const pCatName = ((p as any).categoryName || (p as any).category_name || (p as any).category?.name || (typeof (p as any).category === 'string' ? (p as any).category : '') || '').trim().toLowerCase();
+
         const cId = (id || '').trim().toLowerCase();
         const cSlug = (targetCat?.slug || '').trim().toLowerCase();
         const cName = (targetCat?.name || '').trim().toLowerCase();
+
         return Boolean(
-          (cId && pCatId === cId) ||
-          (cSlug && pCatSlug === cSlug) ||
-          (cSlug && pCatId === cSlug) ||
-          (cId && pCatSlug === cId) ||
-          (cName && (pCatId === cName || pCatSlug === cName))
+          (cId && (pCatId === cId || pCatSlug === cId || pCatName === cId)) ||
+          (cSlug && (pCatSlug === cSlug || pCatId === cSlug || pCatName === cSlug)) ||
+          (cName && (pCatName === cName || pCatId === cName || pCatSlug === cName))
         );
       };
 

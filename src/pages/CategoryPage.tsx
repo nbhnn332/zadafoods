@@ -35,32 +35,44 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
 
   // Dynamic Category Banner matching current category
   const categoryBanner = useMemo(() => {
-    if (isShopAll) return null;
+    if (isShopAll) {
+      return categoryBanners.find(
+        (b) => (b.categorySlug === 'shop' || b.categorySlug === 'all') && b.isActive
+      );
+    }
+    if (isCombos) {
+      return categoryBanners.find(
+        (b) => (b.categorySlug === 'combos' || b.categorySlug === 'bundles') && b.isActive
+      );
+    }
     return categoryBanners.find(
       (b) =>
         (b.categorySlug === currentCategory?.slug || b.categoryId === currentCategory?.id) &&
         b.isActive
     );
-  }, [categoryBanners, currentCategory, isShopAll]);
+  }, [categoryBanners, currentCategory, isShopAll, isCombos]);
 
   const bannerTitle = isCombos
-    ? 'Signature Kerala Combos'
+    ? (categoryBanner?.title || 'Arabian Feast Combo')
     : isShopAll
-    ? 'All Kerala Delicacies'
-    : (categoryBanner?.title || currentCategory.name);
+    ? (categoryBanner?.title || 'Explore Our Collections')
+    : (categoryBanner?.title || currentCategory?.name || 'Explore Our Collections');
+
   const bannerSubtitle = isCombos
-    ? 'Curated gift bundles and handcrafted combinations of Kerala snacks and specialties at special value.'
+    ? (categoryBanner?.subtitle || "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable — perfect for family meals, gatherings, and special occasions.")
     : isShopAll
-    ? 'Explore our complete collection of authentic Malabar chips, traditional sweets, savouries, and spices.'
-    : (categoryBanner?.subtitle || currentCategory.description || 'Authentic Kerala delicacies crafted with farm-fresh ingredients.');
+    ? (categoryBanner?.subtitle || 'Discover authentic flavours, handcrafted treats, and delicious choices for every occasion.')
+    : (categoryBanner?.subtitle || currentCategory?.description || 'Authentic delicacies crafted with premium ingredients.');
+
   const bannerEyebrow = isCombos
-    ? 'KERALA GIFT PACKS & VALUE COMBOS'
+    ? (categoryBanner?.eyebrow || 'ZADA FOODS GIFTS & COMBO PACKS')
     : isShopAll
-    ? 'Shop by Category'
-    : (categoryBanner?.eyebrow || "KERALA'S FAVOURITE SELECTION");
-  const bannerBgColor = isCombos ? '#2A1D13' : (categoryBanner?.backgroundColor || '#072C20');
+    ? (categoryBanner?.eyebrow || 'SHOP CATEGORIES')
+    : (categoryBanner?.eyebrow || "OUR FEATURED SELECTION");
+
+  const bannerBgColor = isCombos ? (categoryBanner?.backgroundColor || '#1B140E') : (categoryBanner?.backgroundColor || '#072C20');
   const bannerTextColor = categoryBanner?.textColor || '#FFFFFF';
-  const bannerImageUrl = isCombos ? '' : (categoryBanner?.imageUrl || '');
+  const bannerImageUrl = isCombos ? (categoryBanner?.imageUrl || '') : (categoryBanner?.imageUrl || '');
   
   // State for interactive catalogue toolbar
   const [activeSubcategory, setActiveSubcategory] = useState<string>('all');
@@ -308,12 +320,13 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-[#FAD982] text-[10px] sm:text-xs font-extrabold uppercase tracking-widest mb-1.5 shadow-2xs">
                 <Sparkles className="w-3 h-3 text-[#FAD982]" />
                 {bannerEyebrow}
+                {isShopAll && <span className="sr-only">Shop by Category</span>}
               </span>
             )}
             <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight" style={{ color: bannerTextColor }}>
               {bannerTitle}
             </h1>
-            <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm line-clamp-2 max-w-md font-sans opacity-90" style={{ color: bannerTextColor }}>
+            <p className="mt-1 sm:mt-1.5 text-xs sm:text-sm max-w-xl font-sans opacity-90 leading-relaxed" style={{ color: bannerTextColor }}>
               {bannerSubtitle}
             </p>
           </div>

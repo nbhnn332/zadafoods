@@ -2757,9 +2757,9 @@ export class SupabaseDataService {
   public static async fetchFeaturedCombosSection(): Promise<DataOperationResult<FeaturedCombosSectionConfig>> {
     const defaultSection: FeaturedCombosSectionConfig = {
       id: 'h0000000-0000-0000-0000-000000000005',
-      title: 'Signature Kerala Combos',
-      subtitle: 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence',
-      eyebrow: 'Curated Gift Bundles & Value Packs',
+      title: 'Arabian Feast Combo',
+      subtitle: "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable — perfect for family meals, gatherings, and special occasions.",
+      eyebrow: 'ZADA FOODS GIFTS & COMBO PACKS',
       isVisible: false, // Default is STRICTLY OFF
       comboIds: [],
       maxCombos: 6,
@@ -5033,7 +5033,9 @@ export class SupabaseDataService {
             codAdvanceMinAmount: checkout.codAdvanceMinAmount ?? INITIAL_STORE_SETTINGS.codAdvanceMinAmount,
             codAdvanceMaxAmount: checkout.codAdvanceMaxAmount ?? INITIAL_STORE_SETTINGS.codAdvanceMaxAmount,
             isRazorpayEnabled: checkout.isRazorpayEnabled ?? INITIAL_STORE_SETTINGS.isRazorpayEnabled,
+            checkoutMode: checkout.checkoutMode || (checkout.primaryCheckoutMode === 'WHATSAPP' ? 'WHATSAPP' : 'WEBSITE') || INITIAL_STORE_SETTINGS.checkoutMode,
             primaryCheckoutMode: checkout.primaryCheckoutMode || INITIAL_STORE_SETTINGS.primaryCheckoutMode,
+            isWhatsAppCheckoutEnabled: checkout.isWhatsAppCheckoutEnabled ?? (checkout.checkoutMode === 'WHATSAPP' || checkout.primaryCheckoutMode === 'WHATSAPP'),
             defaultCustomerPaymentMethod: checkout.defaultCustomerPaymentMethod || INITIAL_STORE_SETTINGS.defaultCustomerPaymentMethod,
             isWhatsAppAssistedCodEnabled: checkout.isWhatsAppAssistedCodEnabled ?? INITIAL_STORE_SETTINGS.isWhatsAppAssistedCodEnabled,
             whatsAppDestinationNumber: checkout.whatsappNumber || checkout.whatsAppDestinationNumber || INITIAL_STORE_SETTINGS.whatsAppDestinationNumber,
@@ -5087,7 +5089,9 @@ export class SupabaseDataService {
           key: 'checkout',
           value: {
             whatsappNumber: merged.whatsAppDestinationNumber,
+            checkoutMode: merged.checkoutMode,
             primaryCheckoutMode: merged.primaryCheckoutMode,
+            isWhatsAppCheckoutEnabled: merged.isWhatsAppCheckoutEnabled,
             isCodGloballyEnabled: merged.isCodGloballyEnabled,
             isCodAdvanceEnabled: merged.isCodAdvanceEnabled,
             codAdvanceType: merged.codAdvanceType,

@@ -335,16 +335,16 @@ export const AdminSettings: React.FC = () => {
       <form onSubmit={handleSave} className="space-y-5">
         {activeTab === 'store' ? (
           <>
-            {/* 1. Checkout Configuration & Mode Selection (Phase 24 Part 2) */}
+            {/* 1. Checkout Configuration & Payment Processing Mode */}
             <section className="bg-white rounded-card p-5 border border-border-subtle shadow-subtle space-y-5">
               <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
                 <CreditCard className="w-5 h-5 text-brand-primary" />
                 <div>
                   <h2 className="text-sm font-bold text-content-primary">
-                    Customer-Facing Payment Methods & Checkout Defaults
+                    Customer-Facing Payment Methods & Checkout Defaults — Payment Processing Mode
                   </h2>
                   <p className="text-[11px] text-content-muted">
-                    Checkout Configuration & Storefront Mode: Choose between WhatsApp Direct Ordering (Mode A) and Website Checkout (Mode B). Modes are mutually exclusive.
+                    Choose between WhatsApp Payment Mode (active without Razorpay keys) and Razorpay Payment Mode (requires valid Razorpay configuration).
                   </p>
                 </div>
               </div>
@@ -352,10 +352,10 @@ export const AdminSettings: React.FC = () => {
               {/* Mutually Exclusive Mode Selection */}
               <div className="space-y-3">
                 <label className="text-xs font-bold text-content-primary block">
-                  Select Primary Checkout Mode
+                  Select Active Payment Processing Mode
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Mode A: WhatsApp Direct Ordering */}
+                  {/* Mode 1: WhatsApp Payment Mode */}
                   <div
                     onClick={() => setCheckoutMode('WHATSAPP')}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -367,7 +367,7 @@ export const AdminSettings: React.FC = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-[#25D366]" />
-                        <span className="font-bold text-xs text-content-primary">MODE A — WhatsApp Direct Ordering</span>
+                        <span className="font-bold text-xs text-content-primary">WhatsApp Payment Mode</span>
                       </div>
                       <input
                         type="radio"
@@ -378,16 +378,22 @@ export const AdminSettings: React.FC = () => {
                       />
                     </div>
                     <p className="text-[11px] text-content-secondary mt-2 leading-relaxed">
-                      Customers browse products and order directly through WhatsApp with a prefilled summary. Payment gates (Razorpay/COD) and website order creation are disabled.
+                      Active mode when Razorpay is unavailable. Customers select Online Payment or Cash on Delivery at checkout. Placing order generates a formatted WhatsApp message to the business desk (+91 75939 59235) with the chosen payment preference and details. Zero unconfirmed orders are created in Order Management.
                     </p>
                     <span className="inline-block mt-2.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#DCFCE7] text-[#166534]">
-                      WhatsApp Only (+91 75939 59235)
+                      Recommended (No Gateway Keys Required)
                     </span>
                   </div>
 
-                  {/* Mode B: Website Checkout */}
+                  {/* Mode 2: Razorpay Payment Mode */}
                   <div
-                    onClick={() => setCheckoutMode('WEBSITE')}
+                    onClick={() => {
+                      if (!razorpayKeyId || razorpayKeyId === 'rzp_test_placeholder_key_id' || !isKeyFormatValid) {
+                        alert('Razorpay Payment Mode requires a valid Razorpay Key ID (starting with rzp_test_ or rzp_live_). Please configure your key in the Razorpay Gateway tab.');
+                        return;
+                      }
+                      setCheckoutMode('WEBSITE');
+                    }}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       checkoutMode === 'WEBSITE'
                         ? 'border-brand-primary bg-[#FAF7F2] shadow-xs'
@@ -397,32 +403,38 @@ export const AdminSettings: React.FC = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <ShoppingBag className="w-5 h-5 text-brand-primary" />
-                        <span className="font-bold text-xs text-content-primary">MODE B — Website Checkout</span>
+                        <span className="font-bold text-xs text-content-primary">Razorpay Payment Mode</span>
                       </div>
                       <input
                         type="radio"
                         name="checkoutMode"
                         checked={checkoutMode === 'WEBSITE'}
-                        onChange={() => setCheckoutMode('WEBSITE')}
+                        onChange={() => {
+                          if (!razorpayKeyId || razorpayKeyId === 'rzp_test_placeholder_key_id' || !isKeyFormatValid) {
+                            alert('Razorpay Payment Mode requires a valid Razorpay Key ID (starting with rzp_test_ or rzp_live_). Please configure your key in the Razorpay Gateway tab.');
+                            return;
+                          }
+                          setCheckoutMode('WEBSITE');
+                        }}
                         className="text-brand-primary focus:ring-brand-primary"
                       />
                     </div>
                     <p className="text-[11px] text-content-secondary mt-2 leading-relaxed">
-                      Customers complete their order directly on the website with Razorpay and/or Cash on Delivery (COD). Orders are saved to the Admin Orders ledger.
+                      Enabled when Razorpay gateway is configured. Online Payments are processed and verified on the website via Razorpay. Cash on Delivery is confirmed directly on the website without WhatsApp redirection.
                     </p>
                     <span className="inline-block mt-2.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#FEF3C7] text-[#92400E]">
-                      Full Website Ecommerce
+                      Requires Valid Razorpay Configuration
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Mode A Notice */}
+              {/* WhatsApp Payment Mode Notice */}
               {checkoutMode === 'WHATSAPP' && (
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                  <p className="font-bold">⚡ WhatsApp Direct Ordering Mode Active</p>
+                  <p className="font-bold">⚡ WhatsApp Payment Mode Active</p>
                   <p className="text-[11px] leading-relaxed">
-                    Online gateways (Razorpay) and website COD are hidden across all customer pages. When customers click "Buy Now" or "Order on WhatsApp", WhatsApp will open directly with the selected items and pre-calculated totals sent to <strong>+91 75939 59235</strong>. No fake orders will be inserted into the Admin Orders page.
+                    Shoppers choose between Online Payment and Cash on Delivery at checkout. Placing order formats and opens a WhatsApp message to <strong>+91 75939 59235</strong>. No unconfirmed order records are inserted into Order Management, and no gateway keys are required.
                   </p>
                 </div>
               )}

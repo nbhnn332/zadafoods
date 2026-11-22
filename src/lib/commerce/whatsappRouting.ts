@@ -136,32 +136,36 @@ export interface WhatsAppOrderSummaryParams {
   subtotal: number;
   discountAmount?: number;
   couponCode?: string | null;
+  deliveryMethod?: 'STANDARD' | 'EXPRESS';
   shippingCharge: number;
+  codFee?: number;
   totalAmount: number;
+  paymentPreference?: 'ONLINE PAYMENT' | 'CASH ON DELIVERY';
   customer?: WhatsAppCustomerDetails;
 }
 
 /**
- * Format premium, highly structured WhatsApp order message matching Phase 24 Part 3 specification.
+ * Format premium, highly structured WhatsApp order message matching Phase 24 Part 3 and Phase 34/35 specification.
  */
 export function formatPremiumWhatsAppOrderMessage(params: WhatsAppOrderSummaryParams): string {
   const itemBlocks = params.items.map(item => [
-    `Product: ${item.productName}`,
-    `Variant: ${item.variantWeightLabel}`,
-    `Quantity: ${item.quantity}`,
-    `Unit Price: ₹${item.unitPrice}`,
-    `Item Total: ₹${item.lineTotal}`
+    `• Product: ${item.productName}`,
+    `  Variant: ${item.variantWeightLabel}`,
+    `  Quantity: ${item.quantity}`,
+    `  Unit Price: ₹${item.unitPrice}`,
+    `  Item Total: ₹${item.lineTotal}`
   ].join('\n')).join('\n\n');
+
+  const deliveryMethodLabel = params.deliveryMethod === 'EXPRESS' ? 'Express Delivery' : 'Standard Delivery';
+  const paymentPref = params.paymentPreference || 'ONLINE PAYMENT';
 
   const lines: string[] = [
     `Hello ZaDa Foods,`,
     ``,
-    `I would like to place an order.${params.orderNumber ? ` (Order Ref: ${params.orderNumber})` : ''}`,
-    ``,
     `ORDER SUMMARY${params.orderNumber ? ` — #${params.orderNumber}` : ''}`,
     `━━━━━━━━━━━━━━━━━━`,
     ``,
-    itemBlocks,
+    itemBlocks || '• No items selected',
     ``,
     `━━━━━━━━━━━━━━━━━━`,
     `Subtotal: ₹${params.subtotal}`
@@ -174,22 +178,35 @@ export function formatPremiumWhatsAppOrderMessage(params: WhatsAppOrderSummaryPa
     }
   }
 
+  lines.push(`Delivery Method: ${deliveryMethodLabel}`);
   lines.push(`Shipping: ₹${params.shippingCharge}`);
+
+  if (params.codFee && params.codFee > 0) {
+    lines.push(`COD Surcharge: +₹${params.codFee}`);
+  }
+
   lines.push(`TOTAL: ₹${params.totalAmount}`);
+  lines.push(``);
+  lines.push(`Payment Preference: ${paymentPref}`);
+  if (paymentPref === 'ONLINE PAYMENT') {
+    lines.push(`(Customer chose Online Payment — please share UPI QR / Bank Transfer details)`);
+  } else if (paymentPref === 'CASH ON DELIVERY') {
+    lines.push(`(Customer chose Cash on Delivery — collect ₹${params.totalAmount} cash upon doorstep delivery)`);
+  }
 
   if (params.customer && (params.customer.name || params.customer.phone || params.customer.streetAddress)) {
     lines.push(``);
     lines.push(`Customer Details`);
     if (params.customer.name) lines.push(`Name: ${params.customer.name}`);
     if (params.customer.phone) lines.push(`Phone: ${params.customer.phone}`);
-    const addrParts = [params.customer.streetAddress, params.customer.city, params.customer.state].filter(Boolean);
-    if (addrParts.length > 0) lines.push(`Delivery Address: ${addrParts.join(', ')}`);
+    const addr = [params.customer.streetAddress, params.customer.city, params.customer.state].filter(Boolean).join(', ');
+    if (addr) lines.push(`Delivery Address: ${addr}`);
     if (params.customer.postalCode) lines.push(`Pincode: ${params.customer.postalCode}`);
-    if (params.customer.instructions) lines.push(`Delivery Instructions: ${params.customer.instructions}`);
+    if (params.customer.instructions) lines.push(`Instructions: ${params.customer.instructions}`);
   }
 
   lines.push(``);
-  lines.push(`Please confirm availability and delivery details.`);
+  lines.push(`Please confirm item availability and dispatch schedule.`);
   lines.push(``);
   lines.push(`Thank you,`);
   lines.push(params.customer?.name || 'ZaDa Customer');

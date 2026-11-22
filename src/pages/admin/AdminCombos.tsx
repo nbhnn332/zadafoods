@@ -17,12 +17,12 @@ export const AdminCombos: React.FC = () => {
   } = useAdminData();
 
   const [merchVisible, setMerchVisible] = useState(featuredCombosSection?.isVisible === true);
-  const [merchTitle, setMerchTitle] = useState(featuredCombosSection?.title || 'Signature Kerala Combos');
+  const [merchTitle, setMerchTitle] = useState(featuredCombosSection?.title || 'Arabian Feast Combo');
   const [merchSubtitle, setMerchSubtitle] = useState(
-    featuredCombosSection?.subtitle || 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence'
+    featuredCombosSection?.subtitle || "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable — perfect for family meals, gatherings, and special occasions."
   );
   const [merchEyebrow, setMerchEyebrow] = useState(
-    featuredCombosSection?.eyebrow || 'Curated Gift Bundles & Value Packs'
+    featuredCombosSection?.eyebrow || 'ZADA FOODS GIFTS & COMBO PACKS'
   );
   const [merchSelectedIds, setMerchSelectedIds] = useState<string[]>(featuredCombosSection?.comboIds || []);
   const [isSavingMerch, setIsSavingMerch] = useState(false);
@@ -31,11 +31,11 @@ export const AdminCombos: React.FC = () => {
   React.useEffect(() => {
     if (featuredCombosSection) {
       setMerchVisible(featuredCombosSection.isVisible === true);
-      setMerchTitle(featuredCombosSection.title || 'Signature Kerala Combos');
+      setMerchTitle(featuredCombosSection.title || 'Arabian Feast Combo');
       setMerchSubtitle(
-        featuredCombosSection.subtitle || 'Authentic Kerala pairings crafted together for festive gifting and everyday indulgence'
+        featuredCombosSection.subtitle || "Enjoy the authentic taste of Arabian-style mandhi with ZaDa's Mandhi Kit. Crafted to make your mandhi experience convenient, flavourful, and memorable — perfect for family meals, gatherings, and special occasions."
       );
-      setMerchEyebrow(featuredCombosSection.eyebrow || 'Curated Gift Bundles & Value Packs');
+      setMerchEyebrow(featuredCombosSection.eyebrow || 'ZADA FOODS GIFTS & COMBO PACKS');
       setMerchSelectedIds(featuredCombosSection.comboIds || []);
     }
   }, [featuredCombosSection]);
@@ -423,7 +423,7 @@ export const AdminCombos: React.FC = () => {
                       type="text"
                       value={merchEyebrow}
                       onChange={(e) => setMerchEyebrow(e.target.value)}
-                      placeholder="e.g. Curated Gift Bundles & Value Packs"
+                      placeholder="e.g. ZADA FOODS GIFTS & COMBO PACKS"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-white focus:outline-none focus:border-brand-primary"
                     />
                   </div>
@@ -435,7 +435,7 @@ export const AdminCombos: React.FC = () => {
                       type="text"
                       value={merchTitle}
                       onChange={(e) => setMerchTitle(e.target.value)}
-                      placeholder="e.g. Signature Kerala Combos"
+                      placeholder="e.g. Arabian Feast Combo"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-white focus:outline-none focus:border-brand-primary font-serif font-bold text-sm"
                     />
                   </div>
