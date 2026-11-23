@@ -306,7 +306,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         </button>
       </div>
 
-      {/* Central Composition - Logo Alone with Ornamental Framing Geometry */}
+      {/* Central Composition - Golden ZaDa Emblem Alone with Framing Geometry */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6 w-full text-center">
         {/* Subtle Luxury SVG Arabian Geometric Framing Ring */}
         <div className="relative flex items-center justify-center w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96">
@@ -368,7 +368,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             </g>
           </svg>
 
-          {/* Central Directly Floating ZaDa Foods Logo - No White Container or Card */}
+          {/* Central Floating ZaDa Golden Emblem - Perfectly Centered, Wordmark Removed, 1.5-1.7x Scale */}
           <div
             className={`absolute inset-0 flex items-center justify-center transition-all duration-700 pointer-events-none select-none ${
               scenePhase === 'arrival' && !isReducedMotion
@@ -377,9 +377,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             }`}
           >
             <img
-              src="/assets/logo.svg"
+              src="/assets/emblem.svg"
               alt="ZaDa Foods"
-              className="h-12 sm:h-14 md:h-16 w-auto max-w-[210px] sm:max-w-[240px] md:max-w-[270px] object-contain select-none pointer-events-none drop-shadow-[0_4px_16px_rgba(184,134,59,0.14)] animate-splash-logo-reveal"
+              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain select-none pointer-events-none drop-shadow-[0_6px_20px_rgba(184,134,59,0.20)] animate-splash-logo-reveal"
             />
           </div>
         </div>

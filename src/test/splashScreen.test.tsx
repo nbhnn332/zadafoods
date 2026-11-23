@@ -47,10 +47,10 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
     const dialog = screen.getByRole('dialog', { name: /ZaDa Foods Brand Loading Experience/i });
     expect(dialog).toBeInTheDocument();
 
-    // Check official ZaDa Foods logo directly rendered
+    // Check official ZaDa Foods golden emblem directly rendered
     const logoImg = screen.getByAltText('ZaDa Foods');
     expect(logoImg).toBeInTheDocument();
-    expect(logoImg).toHaveAttribute('src', '/assets/logo.svg');
+    expect(logoImg).toHaveAttribute('src', '/assets/emblem.svg');
 
     // Verify logo is floating directly without white card container or box
     const logoParent = logoImg.parentElement;
