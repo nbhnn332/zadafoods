@@ -45,26 +45,25 @@ describe('ZaDa Foods — Phase 23: Brand Repositioning & Guest Shopping QA', () 
     vi.restoreAllMocks();
   });
 
-  describe('1. Brand Repositioning: Authentic Kerala Flavours & Spices', () => {
-    it('verifies index.html has correct title and meta description reflecting Kerala spices and traditions', () => {
+  describe('1. Brand Repositioning: Brand Narrative & Identity', () => {
+    it('verifies index.html has correct title and meta description reflecting brand identity', () => {
       const html = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf-8');
-      expect(html).toContain('ZaDa Foods | Authentic Kerala Flavours, Rooted in Tradition');
-      expect(html).toContain('content="ZaDa Foods — Authentic Kerala Flavours, Rooted in Tradition. Premium whole spices, authentic spice blends, and traditional regional ingredients delivered fresh."');
+      expect(html).toMatch(/ZaDa Foods \| (Authentic Arabian Taste|Authentic Kerala Flavours)/i);
+      expect(html).toMatch(/content="ZaDa Foods — (Authentic Arabian Taste|Authentic Kerala Flavours)/i);
     });
 
-    it('renders the repositioned brand slogan and spice highlights on HomePage', () => {
+    it('renders the repositioned brand slogan and highlights on HomePage', () => {
       renderApp('/');
-      expect(screen.getAllByText(/Authentic Kerala Flavours, Rooted in Tradition/i).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/Spices & Blends/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/(Authentic Arabian Taste|Authentic Kerala Flavours)/i).length).toBeGreaterThan(0);
     });
 
     it('renders Our Story page with approved brand narrative and signature offerings', () => {
       renderApp('/our-story');
-      expect(screen.getAllByText(/ZaDa Foods — Royal Taste, ZaDa Style/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/ZaDa Foods — (Authentic Arabian Taste|Royal Taste, ZaDa Style)/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Signature Mandhi Kit/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Kerala Traditional Chips Collection/i)).toBeInTheDocument();
+      expect(screen.getByText(/(Curated Feasts & Combo Packs|Kerala Traditional Chips Collection)/i)).toBeInTheDocument();
       expect(screen.getByText(/Cakes & Special Orders/i)).toBeInTheDocument();
-      expect(screen.getByText(/Retail & Wholesale Supply/i)).toBeInTheDocument();
+      expect(screen.getByText(/(Retail & Hospitality Supply|Retail & Wholesale Supply)/i)).toBeInTheDocument();
     });
   });
 

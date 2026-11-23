@@ -24,20 +24,18 @@ export const OurStoryPage: React.FC = () => {
   const { settings, storeContent } = useAdminData();
   const aboutPage = storeContent.find((p) => p.slug === 'about' || p.slug === 'our-story');
 
-  const defaultHeroTitle = 'ZaDa Foods — Royal Taste, ZaDa Style.';
+  const defaultHeroTitle = 'ZaDa Foods — Authentic Arabian Taste.';
   const displayHeroTitle =
     aboutPage?.title &&
-    aboutPage.title !== 'Our Kerala Heritage & Pure Flavors' &&
-    aboutPage.title !== 'Preserving the Art of Traditional Kerala Delicacies' &&
-    aboutPage.title !== 'Rooted in Kerala. Crafted with Care.'
+    !aboutPage.title.toLowerCase().includes('kerala') &&
+    !aboutPage.title.toLowerCase().includes('chips')
       ? aboutPage.title
       : defaultHeroTitle;
 
   const displayStoryHeading =
     aboutPage?.title &&
-    aboutPage.title !== 'Our Kerala Heritage & Pure Flavors' &&
-    aboutPage.title !== 'Preserving the Art of Traditional Kerala Delicacies' &&
-    aboutPage.title !== 'Rooted in Kerala. Crafted with Care.'
+    !aboutPage.title.toLowerCase().includes('kerala') &&
+    !aboutPage.title.toLowerCase().includes('chips')
       ? aboutPage.title
       : 'Crafted for Taste, Tradition & Togetherness';
 
@@ -46,28 +44,28 @@ export const OurStoryPage: React.FC = () => {
       number: '01',
       title: 'Authentic Taste First',
       description:
-        'Bring genuine traditional and Arabian flavours into modern homes with uncompromising authenticity.',
+        'Bring genuine Arabian flavours and time-honoured spice traditions into modern homes with uncompromising authenticity.',
       icon: Sparkles
     },
     {
       number: '02',
       title: 'Convenience Without Compromise',
       description:
-        'Make beloved traditional dishes easy to prepare without sacrificing flavour, texture, or quality.',
+        'Make elaborate festive dishes like authentic Mandhi effortless to prepare at home, without sacrificing aroma, texture, or quality.',
       icon: Clock
     },
     {
       number: '03',
       title: 'Made for Sharing',
       description:
-        'Create foods that encourage people to gather, share meals, and create memories around the dining table.',
+        'Create foods that inspire families, friends, and communities to gather, celebrate milestones, and create lasting memories together.',
       icon: HeartHandshake
     },
     {
       number: '04',
       title: 'Quality You Can Trust',
       description:
-        'Source good ingredients, follow hygienic preparation methods, and deliver food you are proud to serve your family.',
+        'Source the finest whole spices, aged basmati rice, and natural ingredients with strict hygiene and standards you are proud to serve.',
       icon: ShieldCheck
     }
   ];
@@ -76,16 +74,16 @@ export const OurStoryPage: React.FC = () => {
     {
       title: 'Signature Mandhi Kit',
       description:
-        'A complete, easy-to-use kit crafted with authentic Arabian spices and premium aged basmati rice, allowing anyone to prepare restaurant-style Mandhi at home.',
+        'A complete, easy-to-use kit crafted with authentic Arabian spices and premium aged basmati rice, allowing anyone to prepare fragrant, restaurant-style Mandhi at home.',
       icon: Flame,
       tag: 'Arabian Heritage'
     },
     {
-      title: 'Kerala Traditional Chips Collection',
+      title: 'Curated Feasts & Combo Packs',
       description:
-        'Thinly sliced, crisply fried traditional chips made using authentic recipes — available in classic salted, spicy masala, and traditional variants.',
+        'Thoughtfully paired culinary bundles and banquet kits designed for memorable family gatherings, weekend feasts, and festive dining.',
       icon: UtensilsCrossed,
-      tag: 'Crisp & Traditional'
+      tag: 'Celebration Bundles'
     },
     {
       title: 'Cakes & Special Orders',
@@ -95,9 +93,9 @@ export const OurStoryPage: React.FC = () => {
       tag: 'Celebrations'
     },
     {
-      title: 'Retail & Wholesale Supply',
+      title: 'Retail & Hospitality Supply',
       description:
-        'Supplying homes, restaurants, caterers, and retail partners with bulk food packs, specialty kits, and wholesale orders.',
+        'Supplying homes, restaurants, caterers, and retail partners with bulk food packs, specialty Mandhi kits, and wholesale celebration orders.',
       icon: Store,
       tag: 'B2B & Retail'
     }
@@ -105,14 +103,14 @@ export const OurStoryPage: React.FC = () => {
 
   const differentiators = [
     {
-      title: 'Authentic Kerala & Arabian Inspiration',
+      title: 'Authentic Arabian Culinary Roots',
       detail:
-        'We celebrate two rich food traditions, combining their best elements into products that delight diverse palates.'
+        'Inspired by centuries-old Arabian cooking traditions, balanced spice profiles, and slow-cooking techniques that evoke authentic banquet feasts.'
     },
     {
       title: 'Premium Quality Ingredients',
       detail:
-        'We carefully choose every spice, grain, and oil to ensure consistent flavour and texture in every pack.'
+        'We carefully choose every spice, grain, and aromatic to ensure consistent flavour, rich aroma, and perfect texture in every pack.'
     },
     {
       title: 'No Unnecessary Additives',
@@ -122,17 +120,17 @@ export const OurStoryPage: React.FC = () => {
     {
       title: 'Convenient, Home-Friendly Solutions',
       detail:
-        'Our kits and snacks are designed for real homes and busy kitchens, offering great taste without complicated cooking.'
+        'Our kits and specialties are designed for real homes and busy kitchens, offering royal dining experiences without complicated cooking.'
     },
     {
       title: 'Crafted with Passion & Tradition',
       detail:
-        'Every recipe is tested, perfected, and prepared with the same care we would put into food for our own loved ones.'
+        'Every recipe is tested, perfected, and prepared with the same care and respect we would put into food for our own loved ones.'
     },
     {
       title: 'Flavours Made for Celebrations',
       detail:
-        'From weekday family dinners to Eid gatherings, Onam feasts, and birthday parties, our food is made to be shared.'
+        'From weekday family dinners to Eid gatherings, milestone anniversaries, and festive celebrations, our food is made to be shared.'
     }
   ];
 
@@ -156,18 +154,18 @@ export const OurStoryPage: React.FC = () => {
           <div className="relative z-10 max-w-2xl mx-auto space-y-4 sm:space-y-5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-[#FAD982]/30 text-[#FAD982] text-xs font-extrabold uppercase tracking-widest shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-[#FAD982]" />
-              ABOUT ZADA FOODS • ROYAL TASTE, ZADA STYLE
+              ABOUT ZADA FOODS • AUTHENTIC ARABIAN TASTE
             </span>
 
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-white">
               {displayHeroTitle}
               <span className="block text-lg sm:text-2xl font-normal text-amber-200 mt-2">
-                Authentic Arabian Flavour | Made for Sharing
+                Authentic Arabian Taste | Made for Sharing
               </span>
             </h1>
 
             <p className="text-sm sm:text-base text-stone-200 leading-relaxed max-w-xl mx-auto font-sans font-normal">
-              ZaDa Foods was born from a passion for authentic flavours, quality food, and the joy of sharing meals together. Inspired by the rich food culture of Kerala and the timeless taste of Arabian cuisine, we set out to bring something special to every table.
+              ZaDa Foods was born from a passion for authentic flavours, quality ingredients, and the warmth of shared tables. Inspired by the timeless culinary heritage of Arabian cuisine, we bring thoughtfully crafted dining experiences to every family gathering.
             </p>
           </div>
         </section>
@@ -186,18 +184,19 @@ export const OurStoryPage: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#EAE5DC] p-6 sm:p-10 shadow-2xs space-y-6 text-content-secondary leading-relaxed text-sm sm:text-base">
             {aboutPage?.content &&
             aboutPage.content !== 'Content is being updated by our editorial team.' &&
-            !aboutPage.content.includes('Malabar Heritage Snackworks') ? (
+            !aboutPage.content.toLowerCase().includes('kerala') &&
+            !aboutPage.content.toLowerCase().includes('chips') ? (
               <MarkdownRenderer content={aboutPage.content} />
             ) : (
               <>
                 <p>
-                  ZaDa Foods was born from a passion for authentic flavours, quality food, and the joy of sharing meals together. Inspired by the rich food culture of Kerala and the timeless taste of Arabian cuisine, we set out to bring something special to every table.
+                  ZaDa Foods was founded on a singular passion: bringing the rich, aromatic authenticity of Arabian cuisine into family homes. We believe great food is the cornerstone of connection, celebrations, and cherished memories.
                 </p>
                 <p>
-                  What started as an idea grew into a brand built around taste, tradition, and convenience. From our signature Mandhi Kit to our Kerala Traditional Chips Collection, every product is thoughtfully crafted using quality ingredients and traditional methods.
+                  From our signature Mandhi Kit to our curated celebration feast bundles, each product is meticulously developed with pure spices, authentic recipes, and convenient home preparation in mind.
                 </p>
                 <blockquote className="border-l-4 border-[#A67732] pl-4 sm:pl-6 py-2 my-4 bg-[#FAF7F2] rounded-r-xl font-serif text-base sm:text-lg text-[#072C20] italic font-semibold">
-                  "We believe good food brings people closer — whether it's a family dinner, a celebration, or an everyday craving."
+                  "We believe great food brings people closer — whether it's a family dinner, a celebration, or a joyous gathering of friends."
                 </blockquote>
               </>
             )}
@@ -213,7 +212,7 @@ export const OurStoryPage: React.FC = () => {
                 OUR VISION
               </span>
               <p className="font-serif text-lg sm:text-2xl font-bold leading-relaxed text-white">
-                "To become a trusted household food brand celebrated for authentic Arabian flavours and traditional Kerala snacks, delivering quality, taste, and togetherness across every home."
+                "To become a trusted household food brand celebrated for authentic Arabian taste, delivering culinary excellence, convenience, and togetherness across every home."
               </p>
             </div>
           </div>
@@ -417,13 +416,13 @@ export const OurStoryPage: React.FC = () => {
               CLOSING BRAND STATEMENT
             </span>
             <h3 className="font-serif text-2xl sm:text-3xl font-extrabold text-white">
-              ZaDa Foods — Royal Taste, ZaDa Style.
+              ZaDa Foods — Authentic Arabian Taste.
             </h3>
             <p className="text-sm sm:text-base font-serif italic text-amber-200">
-              Authentic Arabian Flavour | Made for Sharing
+              Crafted for Memorable Food Experiences | Made for Sharing
             </p>
             <p className="text-xs sm:text-sm text-stone-200 pt-1">
-              Explore our signature Mandhi kits, traditional chips collections, and celebration specialities.
+              Explore our signature Mandhi kits, curated feast collections, and celebration bundles.
             </p>
           </div>
 

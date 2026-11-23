@@ -32,11 +32,11 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
     eyebrow: 'Corporate & Wedding Gifting',
     heading: 'Planning a Festive Gathering or Corporate Event?',
     description:
-      'Customized Kerala delicacy boxes, corporate gifting hampers, and wholesale spice orders handcrafted for your special occasions.',
+      'Customized Mandhi feast hampers, corporate celebration gifts, and bulk dining orders handcrafted for your special occasions.',
     bulletPoints: [
       'Corporate gifting hampers',
-      'Wedding Kerala delicacy boxes',
-      'Bulk spice orders'
+      'Wedding & feast celebration boxes',
+      'Bulk specialty Mandhi kits'
     ],
     primaryCtaLabel: 'Discuss a Custom Order',
     primaryCtaDestination: '/bulk-orders',
@@ -152,7 +152,7 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
 
   const COLOR_PRESETS = [
     { label: 'Forest Green (Signature)', bg: '#072C20', text: '#FFFFFF' },
-    { label: 'Royal Malabar', bg: '#38220F', text: '#FFFFFF' },
+    { label: 'Royal Arabian', bg: '#38220F', text: '#FFFFFF' },
     { label: 'Festive Burgundy', bg: '#4A1521', text: '#FFFFFF' },
     { label: 'Deep Teal', bg: '#1B3B2B', text: '#FFFFFF' },
     { label: 'Golden Harvest', bg: '#4A3511', text: '#FFFFFF' }
@@ -398,7 +398,7 @@ export const CorporateGiftingEditor: React.FC<CorporateGiftingEditorProps> = ({
           label="Key Highlights / Bullet Points"
           points={bulletPoints.length === 0 ? [''] : bulletPoints}
           onChange={setBulletPoints}
-          placeholder="e.g. Customized Kerala delicacy boxes"
+          placeholder="e.g. Customized celebration feast hampers"
           helperText="Press Enter for next bullet point. Reorder or remove anytime."
         />
 

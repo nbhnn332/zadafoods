@@ -180,7 +180,7 @@ describe('Phase 13: Category Banner CMS, Premium Category UI & Our Story Redesig
         </Routes>,
         ['/category/chips']
       );
-      expect(screen.getByAltText(/Chips - Authentic Kerala Delicacies/i)).toBeInTheDocument();
+      expect(screen.getByAltText(/Chips - Authentic (Arabian Taste|Kerala Delicacies)/i)).toBeInTheDocument();
       unmount();
     });
 
@@ -242,9 +242,9 @@ describe('Phase 13: Category Banner CMS, Premium Category UI & Our Story Redesig
     it('renders the editorial hero, brand heritage, and founding narrative', () => {
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
-      expect(screen.getByText(/ABOUT ZADA FOODS • ROYAL TASTE, ZADA STYLE/i)).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1, name: /ZaDa Foods — Royal Taste, ZaDa Style/i })).toBeInTheDocument();
-      expect(screen.getByText(/Crafted for Taste, Tradition & Togetherness/i)).toBeInTheDocument();
+      expect(screen.getByText(/ABOUT ZADA FOODS • (AUTHENTIC ARABIAN TASTE|ROYAL TASTE, ZADA STYLE)/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /ZaDa Foods — (Authentic Arabian Taste|Royal Taste, ZaDa Style)/i })).toBeInTheDocument();
+      expect(screen.getAllByText(/Crafted for (Memorable Food Experiences|Taste, Tradition & Togetherness)/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/OUR STORY/i).length).toBeGreaterThan(0);
     });
 
@@ -252,9 +252,9 @@ describe('Phase 13: Category Banner CMS, Premium Category UI & Our Story Redesig
       renderWithProviders(<OurStoryPage />, ['/our-story']);
 
       expect(screen.getAllByText(/Signature Mandhi Kit/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Kerala Traditional Chips Collection/i)).toBeInTheDocument();
+      expect(screen.getByText(/(Curated Feasts & Combo Packs|Kerala Traditional Chips Collection)/i)).toBeInTheDocument();
       expect(screen.getByText(/Cakes & Special Orders/i)).toBeInTheDocument();
-      expect(screen.getByText(/Retail & Wholesale Supply/i)).toBeInTheDocument();
+      expect(screen.getByText(/(Retail & Hospitality Supply|Retail & Wholesale Supply)/i)).toBeInTheDocument();
     });
 
     it('displays the 4 Guiding Mission Principles', () => {

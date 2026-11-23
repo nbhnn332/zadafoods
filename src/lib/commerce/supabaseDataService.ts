@@ -1474,7 +1474,7 @@ export class SupabaseDataService {
         try {
           await supabase
             .from('products')
-            .update({ category_id: null })
+            .update({ category_id: null, category_slug: null })
             .eq('category_id', id)
             .or('deleted_at.not.is.null,is_active.eq.false');
         } catch (unlinkSoftErr) {
@@ -1485,7 +1485,7 @@ export class SupabaseDataService {
         if (reassignToCategoryId === 'unlink' || reassignToCategoryId === 'none') {
           const { error: unlinkErr } = await supabase
             .from('products')
-            .update({ category_id: null })
+            .update({ category_id: null, category_slug: null })
             .eq('category_id', id);
           if (unlinkErr) {
             return {
@@ -1546,7 +1546,7 @@ export class SupabaseDataService {
         if (error && error.code === '23503') {
           // Attempt automatic unlinking of any remaining products and retry
           try {
-            await supabase.from('products').update({ category_id: null }).eq('category_id', id);
+            await supabase.from('products').update({ category_id: null, category_slug: null }).eq('category_id', id);
             const retryRes = await supabase.from('categories').delete().eq('id', id);
             error = retryRes.error;
           } catch {}
@@ -2354,7 +2354,7 @@ export class SupabaseDataService {
     const defaultSection: BestsellerSectionConfig = {
       id: 'h0000000-0000-0000-0000-000000000002',
       title: 'Bestsellers',
-      subtitle: 'Our most celebrated Kerala snacks, traditional spices & sweets',
+      subtitle: 'Our most celebrated authentic flavours, spice blends & specialties',
       badge: 'Customer Favourites',
       isVisible: true,
       maxProducts: 4,
@@ -2467,11 +2467,11 @@ export class SupabaseDataService {
       id: 'h0000000-0000-0000-0000-000000000003',
       eyebrow: 'Corporate & Wedding Gifting',
       heading: 'Planning a Festive Gathering or Corporate Event?',
-      description: 'Customized Kerala delicacy boxes, corporate gifting hampers, and wholesale spice orders handcrafted for your special occasions.',
+      description: 'Customized Mandhi feast hampers, corporate celebration gifts, and bulk dining orders handcrafted for your special occasions.',
       bulletPoints: [
         'Corporate gifting hampers',
-        'Wedding Kerala delicacy boxes',
-        'Bulk spice orders'
+        'Wedding & feast celebration boxes',
+        'Bulk specialty Mandhi kits'
       ],
       primaryCtaLabel: 'Discuss a Custom Order',
       primaryCtaDestination: '/bulk-orders',

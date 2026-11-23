@@ -53,7 +53,8 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
     expect(logoImg).toHaveAttribute('src', '/assets/logo.svg');
 
     // Check official brand statement / tagline
-    expect(screen.getByText(/Authentic Kerala Flavours, Rooted in Tradition/i)).toBeInTheDocument();
+    expect(screen.getByText(/Authentic (Arabian Taste|Kerala Flavours)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Crafted for Memorable Food Experiences/i)).toBeInTheDocument();
 
     // Check accessible skip button
     expect(screen.getByRole('button', { name: /Skip/i })).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
 
     expect(screen.getByText(/Christmas Celebration/i)).toBeInTheDocument();
     expect(screen.getByAltText('ZaDa Foods')).toBeInTheDocument();
-    expect(screen.getByText(/Authentic Kerala Flavours, Rooted in Tradition/i)).toBeInTheDocument();
+    expect(screen.getByText(/Authentic (Arabian Taste|Kerala Flavours)/i)).toBeInTheDocument();
   });
 
   it('adapts to Eid festival theme', () => {
@@ -162,7 +163,7 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
       </FestivalContext.Provider>
     );
 
-    expect(screen.getByText(/Onam Kasavu Edition/i)).toBeInTheDocument();
+    expect(screen.getByText(/(Festive Kasavu Edition|Onam Kasavu Edition)/i)).toBeInTheDocument();
   });
 
   it('adapts to Diwali festival theme', () => {

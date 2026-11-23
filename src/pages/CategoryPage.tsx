@@ -300,7 +300,7 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({ isCombosPage }) => {
           {bannerImageUrl ? (
             <img
               src={bannerImageUrl}
-              alt={`${bannerTitle} - Authentic Kerala Delicacies`}
+              alt={`${bannerTitle} - Authentic Arabian Taste`}
               className="absolute inset-0 w-full h-full object-cover object-right sm:object-center opacity-65 transition-opacity"
               loading="eager"
               referrerPolicy="no-referrer"

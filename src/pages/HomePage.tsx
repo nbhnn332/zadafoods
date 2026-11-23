@@ -270,6 +270,7 @@ export const HomePage: React.FC = () => {
     switch (preset) {
       case 'burgundy':
         return 'bg-gradient-to-br from-[#4A1521] to-[#2E0B13]';
+      case 'royal_arabian':
       case 'royal_malabar':
         return 'bg-gradient-to-br from-[#38220F] to-[#1E1107]';
       case 'golden_harvest':
@@ -315,20 +316,20 @@ export const HomePage: React.FC = () => {
                 {/* Gold eyebrow pill */}
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-[#A67732]/30 text-amber-200 border border-amber-300/30">
                   <Sparkles className="w-3.5 h-3.5 text-[#FAD982]" />
-                  The Essence of Kerala • Authentic Malabar Delicacies
+                  Authentic Arabian Taste • Crafted for Memorable Experiences
                 </span>
 
                 {/* Headline */}
                 <h1 className="font-serif font-bold text-2xl sm:text-4xl leading-tight text-white drop-shadow-sm">
-                  Crafted with Care. Rooted in Kerala.
+                  Authentic Arabian Taste.
                   <span className="block text-lg sm:text-2xl font-medium text-amber-200 mt-1">
-                    Bring Home the Soul of Kerala.
+                    Bring Home the Royal Taste of Mandhi.
                   </span>
                 </h1>
 
                 {/* Description */}
                 <p className="text-xs sm:text-sm text-white/80 leading-relaxed max-w-md mx-auto sm:mx-0">
-                  Pure Kerala spices, authentic spice blends, and traditional ingredients delivered directly from regional farms to your kitchen.
+                  Discover authentic flavours, thoughtfully crafted products, and delicious experiences for every occasion.
                 </p>
 
                 {/* CTA */}
@@ -568,7 +569,7 @@ export const HomePage: React.FC = () => {
                   Shop by Category
                 </h2>
               </FestivalSectionHeader>
-              <p className="text-xs text-[#71717A] mt-0.5">Explore authentic Kerala spices, blends, traditional ingredients &amp; regional essentials</p>
+              <p className="text-xs text-[#71717A] mt-0.5">Discover authentic flavours, thoughtfully crafted products, and delicious experiences for every occasion.</p>
             </div>
             <Link
               to="/shop"
@@ -841,7 +842,7 @@ export const HomePage: React.FC = () => {
                   : '#EAE3D6',
               color: heritageStorySection?.textColor || '#1C1917'
             }}
-            aria-label={heritageStorySection?.heading || 'Our Kerala Heritage'}
+            aria-label={heritageStorySection?.heading || 'Our Heritage Story'}
           >
             {/* Subtle decorative gold orb */}
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-[#A67732]/10 blur-3xl pointer-events-none" />

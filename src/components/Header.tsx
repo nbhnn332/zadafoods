@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Search className="w-4 h-4 text-content-muted absolute left-3.5 pointer-events-none stroke-[2]" />
                 <input
                   type="text"
-                  placeholder="Search snacks, sweets, combos..."
+                  placeholder="Search authentic Mandhi kits, combos & collections..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-[var(--color-border,#E7E2D8)] bg-[var(--color-surface,#F7F5EE)] text-[var(--color-text,#1C1917)] placeholder:text-[#9CA3AF] focus:outline-none focus:bg-[var(--color-surface,#FFFFFF)] focus:border-[var(--color-primary,#A67732)] transition-all shadow-2xs"
@@ -311,7 +311,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Search className="w-4 h-4 text-content-muted absolute left-3 pointer-events-none stroke-[2]" />
                 <input
                   type="text"
-                  placeholder="Search snacks, sweets, combos..."
+                  placeholder="Search authentic Mandhi kits, combos & collections..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-[var(--color-border,#E7E2D8)] bg-[var(--color-surface,#FFFFFF)] text-[var(--color-text,#1C1917)] focus:outline-none focus:border-[var(--color-primary,#A67732)] focus:ring-1 focus:ring-[var(--color-primary,#A67732)] transition-all placeholder:text-[#9CA3AF]"

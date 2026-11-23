@@ -18,6 +18,7 @@ import { Product, ProductVariant, Category, ProductImage } from '../../types';
 import { PointListEditor } from '../../components/PointListEditor';
 import { ImageUploadPreview } from '../../components/ImageUploadPreview';
 import { MultipleImageUrlsEditor } from '../../components/MultipleImageUrlsEditor';
+import { isProductAssignedToCategory } from '../../lib/commerce/categoryUtils';
 
 export const AdminProducts: React.FC = () => {
   const {
@@ -1096,23 +1097,7 @@ export const AdminProducts: React.FC = () => {
 
       {/* Category Delete Confirmation Modal */}
       {categoryToDelete && (() => {
-        const isAssigned = (p: Product) => {
-          if (!categoryToDelete) return false;
-          const pCatId = ((p as any).categoryId || (p as any).category_id || (p as any).category?.id || '').trim().toLowerCase();
-          const pCatSlug = ((p as any).categorySlug || (p as any).category_slug || (p as any).category?.slug || '').trim().toLowerCase();
-          const pCatName = ((p as any).categoryName || (p as any).category_name || (p as any).category?.name || (typeof (p as any).category === 'string' ? (p as any).category : '') || '').trim().toLowerCase();
-
-          const cId = (categoryToDelete.id || '').trim().toLowerCase();
-          const cSlug = (categoryToDelete.slug || '').trim().toLowerCase();
-          const cName = (categoryToDelete.name || '').trim().toLowerCase();
-
-          return Boolean(
-            (cId && (pCatId === cId || pCatSlug === cId || pCatName === cId)) ||
-            (cSlug && (pCatSlug === cSlug || pCatId === cSlug || pCatName === cSlug)) ||
-            (cName && (pCatName === cName || pCatId === cName || pCatSlug === cName))
-          );
-        };
-        const assignedProducts = products.filter(isAssigned);
+        const assignedProducts = products.filter((p) => isProductAssignedToCategory(p, categoryToDelete));
         const hasAssigned = assignedProducts.length > 0 || Boolean(categoryDeleteError);
 
         return (

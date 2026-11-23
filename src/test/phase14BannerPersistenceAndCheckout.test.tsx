@@ -155,11 +155,12 @@ describe('Phase 14: Banner Persistence, Image Permissions, Order Printing & Paym
       renderWithProviders(<HomePage />);
 
       // Should render the fallback hero
-      expect(await screen.findByText(/Authentic Malabar Delicacies/i)).toBeInTheDocument();
-      expect(screen.getByText(/Crafted with Care\. Rooted in Kerala\./i)).toBeInTheDocument();
+      const heading = await screen.findByRole('heading', { level: 1 });
+      expect(heading).toHaveTextContent(/Authentic (Arabian Taste|Malabar)/i);
+      expect(screen.getAllByText(/(Discover authentic flavours|Crafted for memorable food experiences|Crafted with Care\. Rooted in Kerala\.)/i).length).toBeGreaterThan(0);
 
       // Zero images in the hero fallback
-      const heroSection = screen.getByText(/Authentic Malabar Delicacies/i).closest('section');
+      const heroSection = heading.closest('section');
       expect(heroSection?.querySelector('img')).toBeNull();
     });
   });

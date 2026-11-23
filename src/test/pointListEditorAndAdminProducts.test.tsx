@@ -242,7 +242,7 @@ describe('CorporateGiftingEditor Integration: Add Point Button Verification', ()
     fireEvent.click(addPointBtn);
 
     // Third input should appear
-    const inputs = screen.getAllByPlaceholderText('e.g. Customized Kerala delicacy boxes');
+    const inputs = screen.getAllByPlaceholderText(/e\.g\. Customized/i);
     expect(inputs).toHaveLength(3);
 
     // Type new highlight

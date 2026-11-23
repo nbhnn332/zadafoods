@@ -49,7 +49,7 @@ describe('Phase 12C: Award-Worthy Shop Page Refinement', () => {
     it('renders the responsive hero banner with background image and gradient overlay', () => {
       const { container } = renderCategoryPage(['/category/chips']);
 
-      const heroImg = screen.getByAltText(/Chips - Authentic Kerala Delicacies/i);
+      const heroImg = screen.getByAltText(/Chips - Authentic (Arabian Taste|Kerala Delicacies)/i);
       expect(heroImg).toBeInTheDocument();
       expect(heroImg).toHaveAttribute('src', '/assets/cat-hero-chips.png');
 

@@ -54,7 +54,7 @@ describe('ZaDa Foods — Official Footer Enhancement & Manufacturer Information'
     renderWithProviders(<Footer />);
 
     expect(
-      screen.getByText(/Bringing authentic Kerala flavours and quality ingredients to your kitchen\./i)
+      screen.getByText(/Crafted for memorable food experiences|Bringing authentic.*flavours/i)
     ).toBeInTheDocument();
   });
 

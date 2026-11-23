@@ -30,10 +30,10 @@ export const HeritageBannerEditor: React.FC<HeritageBannerEditorProps> = ({
     id: 'h0000000-0000-0000-0000-000000000004',
     eyebrow: 'TRADITION MEETS PURITY',
     heading: 'Pure Ingredients, Generational Craft',
-    subtitle: 'Rooted in Kerala. Crafted for Every Kitchen.',
+    subtitle: 'Authentic Arabian Taste. Crafted for Every Celebration.',
     description:
-      'Hand-picked raw materials, cold-pressed coconut oil, zero preservatives, and traditional recipes perfected across three generations.',
-    imageUrl: '/assets/prod-banana-chips-hero.png',
+      'Carefully selected whole spices, aged basmati rice, zero artificial preservatives, and authentic culinary recipes crafted for memorable meals.',
+    imageUrl: '',
     ctaLabel: 'Read Our Story',
     ctaDestination: '/our-story',
     bgPreset: '#FAF6EE',
@@ -89,7 +89,7 @@ export const HeritageBannerEditor: React.FC<HeritageBannerEditorProps> = ({
   const COLOR_PRESETS = [
     { label: 'Warm Ivory (Signature)', bg: '#FAF6EE', text: '#1C1917' },
     { label: 'Forest Green (Heritage)', bg: '#072C20', text: '#FFFFFF' },
-    { label: 'Royal Malabar', bg: '#38220F', text: '#FFFFFF' },
+    { label: 'Royal Arabian', bg: '#38220F', text: '#FFFFFF' },
     { label: 'Deep Charcoal', bg: '#1C1917', text: '#FFFFFF' }
   ];
 
@@ -298,7 +298,7 @@ export const HeritageBannerEditor: React.FC<HeritageBannerEditorProps> = ({
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   disabled={!canManage}
-                  placeholder="e.g. Rooted in Kerala. Crafted for Every Kitchen."
+                  placeholder="e.g. Authentic Arabian Taste. Crafted for Every Celebration."
                   className="w-full px-3 py-2 text-xs rounded-lg border border-border bg-canvas-subtle focus:bg-white focus:border-brand-primary focus:outline-none transition-colors"
                 />
               </div>

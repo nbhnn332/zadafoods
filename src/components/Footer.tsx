@@ -70,10 +70,10 @@ export const Footer: React.FC = () => {
             </Link>
 
             <p className="text-xs font-serif font-semibold text-[#A67732] italic tracking-wide">
-              "Authentic Kerala Flavours, Rooted in Tradition"
+              "Authentic Arabian Taste"
             </p>
             <p className="text-xs leading-relaxed text-[#D1C7B7]">
-              Bringing authentic Kerala flavours and quality ingredients to your kitchen.
+              Crafted for memorable food experiences, authentic flavours, and thoughtful meals for gatherings and family celebrations.
             </p>
 
             <div className="pt-2 flex items-center gap-3">

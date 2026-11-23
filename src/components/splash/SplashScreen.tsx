@@ -11,119 +11,103 @@ interface SplashScreenProps {
   minDisplayDuration?: number;
 }
 
-interface FestivalSplashTheme {
+interface LuxurySplashTheme {
   backgroundClass: string;
   backgroundStyle: React.CSSProperties;
   glowColor: string;
-  glowPulseColor: string;
   accentGold: string;
-  leafColor: string;
+  richGold: string;
   plaqueBorder: string;
   badgeLabel?: string;
   particleColor: string;
-  ornamentStyle: 'kerala_banana_leaf' | 'christmas_pine' | 'eid_crescent' | 'onam_konna' | 'diwali_diya' | 'new_year_starlight';
 }
 
-const FESTIVAL_SPLASH_THEMES: Record<FestivalPreset, FestivalSplashTheme> = {
+const LUXURY_SPLASH_THEMES: Record<FestivalPreset, LuxurySplashTheme> = {
   default: {
-    backgroundClass: 'bg-[#072C20]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #0A3D2D 0%, #072C20 60%, #031A12 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FBF8F2 50%, #F2E7D5 100%)'
     },
-    glowColor: 'rgba(166, 119, 50, 0.40)',
-    glowPulseColor: 'rgba(212, 175, 55, 0.25)',
-    accentGold: '#A67732',
-    leafColor: '#A67732',
-    plaqueBorder: 'rgba(166, 119, 50, 0.45)',
-    particleColor: '#D4AF37',
-    ornamentStyle: 'kerala_banana_leaf'
-  },
-  christmas: {
-    backgroundClass: 'bg-[#052014]',
-    backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #0B3320 0%, #052014 65%, #02120B 100%)'
-    },
-    glowColor: 'rgba(212, 175, 55, 0.45)',
-    glowPulseColor: 'rgba(220, 38, 38, 0.25)',
-    accentGold: '#D4AF37',
-    leafColor: '#D4AF37',
-    plaqueBorder: 'rgba(212, 175, 55, 0.55)',
-    badgeLabel: 'Christmas Celebration',
-    particleColor: '#F3E8FF',
-    ornamentStyle: 'christmas_pine'
+    glowColor: 'rgba(184, 134, 59, 0.18)',
+    accentGold: '#B8863B',
+    richGold: '#916322',
+    plaqueBorder: 'rgba(184, 134, 59, 0.35)',
+    particleColor: '#B8863B'
   },
   eid: {
-    backgroundClass: 'bg-[#06281E]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #0A382B 0%, #06281E 65%, #03150F 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FAF6EE 50%, #EFE5D0 100%)'
     },
-    glowColor: 'rgba(197, 160, 89, 0.45)',
-    glowPulseColor: 'rgba(212, 181, 116, 0.25)',
-    accentGold: '#C5A059',
-    leafColor: '#C5A059',
-    plaqueBorder: 'rgba(197, 160, 89, 0.55)',
+    glowColor: 'rgba(184, 134, 59, 0.22)',
+    accentGold: '#B8863B',
+    richGold: '#8C5E1E',
+    plaqueBorder: 'rgba(184, 134, 59, 0.45)',
     badgeLabel: 'Eid Festive Selection',
-    particleColor: '#FDF6B2',
-    ornamentStyle: 'eid_crescent'
+    particleColor: '#B8863B'
+  },
+  christmas: {
+    backgroundClass: 'bg-[#FBF8F2]',
+    backgroundStyle: {
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FBF7F0 50%, #F3EAE0 100%)'
+    },
+    glowColor: 'rgba(184, 134, 59, 0.20)',
+    accentGold: '#C59A45',
+    richGold: '#966D26',
+    plaqueBorder: 'rgba(197, 154, 69, 0.45)',
+    badgeLabel: 'Christmas Celebration',
+    particleColor: '#C59A45'
   },
   onam: {
-    backgroundClass: 'bg-[#0B2B1B]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #13422A 0%, #0B2B1B 65%, #051A10 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FAF5EA 50%, #F1E6CC 100%)'
     },
-    glowColor: 'rgba(202, 138, 4, 0.50)',
-    glowPulseColor: 'rgba(234, 179, 8, 0.30)',
-    accentGold: '#CA8A04',
-    leafColor: '#CA8A04',
-    plaqueBorder: 'rgba(202, 138, 4, 0.60)',
-    badgeLabel: 'Onam Kasavu Edition',
-    particleColor: '#FEF08A',
-    ornamentStyle: 'onam_konna'
+    glowColor: 'rgba(202, 138, 4, 0.20)',
+    accentGold: '#B8863B',
+    richGold: '#8F6428',
+    plaqueBorder: 'rgba(184, 134, 59, 0.45)',
+    badgeLabel: 'Festive Kasavu Edition',
+    particleColor: '#CA8A04'
   },
   diwali: {
-    backgroundClass: 'bg-[#180829]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #2D0F4A 0%, #180829 65%, #0D0317 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FAF5EE 50%, #F2E5D4 100%)'
     },
-    glowColor: 'rgba(245, 158, 11, 0.50)',
-    glowPulseColor: 'rgba(251, 191, 36, 0.30)',
-    accentGold: '#F59E0B',
-    leafColor: '#F59E0B',
-    plaqueBorder: 'rgba(245, 158, 11, 0.60)',
+    glowColor: 'rgba(217, 119, 6, 0.20)',
+    accentGold: '#B8863B',
+    richGold: '#916322',
+    plaqueBorder: 'rgba(217, 119, 6, 0.40)',
     badgeLabel: 'Deepavali Special',
-    particleColor: '#FDE68A',
-    ornamentStyle: 'diwali_diya'
+    particleColor: '#D97706'
   },
   new_year: {
-    backgroundClass: 'bg-[#0B0E1E]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #151B38 0%, #0B0E1E 65%, #050711 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #F9F7F3 50%, #EDE7DD 100%)'
     },
-    glowColor: 'rgba(226, 184, 85, 0.45)',
-    glowPulseColor: 'rgba(253, 230, 138, 0.25)',
-    accentGold: '#E2B855',
-    leafColor: '#E2B855',
-    plaqueBorder: 'rgba(226, 184, 85, 0.55)',
+    glowColor: 'rgba(184, 134, 59, 0.20)',
+    accentGold: '#B8863B',
+    richGold: '#916322',
+    plaqueBorder: 'rgba(184, 134, 59, 0.40)',
     badgeLabel: 'New Year Edition',
-    particleColor: '#FEF9C3',
-    ornamentStyle: 'new_year_starlight'
+    particleColor: '#B8863B'
   },
   custom: {
-    backgroundClass: 'bg-[#072C20]',
+    backgroundClass: 'bg-[#FBF8F2]',
     backgroundStyle: {
-      background: 'radial-gradient(ellipse at 50% 45%, #0A3D2D 0%, #072C20 60%, #031A12 100%)'
+      background: 'radial-gradient(ellipse at 50% 42%, #FFFFFF 0%, #FBF8F2 50%, #F2E7D5 100%)'
     },
-    glowColor: 'rgba(166, 119, 50, 0.40)',
-    glowPulseColor: 'rgba(212, 175, 55, 0.25)',
-    accentGold: '#A67732',
-    leafColor: '#A67732',
-    plaqueBorder: 'rgba(166, 119, 50, 0.45)',
-    particleColor: '#D4AF37',
-    ornamentStyle: 'kerala_banana_leaf'
+    glowColor: 'rgba(184, 134, 59, 0.18)',
+    accentGold: '#B8863B',
+    richGold: '#916322',
+    plaqueBorder: 'rgba(184, 134, 59, 0.35)',
+    particleColor: '#B8863B'
   }
 };
 
-/** Deterministic ambient floating particles coordinates around the central crest */
+/** Floating warm gold ambient micro-particles */
 const AMBIENT_PARTICLES = [
   { id: 1, top: '22%', left: '32%', size: 3, delay: '0.1s', duration: '3.2s' },
   { id: 2, top: '18%', left: '65%', size: 4, delay: '0.6s', duration: '2.8s' },
@@ -163,29 +147,29 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   // Choreographed Scene Phases:
   // Scene 1: 'arrival' (0 - 400ms)
   // Scene 2: 'logo' (400 - 850ms)
-  // Scene 3: 'botanical' (850 - 1250ms)
+  // Scene 3: 'geometry' (850 - 1250ms)
   // Scene 4: 'tagline' (1250 - 1800ms)
   // Scene 5: 'exit' (1800ms+ -> cross-fade exit)
-  const [scenePhase, setScenePhase] = useState<'arrival' | 'logo' | 'botanical' | 'tagline' | 'exit'>('arrival');
+  const [scenePhase, setScenePhase] = useState<'arrival' | 'logo' | 'geometry' | 'tagline' | 'exit'>('arrival');
   const [isExiting, setIsExiting] = useState<boolean>(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState<boolean>(false);
 
   // Active theme configuration
-  const themeConfig = useMemo<FestivalSplashTheme>(() => {
+  const themeConfig = useMemo<LuxurySplashTheme>(() => {
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
       const forcedTheme = searchParams.get('theme') || searchParams.get('festival');
       if (forcedTheme === 'default' || forcedTheme === 'none') {
-        return FESTIVAL_SPLASH_THEMES.default;
+        return LUXURY_SPLASH_THEMES.default;
       }
-      if (forcedTheme && FESTIVAL_SPLASH_THEMES[forcedTheme as FestivalPreset]) {
-        return FESTIVAL_SPLASH_THEMES[forcedTheme as FestivalPreset];
+      if (forcedTheme && LUXURY_SPLASH_THEMES[forcedTheme as FestivalPreset]) {
+        return LUXURY_SPLASH_THEMES[forcedTheme as FestivalPreset];
       }
     }
-    if (isFestivalActive && effectiveTheme && effectiveTheme.preset !== 'default' && FESTIVAL_SPLASH_THEMES[effectiveTheme.preset]) {
-      return FESTIVAL_SPLASH_THEMES[effectiveTheme.preset];
+    if (isFestivalActive && effectiveTheme && effectiveTheme.preset !== 'default' && LUXURY_SPLASH_THEMES[effectiveTheme.preset]) {
+      return LUXURY_SPLASH_THEMES[effectiveTheme.preset];
     }
-    return FESTIVAL_SPLASH_THEMES.default;
+    return LUXURY_SPLASH_THEMES.default;
   }, [isFestivalActive, effectiveTheme]);
 
   // Reduced motion preference
@@ -198,231 +182,196 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   const handleExit = useCallback(() => {
     if (isExiting) return;
     setIsExiting(true);
+    setScenePhase('exit');
+
     try {
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem('zada_splash_shown', 'true');
       }
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
+    } catch {}
 
-    const unmountDelay = isReducedMotion ? 100 : 650;
-    setTimeout(() => {
+    // Allow CSS transition to finish before unmounting
+    const timer = setTimeout(() => {
       setShouldMount(false);
-      onComplete?.();
-    }, unmountDelay);
-  }, [isExiting, isReducedMotion, onComplete]);
-
-  // Listen for programmatic re-triggering (e.g. QA, developer testing)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const triggerHandler = () => {
-      setShouldMount(true);
-      setIsExiting(false);
-      setMinTimeElapsed(false);
-      setScenePhase('tagline');
-    };
-    window.addEventListener('trigger-zada-splash', triggerHandler);
-    return () => window.removeEventListener('trigger-zada-splash', triggerHandler);
-  }, []);
-
-  // Keyboard navigation: Escape key immediately dismisses splash
-  useEffect(() => {
-    if (!shouldMount || isExiting) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleExit();
+      if (onComplete) {
+        onComplete();
       }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [shouldMount, isExiting, handleExit]);
+    }, 600);
 
-  // Choreographed animation sequence timer
+    return () => clearTimeout(timer);
+  }, [isExiting, onComplete]);
+
+  // Phase scheduling
   useEffect(() => {
     if (!shouldMount) return;
 
     if (isReducedMotion) {
-      // In reduced motion mode, show brand reveal directly, then dismiss after brief delay
       setScenePhase('tagline');
       setMinTimeElapsed(true);
       const timer = setTimeout(() => {
         handleExit();
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
 
-    // Scene 2: Logo Reveal at 250ms
-    const tLogo = setTimeout(() => {
-      setScenePhase(prev => (prev === 'arrival' ? 'logo' : prev));
-    }, 250);
-
-    // Scene 3: Kerala Botanicals at 550ms
-    const tBotanical = setTimeout(() => {
-      setScenePhase(prev => (prev === 'logo' || prev === 'arrival' ? 'botanical' : prev));
-    }, 550);
-
-    // Scene 4: Brand Statement at 850ms
-    const tTagline = setTimeout(() => {
-      setScenePhase(prev => (prev !== 'exit' ? 'tagline' : prev));
-    }, 850);
-
-    // Scene 5: Min display duration complete
-    const tMinDuration = setTimeout(() => {
+    // Sequence Choreography
+    const tLogo = setTimeout(() => setScenePhase('logo'), 350);
+    const tGeom = setTimeout(() => setScenePhase('geometry'), 800);
+    const tTag = setTimeout(() => setScenePhase('tagline'), 1250);
+    const tMin = setTimeout(() => {
       setMinTimeElapsed(true);
+      if (!isLoading) {
+        handleExit();
+      }
     }, minDisplayDuration);
 
     return () => {
       clearTimeout(tLogo);
-      clearTimeout(tBotanical);
-      clearTimeout(tTagline);
-      clearTimeout(tMinDuration);
+      clearTimeout(tGeom);
+      clearTimeout(tTag);
+      clearTimeout(tMin);
     };
-  }, [shouldMount, isReducedMotion, minDisplayDuration, handleExit]);
+  }, [shouldMount, isReducedMotion, minDisplayDuration, isLoading, handleExit]);
 
-  // Once minimum duration has elapsed AND app is ready, trigger Scene 5 exit transition
+  // Ready listener: dismiss when app hydration completes and minDisplayDuration has elapsed
   useEffect(() => {
-    if (!shouldMount || !minTimeElapsed || isExiting) return;
-
-    // If app is still loading festival/admin data, wait for it
-    if (isLoading) return;
-
-    // Ready to transition smoothly to storefront
-    setScenePhase('exit');
-    const exitTimer = setTimeout(() => {
+    if (minTimeElapsed && !isLoading && !isExiting) {
       handleExit();
-    }, 150);
+    }
+  }, [minTimeElapsed, isLoading, isExiting, handleExit]);
 
-    return () => clearTimeout(exitTimer);
-  }, [shouldMount, minTimeElapsed, isLoading, isExiting, handleExit]);
+  // Accessible Escape Key to Dismiss
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleExit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleExit]);
 
-  if (!shouldMount) return null;
+  if (!shouldMount) {
+    return null;
+  }
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="ZaDa Foods Brand Loading Experience"
-      data-splash-phase={scenePhase}
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center select-none overflow-hidden transition-all ease-out duration-700 ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden transition-opacity duration-700 ease-out select-none ${
         themeConfig.backgroundClass
-      } ${
-        isExiting
-          ? 'opacity-0 scale-105 pointer-events-none'
-          : 'opacity-100 scale-100 pointer-events-auto'
-      }`}
+      } ${isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       style={themeConfig.backgroundStyle}
-      onClick={handleExit}
     >
-      {/* Background Ambient Radial Golden Glow (Scene 1) */}
+      {/* Ambient Radial Soft Glow */}
       <div
-        className="absolute w-[340px] sm:w-[500px] md:w-[680px] h-[340px] sm:h-[500px] md:h-[680px] rounded-full pointer-events-none blur-3xl animate-splash-arrival-glow transition-transform duration-1000"
+        className="absolute inset-0 pointer-events-none animate-splash-arrival-glow"
         style={{
-          background: `radial-gradient(circle, ${themeConfig.glowColor} 0%, ${themeConfig.glowPulseColor} 45%, transparent 75%)`,
-          transform: isExiting ? 'scale(1.15)' : 'scale(1)'
+          background: `radial-gradient(circle at 50% 48%, ${themeConfig.glowColor} 0%, rgba(251, 248, 242, 0) 65%)`
         }}
       />
 
-      {/* Floating Starlight / Kerala Spice Dust Ambient Particles */}
+      {/* Floating Ambient Micro-Glow Specks */}
       {!isReducedMotion && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {AMBIENT_PARTICLES.map(particle => (
-            <div
-              key={particle.id}
-              className="absolute rounded-full"
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          {AMBIENT_PARTICLES.map((p) => (
+            <span
+              key={p.id}
+              className="absolute rounded-full pointer-events-none"
               style={{
-                top: particle.top,
-                left: particle.left,
-                width: `${particle.size}px`,
-                height: `${particle.size}px`,
+                top: p.top,
+                left: p.left,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
                 backgroundColor: themeConfig.particleColor,
+                opacity: 0.35,
                 boxShadow: `0 0 8px ${themeConfig.particleColor}`,
-                animation: `splashParticleDrift ${particle.duration} ease-in-out infinite`,
-                animationDelay: particle.delay
+                animation: `splashParticleDrift ${p.duration} ease-in-out infinite`,
+                animationDelay: p.delay
               }}
             />
           ))}
         </div>
       )}
 
-      {/* Skip Button (Accessible top-right corner) */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleExit();
-        }}
-        className="absolute top-5 right-6 z-20 px-3 py-1.5 rounded-full text-[11px] font-sans font-medium tracking-widest text-[#FBF8F4]/50 hover:text-[#FBF8F4] bg-black/20 hover:bg-black/40 border border-white/10 backdrop-blur-sm transition-all active:scale-95 cursor-pointer uppercase"
-        title="Skip intro (or press Esc)"
-      >
-        Skip <span className="hidden sm:inline opacity-60 text-[9px] lowercase font-normal">(esc)</span>
-      </button>
+      {/* Accessible Skip Button (Top Right) */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+        <button
+          type="button"
+          onClick={handleExit}
+          className="px-3.5 py-1.5 rounded-full text-xs font-sans font-semibold tracking-wider uppercase transition-all duration-300 bg-white/70 hover:bg-white text-[#5B4030] hover:text-[#29231D] border border-[#B8863B]/30 shadow-xs hover:shadow-sm active:scale-95 flex items-center gap-1.5"
+          aria-label="Skip splash screen"
+        >
+          <span>Skip</span>
+          <span className="text-[10px] opacity-60">Esc</span>
+        </button>
+      </div>
 
-      {/* Center Cinematic Stage Container */}
-      <div className="relative z-10 flex flex-col items-center justify-center px-4 max-w-lg w-full">
-        {/* SVG Drawing Circular / Ornamental Frame (Scene 1 & 3) */}
-        <div className="relative flex items-center justify-center">
+      {/* Central Composition */}
+      <div className="relative z-10 flex flex-col items-center justify-center max-w-lg px-6 w-full text-center">
+        {/* Subtle Luxury SVG Arabian Geometric Framing Ring */}
+        <div className="relative flex items-center justify-center w-64 h-64 sm:w-76 sm:h-76">
           <svg
-            className="w-[300px] h-[300px] sm:w-[360px] sm:h-[360px] pointer-events-none"
             viewBox="0 0 360 360"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            aria-hidden="true"
           >
-            {/* Outer Subtle Golden Ring */}
-            <circle
-              cx="180"
-              cy="180"
-              r="160"
-              stroke={themeConfig.accentGold}
-              strokeWidth="1.2"
-              strokeOpacity="0.45"
-              className={isReducedMotion ? '' : 'animate-splash-stroke-draw'}
-            />
+            <defs>
+              <linearGradient id="goldSheenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="#B8863B" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#916322" stopOpacity="0.7" />
+              </linearGradient>
+            </defs>
 
-            {/* Inner Concentric Ornamental Ring */}
+            {/* Outer Subtle Concentric Ring */}
             <circle
               cx="180"
               cy="180"
-              r="144"
-              stroke={themeConfig.accentGold}
+              r="165"
+              fill="none"
+              stroke="url(#goldSheenGrad)"
               strokeWidth="0.8"
               strokeDasharray="4 6"
-              strokeOpacity="0.3"
+              strokeOpacity="0.4"
             />
 
-            {/* Quadrant Diamond Accent Accents */}
-            <g fill={themeConfig.accentGold} fillOpacity="0.8">
-              <polygon points="180,16 183,20 180,24 177,20" />
-              <polygon points="180,336 183,340 180,344 177,340" />
-              <polygon points="16,180 20,183 24,180 20,177" />
-              <polygon points="336,180 340,183 344,180 340,177" />
-            </g>
-
-            {/* Kerala Botanical Banana Leaf Curvature (Scene 3) */}
-            <g
-              stroke={themeConfig.leafColor}
-              strokeWidth="1.6"
+            {/* Inner Refined Circular Accent Line */}
+            <circle
+              cx="180"
+              cy="180"
+              r="140"
               fill="none"
-              strokeLinecap="round"
-              strokeOpacity={scenePhase === 'arrival' ? '0' : '0.9'}
-              className={isReducedMotion || scenePhase === 'arrival' ? '' : 'animate-splash-botanical'}
+              stroke="#B8863B"
+              strokeWidth="1.2"
+              strokeOpacity={scenePhase === 'arrival' ? '0' : '0.65'}
+              className={isReducedMotion || scenePhase === 'arrival' ? '' : 'animate-splash-stroke-draw'}
               style={{ transition: 'stroke-opacity 0.6s ease' }}
-            >
-              {/* Left Sweeping Arching Botanical Leaf Motif */}
-              <path d="M 64 210 C 58 175, 75 125, 118 96 C 102 120, 100 160, 108 190" />
-              <path d="M 76 172 C 86 166, 96 162, 106 160" strokeWidth="1.0" strokeOpacity="0.6" />
-              <path d="M 85 145 C 95 140, 104 137, 112 135" strokeWidth="1.0" strokeOpacity="0.6" />
-              <path d="M 98 120 C 106 117, 114 114, 120 112" strokeWidth="1.0" strokeOpacity="0.6" />
+            />
 
-              {/* Right Sweeping Arching Botanical Leaf Motif (Mirrored) */}
-              <path d="M 296 210 C 302 175, 285 125, 242 96 C 258 120, 260 160, 252 190" />
-              <path d="M 284 172 C 274 166, 264 162, 254 160" strokeWidth="1.0" strokeOpacity="0.6" />
-              <path d="M 275 145 C 265 140, 256 137, 248 135" strokeWidth="1.0" strokeOpacity="0.6" />
-              <path d="M 262 120 C 254 117, 246 114, 240 112" strokeWidth="1.0" strokeOpacity="0.6" />
+            {/* Arabian 8-Point Geometric Star Accent */}
+            <g
+              stroke="#B8863B"
+              strokeWidth="0.9"
+              fill="none"
+              strokeOpacity={scenePhase === 'arrival' ? '0' : '0.5'}
+              style={{ transition: 'stroke-opacity 0.8s ease' }}
+            >
+              {/* Star Diamond 1 */}
+              <polygon points="180,48 274,180 180,312 86,180" strokeDasharray="3 4" strokeOpacity="0.35" />
+              {/* Star Diamond 2 (Rotated 45 deg) */}
+              <polygon points="180,48 274,180 180,312 86,180" strokeDasharray="3 4" strokeOpacity="0.35" transform="rotate(45 180 180)" />
+              {/* Fine Cardinal Corner Nodes */}
+              <circle cx="180" cy="40" r="2.5" fill="#B8863B" />
+              <circle cx="180" cy="320" r="2.5" fill="#B8863B" />
+              <circle cx="40" cy="180" r="2.5" fill="#B8863B" />
+              <circle cx="320" cy="180" r="2.5" fill="#B8863B" />
             </g>
           </svg>
 
-          {/* Central Luxury Warm Ivory Crest / Logo Card (Scene 2) */}
+          {/* Central Luxury Logo Plaque Card */}
           <div
             className={`absolute flex flex-col items-center justify-center transition-all duration-700 ${
               scenePhase === 'arrival' && !isReducedMotion
@@ -431,15 +380,15 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             }`}
           >
             <div
-              className="relative px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-b from-[#FFFDF9] via-[#FBF8F4] to-[#F5EFE6] shadow-[0_16px_45px_rgba(0,0,0,0.5),0_0_35px_rgba(166,119,50,0.25)] border overflow-hidden flex items-center justify-center animate-splash-logo-reveal"
+              className="relative px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-b from-[#FFFFFF] via-[#FDFBF7] to-[#F5EFE6] shadow-[0_12px_36px_rgba(184,134,59,0.14),0_2px_12px_rgba(0,0,0,0.04)] border overflow-hidden flex items-center justify-center animate-splash-logo-reveal"
               style={{
                 borderColor: themeConfig.plaqueBorder
               }}
             >
-              {/* Golden Light Sheen Sweep Overlay (Scene 2) */}
+              {/* Soft Gold Light Sheen Sweep Overlay */}
               {!isReducedMotion && (
                 <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-10">
-                  <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-amber-200/50 to-transparent skew-x-[-25deg] animate-splash-sheen" />
+                  <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-[#E8D2A6]/50 to-transparent skew-x-[-25deg] animate-splash-sheen" />
                 </div>
               )}
 
@@ -447,14 +396,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
               <img
                 src="/assets/logo.svg"
                 alt="ZaDa Foods"
-                className="h-11 sm:h-13 md:h-15 w-auto max-w-[200px] sm:max-w-[240px] object-contain select-none pointer-events-none drop-shadow-sm"
+                className="h-11 sm:h-13 md:h-15 w-auto max-w-[200px] sm:max-w-[240px] object-contain select-none pointer-events-none drop-shadow-xs"
               />
             </div>
 
             {/* Optional Active Festival Pill Badge */}
             {themeConfig.badgeLabel && (
               <div
-                className={`mt-2.5 px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-sans font-semibold tracking-wider uppercase bg-black/40 border border-[#D4AF37]/40 text-[#D4AF37] shadow-sm transition-opacity duration-500 ${
+                className={`mt-2.5 px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-sans font-semibold tracking-wider uppercase bg-white/90 border border-[#B8863B]/40 text-[#916322] shadow-xs transition-opacity duration-500 ${
                   scenePhase === 'arrival' && !isReducedMotion ? 'opacity-0' : 'opacity-100'
                 }`}
               >
@@ -464,16 +413,16 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           </div>
         </div>
 
-        {/* Brand Statement / Tagline Section (Scene 4) */}
+        {/* Brand Statement / Taglines Section */}
         <div
-          className={`flex flex-col items-center justify-center mt-4 sm:mt-6 transition-all duration-700 ${
+          className={`flex flex-col items-center justify-center mt-3 sm:mt-5 transition-all duration-700 ${
             scenePhase === 'arrival' || scenePhase === 'logo'
               ? 'opacity-0 translate-y-3'
               : 'opacity-100 translate-y-0 animate-splash-tagline'
           }`}
         >
           {/* Ornate Gold Filigree Center Divider */}
-          <div className="flex items-center gap-3 w-48 sm:w-60 mb-2.5">
+          <div className="flex items-center gap-3 w-48 sm:w-60 mb-2">
             <span
               className="h-[1px] flex-1"
               style={{
@@ -495,22 +444,29 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             />
           </div>
 
-          {/* Official Tagline in Elegant Typography */}
-          <p
-            className="splash-tagline font-serif italic sm:not-italic font-medium text-xs sm:text-sm tracking-[0.20em] sm:tracking-[0.26em] uppercase text-center px-4 max-w-sm drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]"
+          {/* Primary Tagline in Elegant Typography */}
+          <h2
+            className="splash-tagline font-serif font-bold text-sm sm:text-base tracking-[0.18em] sm:tracking-[0.24em] uppercase text-center px-4 max-w-sm"
             style={{
-              color: '#FBF8F4',
-              textShadow: '0 0 16px rgba(212, 175, 55, 0.65), 0 2px 10px rgba(0, 0, 0, 0.95)'
+              color: '#29231D',
+              textShadow: '0 1px 2px rgba(184, 134, 59, 0.15)'
             }}
           >
-            Authentic Kerala Flavours, Rooted in Tradition
+            Authentic Arabian Taste
+          </h2>
+
+          {/* Supporting Brand Line */}
+          <p
+            className="font-sans text-[11px] sm:text-xs tracking-wider text-[#5B4030] mt-1 font-medium"
+          >
+            Crafted for Memorable Food Experiences
           </p>
 
-          {/* Subtle Branded Loading Pulse Indicator (Only if extended loading occurs) */}
+          {/* Subtle Branded Loading Indicator */}
           {isLoading && minTimeElapsed && (
-            <div className="mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-black/30 border border-white/10 text-[11px] text-[#A67732] font-sans animate-splash-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#A67732] animate-ping" />
-              <span>Preparing your Kerala experience...</span>
+            <div className="mt-4 flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 border border-[#B8863B]/25 text-[11px] text-[#916322] font-sans shadow-2xs animate-splash-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B8863B] animate-ping" />
+              <span>Preparing your authentic Arabian feast...</span>
             </div>
           )}
         </div>

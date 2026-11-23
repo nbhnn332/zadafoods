@@ -48,6 +48,7 @@ import {
 import { useToast } from './ToastContext';
 import { SupabaseDataService, isUUID } from '../lib/commerce/supabaseDataService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isProductAssignedToCategory } from '../lib/commerce/categoryUtils';
 import { createClient } from '@supabase/supabase-js';
 
 interface AdminDataContextType {
@@ -836,22 +837,9 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       const targetCat = categories.find(
         (c) => c.id === id || c.slug?.toLowerCase() === id.toLowerCase() || c.name?.toLowerCase() === id.toLowerCase()
-      );
-      const isAssigned = (p: Product) => {
-        const pCatId = ((p as any).categoryId || (p as any).category_id || (p as any).category?.id || '').trim().toLowerCase();
-        const pCatSlug = ((p as any).categorySlug || (p as any).category_slug || (p as any).category?.slug || '').trim().toLowerCase();
-        const pCatName = ((p as any).categoryName || (p as any).category_name || (p as any).category?.name || (typeof (p as any).category === 'string' ? (p as any).category : '') || '').trim().toLowerCase();
+      ) || { id, slug: id, name: id, subcategories: [] };
 
-        const cId = (id || '').trim().toLowerCase();
-        const cSlug = (targetCat?.slug || '').trim().toLowerCase();
-        const cName = (targetCat?.name || '').trim().toLowerCase();
-
-        return Boolean(
-          (cId && (pCatId === cId || pCatSlug === cId || pCatName === cId)) ||
-          (cSlug && (pCatSlug === cSlug || pCatId === cSlug || pCatName === cSlug)) ||
-          (cName && (pCatName === cName || pCatId === cName || pCatSlug === cName))
-        );
-      };
+      const isAssigned = (p: Product) => isProductAssignedToCategory(p, targetCat);
 
       // Check if products are currently assigned to this category
       const assignedProducts = products.filter(isAssigned);
@@ -871,17 +859,89 @@ export const AdminDataProvider: React.FC<{ children: ReactNode }> = ({ children 
         return { success: false, error: errorMsg };
       }
 
-      setDeletedCategoryIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-      setCategories((prev) => prev.filter((c) => c.id !== id));
+      const idsToRemove = new Set([id, targetCat?.id, targetCat?.slug].filter(Boolean) as string[]);
+      setDeletedCategoryIds((prev) => Array.from(new Set([...prev, ...idsToRemove])));
+      setCategories((prev) => prev.filter((c) => !idsToRemove.has(c.id) && !idsToRemove.has(c.slug)));
+
       if (reassignToCategoryId === 'unlink' || reassignToCategoryId === 'none') {
         setProducts((prev) =>
-          prev.map((p) => (isAssigned(p) ? { ...p, categoryId: '', categorySlug: '' } : p))
+          prev.map((p) => {
+            if (!isAssigned(p)) return p;
+            const updated: any = { ...p, categoryId: '', categorySlug: '' };
+            if ('category' in updated) updated.category = '';
+            if ('categoryName' in updated) updated.categoryName = '';
+            if ('category_id' in updated) updated.category_id = null;
+            if ('category_slug' in updated) updated.category_slug = null;
+            if ('subcategoryId' in updated) updated.subcategoryId = '';
+            return updated as Product;
+          })
         );
+        try {
+          const saved = localStorage.getItem('zada_admin_products');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            const unlinked = parsed.map((p: any) => {
+              if (!isAssigned(p)) return p;
+              return {
+                ...p,
+                categoryId: '',
+                categorySlug: '',
+                category: '',
+                categoryName: '',
+                category_id: null,
+                category_slug: null,
+                subcategoryId: ''
+              };
+            });
+            localStorage.setItem('zada_admin_products', JSON.stringify(unlinked));
+          }
+        } catch {}
       } else if (reassignToCategoryId) {
+        const destCat = categories.find((c) => c.id === reassignToCategoryId);
+        const destId = destCat ? destCat.id : reassignToCategoryId;
+        const destSlug = destCat ? destCat.slug : '';
+        const destName = destCat ? destCat.name : '';
         setProducts((prev) =>
-          prev.map((p) => (isAssigned(p) ? { ...p, categoryId: reassignToCategoryId } : p))
+          prev.map((p) => {
+            if (!isAssigned(p)) return p;
+            const updated: any = { ...p, categoryId: destId, categorySlug: destSlug };
+            if ('category' in updated) updated.category = destName;
+            if ('categoryName' in updated) updated.categoryName = destName;
+            if ('category_id' in updated) updated.category_id = destId;
+            if ('category_slug' in updated) updated.category_slug = destSlug;
+            return updated as Product;
+          })
         );
+        try {
+          const saved = localStorage.getItem('zada_admin_products');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            const reassigned = parsed.map((p: any) => {
+              if (!isAssigned(p)) return p;
+              return {
+                ...p,
+                categoryId: destId,
+                categorySlug: destSlug,
+                category: destName,
+                categoryName: destName,
+                category_id: destId,
+                category_slug: destSlug
+              };
+            });
+            localStorage.setItem('zada_admin_products', JSON.stringify(reassigned));
+          }
+        } catch {}
       }
+
+      try {
+        const savedCats = localStorage.getItem('zada_admin_categories');
+        if (savedCats) {
+          const parsed = JSON.parse(savedCats);
+          const filtered = parsed.filter((c: any) => !idsToRemove.has(c.id) && !idsToRemove.has(c.slug));
+          localStorage.setItem('zada_admin_categories', JSON.stringify(filtered));
+        }
+      } catch {}
+
       logAdminAction('DELETE_CATEGORY', 'CATEGORY', `Deleted category ${id}`, id);
       showToast('Category Removed', 'Category has been deleted permanently from database.', 'info');
       return { success: true };

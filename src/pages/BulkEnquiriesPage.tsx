@@ -46,7 +46,7 @@ export const BulkEnquiriesPage: React.FC = () => {
           </div>
           <h1 className="font-serif text-2xl font-bold">Corporate & Wedding Gifting</h1>
           <p className="text-xs text-white/80 max-w-md mx-auto">
-            Custom-branded Kerala delicacy hampers, festive gift boxes, and bulk snack orders tailored for special occasions.
+            Custom-branded Mandhi feast hampers, celebration gift boxes, and bulk dining orders tailored for family gatherings and special occasions.
           </p>
         </section>
 

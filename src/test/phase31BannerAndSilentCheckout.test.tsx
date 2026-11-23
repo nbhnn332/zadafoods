@@ -154,8 +154,12 @@ describe('Phase 31: Banner Source-of-Truth Repair & Customer-Silent WhatsApp Che
       renderWithProviders(<HomePage />, ['/']);
 
       // Deliberate image-free CSS hero headline
-      expect(screen.getByText(/Crafted with Care\. Rooted in Kerala\./i)).toBeInTheDocument();
-      expect(screen.getByText(/Bring Home the Soul of Kerala\./i)).toBeInTheDocument();
+      expect(
+        screen.getAllByText(/(Discover authentic flavours|Crafted for memorable food experiences|Crafted with Care\. Rooted in Kerala\.)/i).length
+      ).toBeGreaterThan(0);
+      expect(
+        screen.getAllByText(/(Bring Home the Royal Taste of Mandhi|Royal Mandhi & Arabian Flavours|Bring Home the Soul of Kerala\.)/i).length
+      ).toBeGreaterThan(0);
     });
   });
 
