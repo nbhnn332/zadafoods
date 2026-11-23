@@ -40,21 +40,27 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
     window.sessionStorage.clear();
   });
 
-  it('renders splash screen on cold start when sessionStorage is empty', () => {
+  it('renders splash screen on cold start displaying only official logo directly without white container or text', () => {
     render(<SplashScreen minDisplayDuration={1800} />);
 
     // Check dialog wrapper
     const dialog = screen.getByRole('dialog', { name: /ZaDa Foods Brand Loading Experience/i });
     expect(dialog).toBeInTheDocument();
 
-    // Check official ZaDa Foods logo
+    // Check official ZaDa Foods logo directly rendered
     const logoImg = screen.getByAltText('ZaDa Foods');
     expect(logoImg).toBeInTheDocument();
     expect(logoImg).toHaveAttribute('src', '/assets/logo.svg');
 
-    // Check official brand statement / tagline
-    expect(screen.getByText(/Authentic (Arabian Taste|Kerala Flavours)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Crafted for Memorable Food Experiences/i)).toBeInTheDocument();
+    // Verify logo is floating directly without white card container or box
+    const logoParent = logoImg.parentElement;
+    expect(logoParent).not.toHaveClass('bg-white');
+    expect(logoParent).not.toHaveClass('rounded-2xl');
+
+    // Verify all additional text, captions, subtitles are removed
+    expect(screen.queryByText(/Authentic Arabian Taste/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Crafted for Memorable Food Experiences/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kerala/i)).not.toBeInTheDocument();
 
     // Check accessible skip button
     expect(screen.getByRole('button', { name: /Skip/i })).toBeInTheDocument();
@@ -110,7 +116,7 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
     expect(onComplete).toHaveBeenCalled();
   });
 
-  it('adapts to Christmas festival theme', () => {
+  it('adapts to Christmas festival theme palette while preserving logo-only presentation', () => {
     const christmasTheme = mockFestivalTheme('christmas', 'Christmas Magic');
     render(
       <FestivalContext.Provider
@@ -125,12 +131,13 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
       </FestivalContext.Provider>
     );
 
-    expect(screen.getByText(/Christmas Celebration/i)).toBeInTheDocument();
     expect(screen.getByAltText('ZaDa Foods')).toBeInTheDocument();
-    expect(screen.getByText(/Authentic (Arabian Taste|Kerala Flavours)/i)).toBeInTheDocument();
+    // No text or badge container underneath logo
+    expect(screen.queryByText(/Christmas Celebration/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Authentic/i)).not.toBeInTheDocument();
   });
 
-  it('adapts to Eid festival theme', () => {
+  it('adapts to Eid festival theme palette while preserving logo-only presentation', () => {
     const eidTheme = mockFestivalTheme('eid', 'Eid Celebration');
     render(
       <FestivalContext.Provider
@@ -145,10 +152,11 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
       </FestivalContext.Provider>
     );
 
-    expect(screen.getByText(/Eid Festive Selection/i)).toBeInTheDocument();
+    expect(screen.getByAltText('ZaDa Foods')).toBeInTheDocument();
+    expect(screen.queryByText(/Eid Festive Selection/i)).not.toBeInTheDocument();
   });
 
-  it('adapts to Onam festival theme', () => {
+  it('adapts to Onam festival theme palette while preserving logo-only presentation', () => {
     const onamTheme = mockFestivalTheme('onam', 'Onam Celebration');
     render(
       <FestivalContext.Provider
@@ -163,10 +171,11 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
       </FestivalContext.Provider>
     );
 
-    expect(screen.getByText(/(Festive Kasavu Edition|Onam Kasavu Edition)/i)).toBeInTheDocument();
+    expect(screen.getByAltText('ZaDa Foods')).toBeInTheDocument();
+    expect(screen.queryByText(/(Festive Kasavu Edition|Onam Kasavu Edition)/i)).not.toBeInTheDocument();
   });
 
-  it('adapts to Diwali festival theme', () => {
+  it('adapts to Diwali festival theme palette while preserving logo-only presentation', () => {
     const diwaliTheme = mockFestivalTheme('diwali', 'Diwali Celebration');
     render(
       <FestivalContext.Provider
@@ -181,7 +190,8 @@ describe('SplashScreen Cinematic Brand Reveal Component', () => {
       </FestivalContext.Provider>
     );
 
-    expect(screen.getByText(/Deepavali Special/i)).toBeInTheDocument();
+    expect(screen.getByAltText('ZaDa Foods')).toBeInTheDocument();
+    expect(screen.queryByText(/Deepavali Special/i)).not.toBeInTheDocument();
   });
 
   it('progresses through choreographed scenes and exits after min duration', () => {

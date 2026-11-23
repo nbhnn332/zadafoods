@@ -17,7 +17,7 @@ interface LuxurySplashTheme {
   glowColor: string;
   accentGold: string;
   richGold: string;
-  plaqueBorder: string;
+  plaqueBorder?: string;
   badgeLabel?: string;
   particleColor: string;
 }
@@ -145,12 +145,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   });
 
   // Choreographed Scene Phases:
-  // Scene 1: 'arrival' (0 - 400ms)
-  // Scene 2: 'logo' (400 - 850ms)
-  // Scene 3: 'geometry' (850 - 1250ms)
-  // Scene 4: 'tagline' (1250 - 1800ms)
-  // Scene 5: 'exit' (1800ms+ -> cross-fade exit)
-  const [scenePhase, setScenePhase] = useState<'arrival' | 'logo' | 'geometry' | 'tagline' | 'exit'>('arrival');
+  // Scene 1: 'arrival' (0 - 350ms)
+  // Scene 2: 'logo' (350 - 800ms)
+  // Scene 3: 'geometry' (800ms+)
+  // Scene 4: 'exit' (cross-fade exit)
+  const [scenePhase, setScenePhase] = useState<'arrival' | 'logo' | 'geometry' | 'exit'>('arrival');
   const [isExiting, setIsExiting] = useState<boolean>(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState<boolean>(false);
 
@@ -206,7 +205,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     if (!shouldMount) return;
 
     if (isReducedMotion) {
-      setScenePhase('tagline');
+      setScenePhase('geometry');
       setMinTimeElapsed(true);
       const timer = setTimeout(() => {
         handleExit();
@@ -217,7 +216,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     // Sequence Choreography
     const tLogo = setTimeout(() => setScenePhase('logo'), 350);
     const tGeom = setTimeout(() => setScenePhase('geometry'), 800);
-    const tTag = setTimeout(() => setScenePhase('tagline'), 1250);
     const tMin = setTimeout(() => {
       setMinTimeElapsed(true);
       if (!isLoading) {
@@ -228,7 +226,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
     return () => {
       clearTimeout(tLogo);
       clearTimeout(tGeom);
-      clearTimeout(tTag);
       clearTimeout(tMin);
     };
   }, [shouldMount, isReducedMotion, minDisplayDuration, isLoading, handleExit]);
@@ -269,7 +266,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       <div
         className="absolute inset-0 pointer-events-none animate-splash-arrival-glow"
         style={{
-          background: `radial-gradient(circle at 50% 48%, ${themeConfig.glowColor} 0%, rgba(251, 248, 242, 0) 65%)`
+          background: `radial-gradient(circle at 50% 50%, ${themeConfig.glowColor} 0%, rgba(251, 248, 242, 0) 65%)`
         }}
       />
 
@@ -301,7 +298,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         <button
           type="button"
           onClick={handleExit}
-          className="px-3.5 py-1.5 rounded-full text-xs font-sans font-semibold tracking-wider uppercase transition-all duration-300 bg-white/70 hover:bg-white text-[#5B4030] hover:text-[#29231D] border border-[#B8863B]/30 shadow-xs hover:shadow-sm active:scale-95 flex items-center gap-1.5"
+          className="px-3.5 py-1.5 rounded-full text-xs font-sans font-semibold tracking-wider uppercase transition-all duration-300 bg-white/70 hover:bg-white text-[#5B4030] hover:text-[#29231D] border border-[#B8863B]/30 shadow-xs hover:shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
           aria-label="Skip splash screen"
         >
           <span>Skip</span>
@@ -309,13 +306,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         </button>
       </div>
 
-      {/* Central Composition */}
-      <div className="relative z-10 flex flex-col items-center justify-center max-w-lg px-6 w-full text-center">
+      {/* Central Composition - Logo Alone with Ornamental Framing Geometry */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 w-full text-center">
         {/* Subtle Luxury SVG Arabian Geometric Framing Ring */}
-        <div className="relative flex items-center justify-center w-64 h-64 sm:w-76 sm:h-76">
+        <div className="relative flex items-center justify-center w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96">
           <svg
             viewBox="0 0 360 360"
-            className="absolute inset-0 w-full h-full pointer-events-none"
+            className="absolute inset-0 w-full h-full pointer-events-none select-none"
             aria-hidden="true"
           >
             <defs>
@@ -371,104 +368,20 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             </g>
           </svg>
 
-          {/* Central Luxury Logo Plaque Card */}
+          {/* Central Directly Floating ZaDa Foods Logo - No White Container or Card */}
           <div
-            className={`absolute flex flex-col items-center justify-center transition-all duration-700 ${
+            className={`absolute inset-0 flex items-center justify-center transition-all duration-700 pointer-events-none select-none ${
               scenePhase === 'arrival' && !isReducedMotion
-                ? 'opacity-0 scale-90 translate-y-3'
+                ? 'opacity-0 scale-90 translate-y-2'
                 : 'opacity-100 scale-100 translate-y-0'
             }`}
           >
-            <div
-              className="relative px-7 sm:px-9 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-b from-[#FFFFFF] via-[#FDFBF7] to-[#F5EFE6] shadow-[0_12px_36px_rgba(184,134,59,0.14),0_2px_12px_rgba(0,0,0,0.04)] border overflow-hidden flex items-center justify-center animate-splash-logo-reveal"
-              style={{
-                borderColor: themeConfig.plaqueBorder
-              }}
-            >
-              {/* Soft Gold Light Sheen Sweep Overlay */}
-              {!isReducedMotion && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-10">
-                  <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-[#E8D2A6]/50 to-transparent skew-x-[-25deg] animate-splash-sheen" />
-                </div>
-              )}
-
-              {/* Official Existing ZaDa Foods Brand Logo */}
-              <img
-                src="/assets/logo.svg"
-                alt="ZaDa Foods"
-                className="h-11 sm:h-13 md:h-15 w-auto max-w-[200px] sm:max-w-[240px] object-contain select-none pointer-events-none drop-shadow-xs"
-              />
-            </div>
-
-            {/* Optional Active Festival Pill Badge */}
-            {themeConfig.badgeLabel && (
-              <div
-                className={`mt-2.5 px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-sans font-semibold tracking-wider uppercase bg-white/90 border border-[#B8863B]/40 text-[#916322] shadow-xs transition-opacity duration-500 ${
-                  scenePhase === 'arrival' && !isReducedMotion ? 'opacity-0' : 'opacity-100'
-                }`}
-              >
-                {themeConfig.badgeLabel}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Brand Statement / Taglines Section */}
-        <div
-          className={`flex flex-col items-center justify-center mt-3 sm:mt-5 transition-all duration-700 ${
-            scenePhase === 'arrival' || scenePhase === 'logo'
-              ? 'opacity-0 translate-y-3'
-              : 'opacity-100 translate-y-0 animate-splash-tagline'
-          }`}
-        >
-          {/* Ornate Gold Filigree Center Divider */}
-          <div className="flex items-center gap-3 w-48 sm:w-60 mb-2">
-            <span
-              className="h-[1px] flex-1"
-              style={{
-                background: `linear-gradient(to right, transparent, ${themeConfig.accentGold})`
-              }}
-            />
-            <span
-              className="w-1.5 h-1.5 rotate-45"
-              style={{
-                backgroundColor: themeConfig.accentGold,
-                boxShadow: `0 0 6px ${themeConfig.accentGold}`
-              }}
-            />
-            <span
-              className="h-[1px] flex-1"
-              style={{
-                background: `linear-gradient(to left, transparent, ${themeConfig.accentGold})`
-              }}
+            <img
+              src="/assets/logo.svg"
+              alt="ZaDa Foods"
+              className="h-12 sm:h-14 md:h-16 w-auto max-w-[210px] sm:max-w-[240px] md:max-w-[270px] object-contain select-none pointer-events-none drop-shadow-[0_4px_16px_rgba(184,134,59,0.14)] animate-splash-logo-reveal"
             />
           </div>
-
-          {/* Primary Tagline in Elegant Typography */}
-          <h2
-            className="splash-tagline font-serif font-bold text-sm sm:text-base tracking-[0.18em] sm:tracking-[0.24em] uppercase text-center px-4 max-w-sm"
-            style={{
-              color: '#29231D',
-              textShadow: '0 1px 2px rgba(184, 134, 59, 0.15)'
-            }}
-          >
-            Authentic Arabian Taste
-          </h2>
-
-          {/* Supporting Brand Line */}
-          <p
-            className="font-sans text-[11px] sm:text-xs tracking-wider text-[#5B4030] mt-1 font-medium"
-          >
-            Crafted for Memorable Food Experiences
-          </p>
-
-          {/* Subtle Branded Loading Indicator */}
-          {isLoading && minTimeElapsed && (
-            <div className="mt-4 flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/80 border border-[#B8863B]/25 text-[11px] text-[#916322] font-sans shadow-2xs animate-splash-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B8863B] animate-ping" />
-              <span>Preparing your authentic Arabian feast...</span>
-            </div>
-          )}
         </div>
       </div>
     </div>
